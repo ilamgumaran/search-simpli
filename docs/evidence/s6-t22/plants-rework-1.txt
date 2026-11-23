@@ -1,0 +1,19 @@
+Rework-1 planted faults, each in its own copy of fixtures/text-search/judgments.json; each named test must fail.
+1. word-06 loses its second judged answer (paati/naatkaatti-2027.md)
+   test_the_judged_answers_stay_judged: FAILED  + []
+2. span-02's query set back to v1's 'sourdough prove bake temperature'
+   test_no_query_borrows_a_word_from_its_answer: FAILED  AssertionError: 'temperature' unexpectedly found in {'prove', 'every', 'temperature', '4', 'half', 'at', 'for', 'folding', 'room', 'hours', 'hour'} : span-02: temperature in home/recipes/sourdough.md
+3. spell-04's question reworded to 'sourdogh'
+   test_version_1_questions_keep_their_wording: FAILED  + cd90ba207bb0f250daa923fc618dd57f801c9208ba01884fd8bb7b97152f40dd
+4. word-03's single_source flipped
+   test_single_source_is_what_the_readable_files_say: FAILED  AssertionError: False != True : word-03
+5. cur-01 loses its stale copy
+   test_stale_copies_hold_their_keys_and_are_not_answers: FAILED  AssertionError: None is not true : cur-01
+6. form-10 given v1's wrong line as a key ('bike lights', line 1)
+   test_every_range_exists_and_holds_its_keys: FAILED  AssertionError: 'bike lights' not found in 'mira: sketchbook and pens (bought)\npaati: shawl (to order)' : form-10: home/lists/christmas-presents.txt 2-3
+7. each of the five v1 queries the Verdict found borrowing a word, put back one at a time
+   number-05 '2026-06-17 error': FAILED  number-05: error in toolshare/logs/server-2026-06.log
+   span-02 'sourdough prove bake temperature': FAILED  span-02: temperature in home/recipes/sourdough.md
+   span-07 'borrowed how long late returns': FAILED  span-07: returns in toolshare/docs/lending-rules.md
+   span-11 'ladder cordless drill shelf': FAILED  span-11: shelf in toolshare/data/inventory.yaml
+   pair-09 'reminders sent twice fixed release': FAILED  pair-09: sent in toolshare/CHANGELOG.md

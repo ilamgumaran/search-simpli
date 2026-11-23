@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+"""Verifier plant: the real searchd, with two queries swapped (an engine answer swapped)."""
+import os, sys
+real = "<scratch>/prefix-rs/bin/searchd"
+swap = {"dehumidifier setting": "gutter", "snorkel": "trellis"}
+args = [swap.get(a, a) for a in sys.argv[1:]]
+os.execv(real, [real] + args)

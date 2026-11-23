@@ -1,0 +1,99 @@
+Rework 2: every question whose judgment changed, or whose score moved in any of the four direct
+configurations, with its score before (baseline-rework-1) and after (baseline-rework-2).
+The engine and the binary are the same (main 87bfd35, searchd 5ad3de31...); what moved is the set and the corpus:
+  archive/committee-2025.md and archive/house-notes-2024.md gained a last line 'Status: superseded.';
+  inbox/note-08.txt reads 'repairs' for 'desk'; five rework-1 copies gained the same line ('Status: draft, superseded.' in the Cornwall draft)
+  (the Cornwall draft also '(draft)' in its title). The scorer aligns content to file lines (finding 7).
+Question texts and queries are unchanged (test_every_question_matches_its_frozen_digest records all 181 now).
+Score: file rank, passage rank, parts found, complete, judged share, stale rank.
+
+word-05: stale archive/lending-rules-2024.md:9-9 (was none)
+   both typed     file 2, passage 2, parts 1/1, complete, share 0.0321  ->  file 1, passage 1, parts 1/1, complete, share 0.0317, stale rank 2
+   both query     file 2, passage 2, parts 1/1, complete, share 0.0294  ->  file 1, passage 1, parts 1/1, complete, share 0.0291, stale rank 2
+   content typed  file 2, passage 2, parts 1/1, complete, share 0.0408  ->  file 1, passage 1, parts 1/1, complete, share 0.0402, stale rank 2
+   content query  file 2, passage 2, parts 1/1, complete, share 0.0168  ->  file 1, passage 1, parts 1/1, complete, share 0.0167, stale rank 2
+spell-06: stale home/trips/cornwall-2026-draft.md:9-9 (was none); note
+   both typed     file 1, passage 1, parts 1/1, complete, share 0.0718  ->  file 1, passage 1, parts 1/1, complete, share 0.0729, stale rank 2
+   both query     file 1, passage 1, parts 1/1, complete, share 0.3659  ->  file 1, passage 1, parts 1/1, complete, share 0.3285, stale rank 2
+   content typed  file 1, passage 1, parts 1/1, complete, share 0.1044  ->  file 1, passage 1, parts 1/1, complete, share 0.0979, stale rank 2
+   content query  file 1, passage 1, parts 1/1, complete, share 0.3659  ->  file 1, passage 1, parts 1/1, complete, share 0.3285, stale rank 2
+phrase-01: stale archive/house-notes-2024.md:7-7 (was none); note
+   both typed     file 1, passage 1, parts 1/1, complete, share 0.0427  ->  file 1, passage 1, parts 1/1, complete, share 0.0427, stale rank 2
+   both query     file 1, passage 1, parts 1/1, complete, share 0.0427  ->  file 1, passage 1, parts 1/1, complete, share 0.0427, stale rank 2
+   content typed  file 1, passage 1, parts 1/1, complete, share 0.0427  ->  file 1, passage 1, parts 1/1, complete, share 0.0427, stale rank 2
+   content query  file 1, passage 1, parts 1/1, complete, share 0.0427  ->  file 1, passage 1, parts 1/1, complete, share 0.0427, stale rank 2
+phrase-02: stale archive/committee-2025.md:9-9 (was none)
+   both typed     file 1, passage 1, parts 1/1, complete, share 0.0449  ->  file 1, passage 1, parts 1/1, complete, share 0.0444, stale rank 4
+   both query     file 1, passage 1, parts 1/1, complete, share 0.0449  ->  file 1, passage 1, parts 1/1, complete, share 0.0444, stale rank 4
+   content typed  file 1, passage 1, parts 1/1, complete, share 0.0449  ->  file 1, passage 1, parts 1/1, complete, share 0.0444, stale rank 4
+   content query  file 1, passage 1, parts 1/1, complete, share 0.0449  ->  file 1, passage 1, parts 1/1, complete, share 0.0444, stale rank 4
+span-03: stale archive/committee-2025.md:5-5, archive/committee-2025.md:9-9 (was none)
+   both typed     file 3, passage 3, parts 1/2, incomplete, share 0.0702  ->  file 2, passage 2, parts 1/2, incomplete, share 0.069, stale rank 3
+   both query     file 1, passage 1, parts 1/2, incomplete, share 0.1097  ->  file 1, passage 1, parts 1/2, incomplete, share 0.1069, stale rank 2
+   content typed  file 3, passage 3, parts 1/2, incomplete, share 0.0425  ->  file 2, passage 2, parts 1/2, incomplete, share 0.0421, stale rank 3
+   content query  file 1, passage 1, parts 1/2, incomplete, share 0.1097  ->  file 1, passage 1, parts 1/2, incomplete, share 0.1069, stale rank 2
+span-06: stale home/trips/cornwall-2026-draft.md:5-5 (was none)
+   both typed     file 1, passage 1, parts 1/2, incomplete, share 0.0372  ->  file 1, passage 1, parts 1/2, incomplete, share 0.0365, stale rank 3
+   both query     file 1, passage 1, parts 1/2, incomplete, share 0.0556  ->  file 1, passage 1, parts 1/2, incomplete, share 0.0542, stale rank 3
+   content typed  file 1, passage 1, parts 2/2, complete, share 0.0728  ->  file 1, passage 1, parts 2/2, complete, share 0.0717, stale rank 3
+   content query  file 1, passage 1, parts 2/2, complete, share 0.1083  ->  file 1, passage 1, parts 2/2, complete, share 0.1062, stale rank 3
+span-07: stale archive/lending-rules-2024.md:5-5 (was none)
+   both typed     file 2, passage 2, parts 1/2, incomplete, share 0.0262  ->  file 2, passage 2, parts 1/2, incomplete, share 0.0262, stale rank 1 (first)
+   both query     file 2, passage 2, parts 1/2, incomplete, share 0.0353  ->  file 2, passage 2, parts 1/2, incomplete, share 0.0353, stale rank 1 (first)
+   content typed  file 2, passage 2, parts 2/2, complete, share 0.0568  ->  file 2, passage 2, parts 2/2, complete, share 0.0568, stale rank 1 (first)
+   content query  file 2, passage 2, parts 2/2, complete, share 0.0932  ->  file 2, passage 2, parts 2/2, complete, share 0.0932, stale rank 1 (first)
+span-08: stale archive/boiler-2025.md:8-8 (was none); note
+   both typed     file 1, passage 1, parts 1/2, incomplete, share 0.0455  ->  file 1, passage 1, parts 1/2, incomplete, share 0.0454, stale rank 3
+   both query     file 1, passage 1, parts 1/2, incomplete, share 0.1878  ->  file 1, passage 1, parts 1/2, incomplete, share 0.1878, stale rank 2
+   content typed  file 1, passage 1, parts 2/2, complete, share 0.1185  ->  file 1, passage 1, parts 2/2, complete, share 0.1182, stale rank 3
+   content query  file 1, passage 1, parts 2/2, complete, share 0.223  ->  file 1, passage 1, parts 2/2, complete, share 0.223, stale rank 2
+span-10: stale school/calendar-autumn-draft.md:6-6 (was none)
+   both typed     file 1, passage 1, parts 1/2, incomplete, share 0.0463  ->  file 1, passage 1, parts 1/2, incomplete, share 0.046, stale rank 2
+   both query     file 1, passage 1, parts 1/2, incomplete, share 0.0495  ->  file 1, passage 1, parts 1/2, incomplete, share 0.0491, stale rank 2
+   content typed  file 1, passage 1, parts 2/2, complete, share 0.0822  ->  file 1, passage 1, parts 2/2, complete, share 0.0815, stale rank 2
+   content query  file 1, passage 1, parts 2/2, complete, share 0.1026  ->  file 1, passage 1, parts 2/2, complete, share 0.1016, stale rank 2
+pair-01: stale archive/boiler-2025.md:12-12 (was none)
+   both typed     file 2, passage 2, parts 1/2, incomplete, share 0.0737  ->  file 2, passage 2, parts 1/2, incomplete, share 0.0728, stale rank 1 (first)
+   both query     file 2, passage 2, parts 1/2, incomplete, share 0.1607  ->  file 2, passage 2, parts 1/2, incomplete, share 0.1567, stale rank 1 (first)
+   content typed  file 2, passage 2, parts 1/2, incomplete, share 0.0762  ->  file 2, passage 2, parts 1/2, incomplete, share 0.0753, stale rank 1 (first)
+   content query  file 2, passage 2, parts 1/2, incomplete, share 0.1599  ->  file 2, passage 2, parts 1/2, incomplete, share 0.156, stale rank 1 (first)
+name-01: stale archive/boiler-2025.md:5-8 (was none); note
+   both typed     file 3, passage 6, parts 1/1, complete, share 0.0657  ->  file 3, passage 6, parts 1/1, complete, share 0.0644, stale rank 2 (first)
+   both query     file 2, passage 2, parts 1/1, complete, share 0.0631  ->  file 2, passage 2, parts 1/1, complete, share 0.0619, stale rank 3
+   content typed  file 3, passage 6, parts 1/1, complete, share 0.0748  ->  file 3, passage 6, parts 1/1, complete, share 0.0731, stale rank 2 (first)
+   content query  file 2, passage 2, parts 1/1, complete, share 0.0681  ->  file 2, passage 2, parts 1/1, complete, share 0.0667, stale rank 3
+about-02: judged ranges; + home/trips/cornwall-2026-draft.md:1-1; note
+   both typed     file 1, passage 1, parts 2/3, incomplete, share 0.1025  ->  file 1, passage 1, parts 2/3, incomplete, share 0.1313
+   both query     file 1, passage 1, parts 3/3, complete, share 0.1513  ->  file 1, passage 1, parts 3/3, complete, share 0.1817
+   content typed  file 1, passage 1, parts 2/3, incomplete, share 0.1025  ->  file 1, passage 1, parts 2/3, incomplete, share 0.1313
+   content query  file 1, passage 1, parts 3/3, complete, share 0.1513  ->  file 1, passage 1, parts 3/3, complete, share 0.1817
+about-03: judged ranges; + archive/pickle-2024.md:1-1; note
+   both typed     file 1, passage 1, parts 3/3, complete, share 0.0982  ->  file 1, passage 1, parts 3/3, complete, share 0.1042
+   both query     file 1, passage 1, parts 3/3, complete, share 0.1148  ->  file 1, passage 1, parts 3/3, complete, share 0.1218
+   content typed  file 1, passage 1, parts 3/3, complete, share 0.0982  ->  file 1, passage 1, parts 3/3, complete, share 0.1042
+   content query  file 1, passage 1, parts 3/3, complete, share 0.1148  ->  file 1, passage 1, parts 3/3, complete, share 0.1218
+about-09: note
+   both typed     file 5, passage 5, parts 2/8, incomplete, share 0.0482  ->  file 5, passage 5, parts 2/8, incomplete, share 0.0482  (same)
+   both query     file 3, passage 3, parts 3/8, incomplete, share 0.0751  ->  file 3, passage 3, parts 3/8, incomplete, share 0.0751  (same)
+   content typed  file 5, passage 5, parts 2/8, incomplete, share 0.0436  ->  file 5, passage 5, parts 2/8, incomplete, share 0.0436  (same)
+   content query  file 3, passage 3, parts 3/8, incomplete, share 0.0751  ->  file 3, passage 3, parts 3/8, incomplete, share 0.0751  (same)
+syn-02: judged ranges; + archive/house-notes-2024.md:23-23; stale none (was archive/house-notes-2024.md:23-23); note
+   both typed     file None, passage None, parts 0/1, incomplete, share 0.0, stale rank 10 (first)  ->  file 10, passage None, parts 0/1, incomplete, share 0.0
+   both query     file None, passage None, parts 0/1, incomplete, share 0.0, stale rank None  ->  file None, passage None, parts 0/1, incomplete, share 0.0
+   content typed  file None, passage None, parts 0/1, incomplete, share 0.0, stale rank 10 (first)  ->  file 10, passage None, parts 0/1, incomplete, share 0.0
+   content query  file None, passage None, parts 0/1, incomplete, share 0.0, stale rank None  ->  file None, passage None, parts 0/1, incomplete, share 0.0
+syn-03: judged ranges; + archive/house-notes-2024.md:13-13; note
+   both typed     file None, passage None, parts 0/1, incomplete, share 0.0  ->  file None, passage None, parts 0/1, incomplete, share 0.0  (same)
+   both query     file 10, passage 10, parts 1/1, complete, share 0.0255  ->  file 10, passage 10, parts 1/1, complete, share 0.0255  (same)
+   content typed  file None, passage None, parts 0/1, incomplete, share 0.0  ->  file None, passage None, parts 0/1, incomplete, share 0.0  (same)
+   content query  file None, passage None, parts 0/1, incomplete, share 0.0  ->  file None, passage None, parts 0/1, incomplete, share 0.0  (same)
+where-05: note
+   both typed     file 2, passage 2, parts 1/1, complete, share 0.0179  ->  file 2, passage 2, parts 1/1, complete, share 0.0179  (same)
+   both query     file 3, passage 3, parts 1/1, complete, share 0.019  ->  file 3, passage 3, parts 1/1, complete, share 0.019  (same)
+   content typed  file 2, passage 2, parts 1/1, complete, share 0.0179  ->  file 2, passage 2, parts 1/1, complete, share 0.0179  (same)
+   content query  file 3, passage 3, parts 1/1, complete, share 0.019  ->  file 3, passage 3, parts 1/1, complete, share 0.019  (same)
+
+17 questions changed in judgment; 0 more moved in rank, parts, completeness or a stale rank,
+with no change to the question; 23 more moved only in judged share (other files' text in
+their passages changed length; the line alignment of finding 7 changed no score, see line-alignment-rework-2.txt):
+  word-02, form-02, form-06, spell-02, spell-09, phrase-03, phrase-11, number-02, number-03, number-04, number-10, number-11, number-12, pair-03, word-14, about-06, content-05, syn-05, table-04, cur-01, cur-02, cur-06, cur-08

@@ -1,0 +1,22 @@
+Rework 2 plants (scratch copies of scripts/, tests/, fixtures/ and src/; SEARCH_SIMPLI_NO_ZIG=1):
+none (the unplanted copy): passes
+syn-05 reworded in the questions script; judgments regenerated, digests not: FAILS
+    FAIL: test_every_question_matches_its_frozen_digest (tests.test_text_search_score.JudgmentTests)
+syn-08's treasurer.md alternative dropped, judgments regenerated: FAILS
+    FAIL: test_every_question_matches_its_frozen_digest (tests.test_text_search_score.JudgmentTests)
+syn-02's agreeing 2024 copy marked stale again (rework 1's mark): FAILS
+    FAIL: test_a_stale_copy_disagrees_and_says_it_is_old (tests.test_text_search_score.JudgmentTests)
+the 2024 lending rules without their status line: FAILS
+    FAIL: test_a_stale_copy_disagrees_and_says_it_is_old (tests.test_text_search_score.JudgmentTests)
+note-08 back to 'desk': FAILS
+    FAIL: test_no_other_file_states_a_different_value_for_a_judged_fact (tests.test_text_search_score.JudgmentTests)
+a filler sentence stating another deposit: FAILS
+    FAIL: test_no_other_file_states_a_different_value_for_a_judged_fact (tests.test_text_search_score.JudgmentTests)
+budget: < for <=: FAILS
+    FAIL: test_tightness_judged_share_first_passage_and_budget (tests.test_text_search_score.ScoringTests)
+line alignment removed: FAILS
+    FAIL: test_judged_share_follows_the_file_when_content_skips_a_blank_start_line (tests.test_text_search_score.ScoringTests)
+readable-now total counts every answerable question: FAILS
+    FAIL: test_the_readable_now_total (tests.test_text_search_score.ScoringTests)
+readable_now computed from the first range only: FAILS
+    FAIL: test_readable_now_is_every_part_in_a_readable_file (tests.test_text_search_score.JudgmentTests)

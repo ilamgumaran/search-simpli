@@ -1,0 +1,18 @@
+"""Verifier pass 2: which questions have a range whose key words all occur in one of the six files added in rework 1
+(or in another archive/ copy), without that file being judged an answer or stale? Candidates for an unjudged answer
+or an unmarked stale copy."""
+import json, sys, unicodedata
+from pathlib import Path
+J = json.load(open(sys.argv[1])); C = Path(sys.argv[2])
+fold = lambda t: unicodedata.normalize("NFC", t).casefold()
+cands = ["home/trips/cornwall-2026-draft.md", "archive/lending-rules-2024.md", "archive/boiler-2025.md", "school/calendar-autumn-draft.md",
+         "archive/pickle-2024.md", "school/clubs-autumn.md", "archive/committee-2025.md", "archive/house-notes-2024.md"]
+lines = {p: fold((C/p).read_text()).splitlines() for p in cands}
+for q in J["questions"]:
+    judged = {r["path"] for p in q["parts"] for r in p["ranges"]} | {r["path"] for r in q.get("stale", [])}
+    for part in q["parts"]:
+        for r in part["ranges"]:
+            for p, ls in lines.items():
+                if p in judged: continue
+                hit = [i + 1 for i, l in enumerate(ls) if all(fold(k) in l for k in r["keys"])]
+                if hit: print(f"{q['id']:10s} range {r['path']}:{r['start_line']} keys {r['keys']} -> unjudged {p}:{hit}")

@@ -1,0 +1,23 @@
+word-06 | ranges [[('paati/pongal-samayal.md', 15, 15)]] -> [[('paati/pongal-samayal.md', 15, 15), ('paati/naatkaatti-2027.md', 3, 3)]] | listed: True
+form-10 | ranges [[('home/lists/christmas-presents.txt', 1, 1)]] -> [[('home/lists/christmas-presents.txt', 2, 3)]] | listed: True
+spell-04 | ranges [[('home/recipes/sourdough.md', 1, 1), ('archive/sourdough-copy.md', 1, 1)], [('home/recipes/sourdough.md', 14, 14), ('archive/sourdough-copy.md', 14, 14)]] -> [[('home/recipes/sourdough.md', 14, 14), ('archive/sourdough-copy.md', 14, 14)]] | listed: True
+spell-09 | ranges [[('school/calendar-autumn.md', 3, 3)], [('school/calendar-autumn.md', 9, 9)]] -> [[('school/calendar-autumn.md', 9, 9)]] | listed: True
+spell-10 | ranges [[('toolshare/data/inventory.yaml', 125, 125)]] -> [[('toolshare/data/inventory.yaml', 125, 125), ('toolshare/data/loans-2026.csv', 42, 42)]] | listed: True
+number-02 | ranges [[('toolshare/data/inventory.yaml', 52, 53), ('toolshare/docs/repairs.md', 3, 3)]] -> [[('toolshare/data/inventory.yaml', 52, 53), ('toolshare/docs/repairs.md', 3, 3), ('toolshare/data/loans-2026.csv', 18, 18)]] | listed: True
+number-05 | query '2026-06-17 error'->'server 2026-06-17' | listed: True
+number-06 | ranges [[('home/lists/useful-numbers.txt', 2, 2)]] -> [[('home/lists/useful-numbers.txt', 2, 2), ('home/contacts.tsv', 2, 2)]] | listed: True
+span-02 | query 'sourdough prove bake temperature'->'sourdough prove how long oven' | listed: True
+span-07 | query 'borrowed how long late returns'->'tool borrowed how long back late' | listed: True
+span-08 | ranges [[('home/house/boiler.md', 9, 9)], [('home/house/boiler.md', 17, 17)]] -> [[('home/house/boiler.md', 9, 9), ('inbox/boiler-service-2026-03-14.txt', 1, 1)], [('home/house/boiler.md', 17, 17), ('home/lists/useful-numbers.txt', 5, 5), ('home/contacts.tsv', 4, 4)]] | listed: True
+span-11 | query 'ladder cordless drill shelf'->'ladder cordless drill kept' | listed: True
+pair-01 | ranges [[('home/money/receipts-note.md', 7, 7)], [('home/house/boiler.md', 13, 13)]] -> [[('home/money/receipts-note.md', 7, 7)], [('home/house/boiler.md', 13, 13), ('inbox/boiler-service-2026-03-14.txt', 1, 1)]] | listed: True
+word-13 | id pair-04->word-13; kind two-files->word; ranges [[('school/calendar-autumn.md', 8, 8)], [('school/trip-letter-wetlands.md', 6, 6)]] -> [[('school/trip-letter-wetlands.md', 5, 5), ('school/calendar-autumn.md', 8, 8)], [('school/trip-letter-wetlands.md', 6, 6)]] | listed: True
+word-14 | id pair-06->word-14; kind two-files->word; ranges [[('home/trips/cornwall-2026.md', 10, 10)], [('home/trips/directions-to-gull-cottage.txt', 1, 3)]] -> [[('home/trips/cornwall-2026.md', 10, 10), ('home/trips/directions-to-gull-cottage.txt', 3, 3)], [('home/trips/directions-to-gull-cottage.txt', 1, 3)]] | listed: True
+word-15 | id pair-07->word-15; kind two-files->word; ranges [[('home/lists/useful-numbers.txt', 2, 2)], [('home/house/jobs-autumn.md', 6, 6)]] -> [[('home/lists/useful-numbers.txt', 2, 2), ('home/house/jobs-autumn.md', 6, 6), ('home/contacts.tsv', 2, 2)], [('home/house/jobs-autumn.md', 6, 6), ('home/money/receipts-note.md', 8, 8), ('home/money/house-costs-2026.csv', 6, 6)]] | listed: True
+pair-09 | query 'reminders sent twice fixed release'->'release fixed reminders going out twice issue' | listed: True
+name-01 | ranges [[('inbox/boiler-service-2026-03-14.txt', 1, 1)]] -> [[('inbox/boiler-service-2026-03-14.txt', 1, 1), ('home/house/boiler.md', 5, 9)]] | listed: True
+about-05 | ranges [[('toolshare/docs/repairs.md', 3, 3)], [('toolshare/docs/treasurer.md', 8, 8)], [('toolshare/data/inventory.yaml', 53, 53)]] -> [[('toolshare/docs/repairs.md', 3, 3)], [('toolshare/docs/treasurer.md', 8, 8)], [('toolshare/data/inventory.yaml', 53, 53), ('toolshare/data/loans-2026.csv', 18, 18)]] | listed: True
+about-09 | ranges [[('toolshare/src/app.py', 1, 1)], [('toolshare/src/reminders.py', 1, 1)], [('toolshare/src/models.py', 1, 1)], [('toolshare/site/app.js', 1, 1)]] -> [[('toolshare/src/app.py', 1, 1)], [('toolshare/src/reminders.py', 1, 1)], [('toolshare/src/models.py', 1, 1)], [('toolshare/site/app.js', 1, 1)], [('toolshare/site/index.html', 5, 5)], [('toolshare/site/join.html', 3, 3)], [('toolshare/site/styles.css', 1, 1)], [('toolshare/site/sitemap.xml', 2, 2)]] | listed: True
+syn-01 | id none-07->syn-01; kind no-answer->synonym; ranges [] -> [[('home/health/dentist.txt', 1, 1)]] | listed: True
+v1 questions missing from the new set: []
+changed: 21 | changed but not listed: []

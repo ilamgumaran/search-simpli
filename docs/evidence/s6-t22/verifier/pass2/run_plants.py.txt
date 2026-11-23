@@ -1,0 +1,47 @@
+"""Verifier pass 2: plant faults in fresh `git archive` copies of the head and run the text-search tests (no Zig: the
+end-to-end class builds searchd and is not what these plants exercise). Each plant edits one thing; judgment plants
+rewrite judgments.json with the repository's own script so only the planted fault differs."""
+import subprocess, sys, os, re, shutil
+from pathlib import Path
+REPO, HEAD, BASE = sys.argv[1], sys.argv[2], Path(sys.argv[3])
+PLANTS = [
+  ("p1-word06-drop-naatkaatti", "scripts/text_search_questions.py",
+   '        R("paati/naatkaatti-2027.md", "பொங்கல்: ஜனவரி 14", ["பொங்கல்", "ஜனவரி 14"])]],', ']],', True),
+  ("p2-syn08-drop-treasurer-md", "scripts/text_search_questions.py",
+   ',\n              R(TS + "docs/treasurer.md", "# Treasurer\'s notes", ["treasurer"])]],', ']],', True),
+  ("p3-pair04-drop-kitchen-part", "scripts/text_search_questions.py",
+   ',\n             [R("home/notes/kitchen-care.md", "The oven door seal was swapped", ["july"])]],', '],', True),
+  ("p4-word02-typed-form-changed", "scripts/text_search_questions.py",
+   '"How do I feed the sourdough starter?"', '"How do I feed the sourdough starter each night?"', True),
+  ("p5-syn05-typed-form-changed", "scripts/text_search_questions.py",
+   'Q("syn-05", "synonym", "', 'Q("syn-05", "synonym", "Ants: ', True),
+  ("p6-judged-share-no-newline", "scripts/text_search_score.py",
+   'size = len(line.encode("utf-8")) + 1', 'size = len(line.encode("utf-8"))', False),
+  ("p7-judged-share-off-by-one", "scripts/text_search_score.py",
+   'n = p["start_line"] + i', 'n = p["start_line"] + i + 1', False),
+  ("p8-first-passage-is-last", "scripts/text_search_score.py",
+   '        first.setdefault(p["path"], p)', '        first[p["path"]] = p', False),
+  ("p9-budget-strict", "scripts/text_search_score.py",
+   'evidence_bytes <= BUDGET_BYTES', 'evidence_bytes < BUDGET_BYTES', False),
+  ("p10-budget-ignored", "scripts/text_search_score.py",
+   'row["complete_within"] = row["complete"] and evidence_bytes <= BUDGET_BYTES', 'row["complete_within"] = row["complete"]', False),
+  ("p11-stale-first-ties", "scripts/text_search_score.py", None, None, False),
+]
+env = dict(os.environ, SEARCH_SIMPLI_NO_ZIG="1"); env.pop("SEARCHD_BINARY", None)
+for name, rel, old, new, regen in PLANTS:
+    d = BASE / name
+    if d.exists(): print("exists, skipped", d); continue
+    d.mkdir(parents=True)
+    subprocess.run(f"git -C '{REPO}' archive {HEAD} | tar -x -C '{d}'", shell=True, check=True)
+    f = d / rel; text = f.read_text(encoding="utf-8")
+    if old is None:  # p11: find the stale_first line and flip its comparison
+        m = re.search(r'row\["stale_first"\] = .*', text); old = m.group(0); new = old.replace("<", "<=", 1)
+        if new == old: print(name, "no '<' in", old); continue
+    assert text.count(old) == 1, (name, text.count(old)); f.write_text(text.replace(old, new), encoding="utf-8")
+    if regen:
+        r = subprocess.run([sys.executable, "-I", "scripts/text_search_questions.py", "--write", "fixtures/text-search/judgments.json"],
+                           cwd=d, capture_output=True, text=True)
+        if r.returncode: print(name, "REGEN FAILED", r.stderr[-300:]); continue
+    r = subprocess.run([sys.executable, "-m", "unittest", "tests.test_text_search_score"], cwd=d, env=env, capture_output=True, text=True)
+    fails = sorted(set(re.findall(r"^(?:FAIL|ERROR): (\S+)", r.stderr, re.M)))
+    print(f"{name}: exit {r.returncode}; {r.stderr.strip().splitlines()[-1]}; failing: {fails or 'none'}")

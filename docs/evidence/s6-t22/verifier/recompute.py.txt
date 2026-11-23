@@ -1,0 +1,55 @@
+"""Verifier probe: recompute every per-question row and every aggregate of baseline.json with code written here
+(not the scorer's), from fresh searchd calls on both surfaces, and compare."""
+import json, subprocess, sys
+from pathlib import Path
+B, RUN, J, BASE = sys.argv[1], Path(sys.argv[2]), json.load(open(sys.argv[3])), json.load(open(sys.argv[4]))
+def call(surface, field, query):
+    if surface == "direct":
+        args = ["search", str(RUN/"corpus"), query, "--evidence", "--search-field", field, "--top-k", "10"]
+    else:
+        args = ["evidence", str(RUN/"index"), query, "--search-field", field, "--top-k", "10"]
+    return subprocess.run([B, *args], capture_output=True, check=True, cwd=RUN).stdout
+def passages(env):
+    if "results" in env:
+        return [(r["citation"]["path"], r["citation"]["start_line"], r["citation"]["end_line"]) for r in env["results"]]
+    return [(r["path"], r["start_line"], r["end_line"]) for r in env["evidence"]]
+mism, agg = 0, {}
+for cfg, data in BASE["configs"].items():
+    surface, field = cfg.split("/")
+    rows = {r["id"]: r for r in data["questions"]}
+    tallies = {}
+    for q in J["questions"]:
+        out = call(surface, field, q.get("query") or q["question"])
+        ps = passages(json.loads(out))
+        mine = {"returned": len(ps), "evidence_bytes": len(out)}
+        if q["kind"] != "no-answer":
+            seen = []
+            for p in ps:
+                if p[0] not in seen: seen.append(p[0])
+            fr = [i + 1 for i, path in enumerate(seen) if path in q["files"]]
+            mine["file_rank"] = fr[0] if fr else None
+            inside = lambda p, r: p[0] == r["path"] and p[1] <= r["start_line"] and p[2] >= r["end_line"]
+            pr = [i + 1 for i, p in enumerate(ps) if any(inside(p, r) for part in q["parts"] for r in part["ranges"])]
+            mine["passage_rank"] = pr[0] if pr else None
+            mine["complete"] = all(any(inside(p, r) for p in ps for r in part["ranges"]) for part in q["parts"])
+        for k, v in mine.items():
+            if rows[q["id"]].get(k) != v:
+                mism += 1; print("MISMATCH", cfg, q["id"], k, rows[q["id"]].get(k), v)
+        t = tallies.setdefault(q["kind"], {"n": 0, "f1": 0, "f3": 0, "f10": 0, "p1": 0, "p3": 0, "p10": 0, "c": 0, "ret": 0, "bytes": 0})
+        t["n"] += 1; t["bytes"] += len(out)
+        if q["kind"] == "no-answer":
+            t["ret"] += len(ps) > 0
+        else:
+            for k in (1, 3, 10):
+                t[f"f{k}"] += mine["file_rank"] is not None and mine["file_rank"] <= k
+                t[f"p{k}"] += mine["passage_rank"] is not None and mine["passage_rank"] <= k
+            t["c"] += mine["complete"]
+    tot = {k: sum(t[k] for kind, t in tallies.items() if kind != "no-answer") for k in ("n", "f1", "f3", "f10", "p1", "p3", "p10", "c", "bytes")}
+    print(f"\n{cfg}: kind n f@1 f@3 f@10 p@1 p@3 p@10 complete | no-answer returned | mean evidence bytes")
+    for kind, t in tallies.items():
+        s = BASE["configs"][cfg]["summary"]["per_kind"][kind]
+        print(f"  {kind:13s} {t['n']:3d} {t['f1']:3d} {t['f3']:3d} {t['f10']:3d} {t['p1']:3d} {t['p3']:3d} {t['p10']:3d} {t['c']:3d} | {t['ret'] if kind=='no-answer' else ''} | {t['bytes']/t['n']:.1f} (scorer {s['evidence_bytes_mean']})")
+    print(f"  {'total':13s} {tot['n']:3d} {tot['f1']:3d} {tot['f3']:3d} {tot['f10']:3d} {tot['p1']:3d} {tot['p3']:3d} {tot['p10']:3d} {tot['c']:3d} | | {tot['bytes']/tot['n']:.1f}")
+    st = BASE["configs"][cfg]["summary"]["total"]
+    print("  scorer total:", {k: st[k]["hits"] for k in ("file@1","file@3","file@10","passage@1","passage@3","passage@10","complete","not_read")}, "bytes", st["evidence_bytes_mean"], "passage bytes", st["passage_bytes_mean"])
+print("\nrow mismatches:", mism)

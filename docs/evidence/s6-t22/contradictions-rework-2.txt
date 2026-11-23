@@ -1,0 +1,48 @@
+The scripted contradiction search, text_search_questions.contradictions (its docstring has the rule),
+kept as tests/test_text_search_score.py::test_no_other_file_states_a_different_value_for_a_judged_fact.
+It reads all 270 files, the generated filler sentences included.
+
+1. With inbox/note-08.txt as before rework 2 (Saturday desk), on these judgments:
+  about-11  toolshare/docs/treasurer.md:8  - INV-2026-014: Fennick Hardware, new hose for the pressure washer, 23.50, paid 12 October.
+  name-12   toolshare/docs/treasurer.md:8  - INV-2026-014: Fennick Hardware, new hose for the pressure washer, 23.50, paid 12 October.
+  table-09  inbox/note-08.txt:1  Wilf can do the Saturday desk on the 21st.
+  word-02   home/recipes/flatbread.md:3  300 g flour, 200 ml warm water, a pinch of salt, a spoon of oil.
+  word-13   school/trip-letter-castle.md:1  # Year 2 trip: Harrow Castle
+  word-13   school/trip-letter-castle.md:5  On Tuesday 10 November Year 2 will visit Harrow Castle.
+  (6)
+
+2. The corpus as committed: what remains, each reviewed as not a contradiction (REVIEWED_NON_CONTRADICTIONS):
+  about-11  toolshare/docs/treasurer.md:8  - INV-2026-014: Fennick Hardware, new hose for the pressure washer, 23.50, paid 12 October.
+  name-12   toolshare/docs/treasurer.md:8  - INV-2026-014: Fennick Hardware, new hose for the pressure washer, 23.50, paid 12 October.
+  word-02   home/recipes/flatbread.md:3  300 g flour, 200 ml warm water, a pinch of salt, a spoon of oil.
+  word-13   school/trip-letter-castle.md:1  # Year 2 trip: Harrow Castle
+  word-13   school/trip-letter-castle.md:5  On Tuesday 10 November Year 2 will visit Harrow Castle.
+  (5)
+
+3. The committed corpus with every stale mark removed (the search should find the older copies on its own):
+  about-11  toolshare/docs/treasurer.md:8  - INV-2026-014: Fennick Hardware, new hose for the pressure washer, 23.50, paid 12 October.
+  cur-01    archive/lending-rules-2024.md:5  Tools can be borrowed for up to 14 days.
+  cur-02    archive/boiler-2025.md:12  Next service due in March 2026.
+  cur-03    school/calendar-autumn-draft.md:6  - 15 December: Christmas concert, 6 pm, St Aldric's church
+  cur-04    archive/committee-2025.md:5  Chair: Orla Quent. Treasurer: Kofi Dunleavy. Secretary: Tamsin Pellow.
+  name-01   archive/boiler-2025.md:7  - 2024-03-02: serviced by Wenlow Heating, all fine.
+  name-01   archive/boiler-2025.md:8  - 2025-03-11: serviced by Wenlow Heating, flue seal replaced.
+  name-12   toolshare/docs/treasurer.md:8  - INV-2026-014: Fennick Hardware, new hose for the pressure washer, 23.50, paid 12 October.
+  pair-01   archive/boiler-2025.md:12  Next service due in March 2026.
+  pair-06   archive/committee-2025.md:5  Chair: Orla Quent. Treasurer: Kofi Dunleavy. Secretary: Tamsin Pellow.
+  span-03   archive/committee-2025.md:5  Chair: Orla Quent. Treasurer: Kofi Dunleavy. Secretary: Tamsin Pellow.
+  span-07   archive/lending-rules-2024.md:5  Tools can be borrowed for up to 14 days.
+  span-08   archive/boiler-2025.md:7  - 2024-03-02: serviced by Wenlow Heating, all fine.
+  span-08   archive/boiler-2025.md:8  - 2025-03-11: serviced by Wenlow Heating, flue seal replaced.
+  span-10   school/calendar-autumn-draft.md:6  - 15 December: Christmas concert, 6 pm, St Aldric's church
+  word-02   home/recipes/flatbread.md:3  300 g flour, 200 ml warm water, a pinch of salt, a spoon of oil.
+  word-05   archive/lending-rules-2024.md:9  A refundable deposit of 10 pounds is taken for power tools.
+  word-13   school/trip-letter-castle.md:1  # Year 2 trip: Harrow Castle
+  word-13   school/trip-letter-castle.md:5  On Tuesday 10 November Year 2 will visit Harrow Castle.
+  (19)
+
+Of the 22 questions with a stale mark, the search finds the stale copy of 12 on its own:
+  word-05, span-03, span-07, span-08, span-10, pair-01, pair-06, name-01, cur-01, cur-02, cur-03, cur-04.
+The other 10 were marked by reading (the value differs in shape, e.g. 7:30 against 7 pm or 'after 4 pm'
+against 'in the evening', or the fact is words, not a value: key safe against blue pot, one scoop, Heron Barn):
+  spell-06, phrase-01, phrase-02, span-06, syn-07, cur-05, cur-06, cur-07, cur-08, cur-09.

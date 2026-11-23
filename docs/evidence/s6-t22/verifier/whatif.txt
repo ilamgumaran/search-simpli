@@ -1,0 +1,19 @@
+What-if (whatif-corrections.py.txt): the judgments with the verifier's corrections, scored with the own ReleaseSmall
+searchd. Evidence only; nothing of it is committed as data. form-10 judged at lines 2-3; word-06 with naatkaatti-2027.md:3 as
+an alternative; pair-07 part 2 with receipts-note.md:8 as an alternative; about-09 with index.html, join.html and styles.css
+as parts (the README says the website code is src/ and site/); spell-04 and spell-09 sent as typed.
+
+index/both form-10: file_rank 1->1, passage_rank 1->1, parts 1/1->1/1, complete True->True
+index/both word-06: file_rank 1->1, passage_rank None->2, parts 0/1->1/1, complete False->True
+index/both pair-07: file_rank 1->1, passage_rank 1->1, parts 2/2->2/2, complete True->True
+index/both about-09: file_rank 9->3, passage_rank 9->3, parts 1/4->3/7, complete False->False
+index/both spell-04: file_rank 1->1, passage_rank 1->1, parts 1/2->1/2, complete False->False
+index/both spell-09: file_rank 1->1, passage_rank 1->1, parts 1/2->1/2, complete False->False
+index/both total: {'file@1': '97->97', 'file@3': '101->102', 'file@10': '103->103', 'passage@1': '94->94', 'passage@3': '99->101', 'passage@10': '101->102', 'complete': '83->84'}
+index/content form-10: file_rank 1->1, passage_rank 1->1, parts 1/1->1/1, complete True->True
+index/content word-06: file_rank 1->1, passage_rank 3->2, parts 1/1->1/1, complete True->True
+index/content pair-07: file_rank 1->1, passage_rank 1->1, parts 2/2->2/2, complete True->True
+index/content about-09: file_rank 9->3, passage_rank 9->3, parts 1/4->3/7, complete False->False
+index/content spell-04: file_rank 1->1, passage_rank 1->1, parts 1/2->2/2, complete False->True
+index/content spell-09: file_rank 1->1, passage_rank 1->1, parts 1/2->2/2, complete False->True
+index/content total: {'file@1': '97->97', 'file@3': '101->102', 'file@10': '103->103', 'passage@1': '94->94', 'passage@3': '101->102', 'passage@10': '103->103', 'complete': '95->97'}

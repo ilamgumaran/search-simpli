@@ -1,0 +1,33 @@
+Test plants: each in a copy of `git archive 0cd6f5f` (scripts, tests, src, fixtures), then
+`SEARCH_SIMPLI_NO_ZIG=1 python3 -m unittest tests.test_text_search_score` (the end-to-end class skips).
+t1 judgments.json edited by hand: word-01 range 7 -> 8. t2 script: span-05 key '33 psi' -> '34 psi', judgments rewritten.
+t3 script: span-08 part 1 anchored on the 2025 service line, keys kept, rewritten. t4 generator: the answer line
+'55 percent' -> '50 percent', judgments rewritten. t5 script: none-01's absent word set to 'trellis', rewritten.
+
+##### plant t1
+FAIL: test_every_range_exists_and_holds_its_keys (tests.test_text_search_score.JudgmentTests)
+AssertionError: 'dehumidifier' not found in 'open the window for ten minutes after a shower next door.' : word-01: home/house/damp-bedroom.md 8-8
+FAIL: test_file_is_what_the_questions_script_writes (tests.test_text_search_score.JudgmentTests)
+AssertionError: '{\n [2728 chars]ne": 8,\n              "end_line": 8,\n       [88452 chars]n}\n' != '{\n [2728 chars]ne": 7,\n              "end_line": 7,\n       [88452 chars]n}\n'
+Ran 15 tests in 0.086s
+FAILED (failures=2, skipped=1)
+##### plant t2
+FAIL: test_every_range_exists_and_holds_its_keys (tests.test_text_search_score.JudgmentTests)
+AssertionError: '34 psi' not found in 'tyre pressure: 33 psi front, 30 psi rear (35 front when loaded for cornwall).' : span-05: home/car/car-notes.md 11-11
+Ran 15 tests in 0.089s
+FAILED (failures=1, skipped=1)
+##### plant t3
+FAIL: test_every_range_exists_and_holds_its_keys (tests.test_text_search_score.JudgmentTests)
+AssertionError: '2026-03-14' not found in '- 2025-03-11: serviced by wenlow heating, flue seal replaced.' : span-08: home/house/boiler.md 8-8
+Ran 15 tests in 0.085s
+FAILED (failures=1, skipped=1)
+##### plant t4
+FAIL: test_every_range_exists_and_holds_its_keys (tests.test_text_search_score.JudgmentTests)
+AssertionError: '55 percent' not found in 'set the dehumidifier to 50 percent and empty the tank each morning.' : word-01: home/house/damp-bedroom.md 7-7
+Ran 15 tests in 0.084s
+FAILED (failures=1, skipped=1)
+##### plant t5
+FAIL: test_absent_words_are_absent (tests.test_text_search_score.JudgmentTests)
+AssertionError: True is not false : none-01: trellis
+Ran 15 tests in 0.084s
+FAILED (failures=1, skipped=1)

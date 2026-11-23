@@ -1,0 +1,28 @@
+Rework 2: the engine, the determinism of the scorer, and the corpus.
+searchd: the rework-1 build of main 87bfd35 (ReleaseSmall, in <scratch>/prefix-87bfd35), sha256
+  5ad3de31652ab4db88302678132c86ac5e45de25b6f3ce0630b28cf33f6bd8c1 (= build-rework-1.txt). No engine change:
+  this branch's zig/, contracts/ and bindings/ have no diff against b8852d8.
+
+scorer, three runs on the final set (run3, run4, run5; run5 after a docstring-only edit of the scorer):
+  json sha256 23bf7546f769a95dd6142644047919b65c24afa8a01dfdffe5c234baa4ea2da5 (all three; = baseline-rework-2.json)
+  md   sha256 1b643faf114ce441ce66fbb66b326f0ed9fb34972a19b3ceec54afb6f1e228f7 (all three; = baseline-rework-2.md)
+  1,448 searchd calls per run, about 12 s
+
+judgments: fixtures/text-search/judgments.json sha256 e8f407728a3178c0b0ca01d296c9fd36b1709f2865fb3a1963b3567ff0cc5a55 (set version 3)
+digests:   fixtures/text-search/question-digests.json sha256 21be6867da0281e2295524311828de5518e943056f5e8e1905a8fe216755bf0c
+
+corpus: 270 files, 141870 bytes, sha256 b7cf14314ee097b82cb75d9568a7fae22e728f7e7aa4af17abc159d21eef8dec
+the 261 files of version 1 not changed in rework 2: f5a8bc17e3c8c8b8143b4c8ba3093449378bda6a2c8a804f4050c821f2a48287
+  (the same 261 files had this digest at rework 1's 732041f too)
+changed files of version 1 (CHANGED_IN_REWORK_2), new sha256:
+  archive/committee-2025.md    7ec25643fe28e6f0c6f8b9d7a28e9344a751c4efaf736787ac3ca084f6023e02  (+ "Status: superseded.")
+  archive/house-notes-2024.md  5947c390a036b4af369d0b2702b5fd4b3dabccfedb10743b39787aacf72b11f3  (+ "Status: superseded.")
+  inbox/note-08.txt            709846f58e4d38e5ca0e65150959e0205ea20b535a2ae2a9452dcc906cc18e65  ("desk" -> "repairs")
+changed files added in rework 1: archive/lending-rules-2024.md, archive/boiler-2025.md, archive/pickle-2024.md
+  (+ "Status: superseded."), home/trips/cornwall-2026-draft.md (title "(draft)", + "Status: draft, superseded.").
+  school/calendar-autumn-draft.md and school/clubs-autumn.md are unchanged.
+
+A first wording of the status lines named the topic ("see the current committee list", "when the vet changed her
+food", "superseded by the booking"). Scored, it moved 11 unchanged questions' ranks, mostly by pulling the old
+copy up (cur-04's stale copy from rank 9 to 1). It was replaced by the topic-free line before the baseline; with
+it, no question whose judgment is unchanged moves in rank, parts or completeness (changed-questions-rework-2.txt).

@@ -1,0 +1,12 @@
+"""Verifier pass 2: the v1 corpus (generated in pass 1 from 0cd6f5f) against the rework-1 corpus generated twice."""
+import sys, hashlib
+from pathlib import Path
+v1, a, b = (Path(x) for x in sys.argv[1:])
+files = lambda d: {str(p.relative_to(d)): p.read_bytes() for p in d.rglob("*") if p.is_file()}
+F1, FA, FB = files(v1), files(a), files(b)
+print("v1 files", len(F1), "rework-1 files", len(FA), "| two rework-1 generations identical:", FA == FB)
+print("v1 files unchanged in rework 1:", all(FA.get(k) == v for k, v in F1.items()), "| removed:", sorted(set(F1) - set(FA)))
+print("added:", sorted(set(FA) - set(F1)))
+h = hashlib.sha256()
+for k in sorted(FA): h.update(k.encode() + b"\0" + FA[k] + b"\0")
+print("rework-1 corpus bytes", sum(map(len, FA.values())), "own digest (path NUL bytes NUL, sorted)", h.hexdigest()[:16])

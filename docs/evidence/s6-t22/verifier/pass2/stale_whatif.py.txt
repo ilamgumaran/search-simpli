@@ -1,0 +1,21 @@
+"""Verifier pass 2, what-if (scratch only): 'stale copy ranked first' if the stale rule were applied to every question
+an older or draft copy contradicts (word-05, pair-01, span-08, span-10, span-03 added) and syn-02's agreeing copy
+were not stale. From the committed rows: top_paths holds only 3, so the full order is re-read from the run's envelopes."""
+import json, subprocess, sys
+B_, RUN = sys.argv[1], sys.argv[2]
+J = {q["id"]: q for q in json.load(open(sys.argv[3]))["questions"]}
+stale = {q: {r["path"] for r in J[q].get("stale", [])} for q in J if J[q].get("stale")}
+stale.pop("syn-02")
+stale.update({"word-05": {"archive/lending-rules-2024.md"}, "pair-01": {"archive/boiler-2025.md"}, "span-08": {"archive/boiler-2025.md"},
+              "span-10": {"school/calendar-autumn-draft.md"}, "span-03": {"archive/committee-2025.md"}})
+for field in ("both", "content"):
+    for form in ("question", "query"):
+        first = []
+        for qid, st in stale.items():
+            q = J[qid]
+            env = json.loads(subprocess.run([B_, "evidence", "index", q[form], "--search-field", field, "--top-k", "10"], capture_output=True, check=True, cwd=RUN).stdout)
+            rows = [r["citation"] for r in env["results"]] if "results" in env else env["evidence"]
+            order = list(dict.fromkeys(r["path"] for r in rows))
+            fr = next((i for i, p in enumerate(order) if p in q["files"]), None); sr = next((i for i, p in enumerate(order) if p in st), None)
+            if sr is not None and (fr is None or sr < fr): first.append(qid)
+        print(f"{field}/{'typed' if form == 'question' else 'query'}: stale copy first {len(first)} of {len(stale)}: {first}")

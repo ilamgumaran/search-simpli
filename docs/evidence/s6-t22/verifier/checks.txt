@@ -1,0 +1,71 @@
+S6-T22 verifier: checks run, 22 Nov 2026, on task/S6-T22 at 0cd6f5f (base main b8852d8).
+Own worktree, detached at 0cd6f5f. Scratch: <scratch> (a .noindex folder beside the worktrees).
+Shell: SEARCH_SIMPLI_LIBRARY_PATH unset; zig 0.16.0 (pinned toolchain) first on PATH.
+
+== Ruling 1: no engine change
+git diff --stat b8852d8 HEAD -- zig contracts bindings zig/include      (empty)
+git rev-parse HEAD:zig/src b8852d8:zig/src                              9c224562e0789ad7cef3219cb76243c2a1506b5e (both)
+Files changed by the commit: docs/README.md, docs/evidence/s6-t22/* (6), docs/tasks/S6-T22.md, docs/text-search-score.md,
+fixtures/text-search/judgments.json, scripts/gen_text_search_corpus.py, scripts/text_search_questions.py,
+scripts/text_search_score.py, tests/test_text_search_score.py. Nothing else.
+
+== Builds (from `git archive 0cd6f5f`, own --cache-dir and --global-cache-dir)
+zig build -Doptimize=ReleaseSmall --prefix <scratch>/prefix-rs   searchd 1,151,240 B, sha256 46b9d718f6720f245b773c24a40b236230df204a9dd70dbe02e19f0f64d56fb6
+                                                                  (= the builder's build.txt and baseline.json: the build reproduces bit for bit)
+zig build --prefix <scratch>/prefix-dbg (Debug)                   searchd 6,781,256 B, sha256 4129a8406028dfd4938faa8c38a1910dcb446f6dc55c4151e1bf4dd136349ff3
+
+== Determinism: the corpus
+gen_text_search_corpus.py --digest, twice       files=264 bytes=140622 corpus_sha256=d2bf0314a2769cb78d9077dbe196a1c53216e8393b0c150a6781badae0e94e26 (both)
+gen_text_search_corpus.py <scratch>/corpus-a and corpus-b     same digest; diff -r: identical; diff -r against the scorer's own folder: identical
+build_corpus(2212) (seed changed; seed_probe.py.txt)           digest 54dbc58daf0bdf75cb1a6cd97636952578726e09c90ebd350ccc5aade4ccd6f1;
+                                                                 164 of 264 files differ, the set of paths differs (journal dates are drawn),
+                                                                 none of the 87 planted files differs (the seed moves only the filler)
+
+== Determinism: the scorer (text_search_score.py, defaults --fields both,content --top-k 10)
+ReleaseSmall run 1   JSON sha256 855b876e2512ad891069c3723922f4f8f3f65176ac592588ba77b702a2bafa77   MD 01f5f5b09e6460d1d51daf64162d7318ec2c10804e504ca9ccf210eb2cd8a784   4.06 s wall
+ReleaseSmall run 2   JSON 855b876e...   MD 01f5f5b0...   4.00 s wall
+committed baseline   JSON 855b876e...   MD 01f5f5b0...   cmp: identical to run 1 (JSON and Markdown)
+Debug run            JSON 82b2b6d9...   MD 560ba159...   diff against run 1: only the searchd_sha256 line (and its echo in the MD);
+                                                          every per-question row and aggregate is the same in Debug and ReleaseSmall
+recompute.txt        every row (file_rank, passage_rank, complete, returned, evidence_bytes) and every aggregate of all four
+                     configurations recomputed by code written here from fresh searchd calls: 0 mismatches; every number in
+                     both tables of docs/text-search-score.md and in the Report's table matches it
+
+== Unread files (headline 1)
+list-files over the scorer's index: 240 indexed (md 156, txt 72, json 2, yaml 2, html 2, py 3, toml, js, css);
+24 not listed: log 12, csv 4, tsv 2, sh 1, xml 1, no extension 4 (home/TODO, inbox/NOTES, toolshare/Makefile, toolshare/README).
+Direct search does not read them either: `searchd search <folder> quota` (a word only in the June log) returns the
+insurance quote (a fuzzy match), not the log; `Plumber` with content returns useful-numbers.txt, not the CSV.
+Questions naming an unread file: 11 (word-07, word-08, word-12, phrase-10, number-05, number-08, name-10, about-11,
+content-02, content-03, content-11), as stated; 10 of them have their only answer there, about-11 has one unread part of three.
+
+== Tests: planted faults (test-plants.txt; each in a copy of the archive, module run with SEARCH_SIMPLI_NO_ZIG=1)
+t1 judgments.json edited: word-01 range 7 -> 8                         2 fail (range/keys; file is not what the script writes)
+t2 script: span-05 key '33 psi' -> '34 psi', judgments regenerated      1 fail (range/keys)
+t3 script: span-08 part 1 anchored on the 2025 line, keys kept, regen.  1 fail (range/keys)
+t4 generator: the answer text changed (55 -> 50 percent), regen.       1 fail (range/keys)
+t5 script: none-01 absent word set to 'trellis', regenerated            1 fail (absent words)
+Unplanted module, SEARCHD_BINARY = own ReleaseSmall: Ran 16 tests, OK.
+
+== Python suite, python3 -m unittest discover -s tests
+                                                    main b8852d8 (own detached worktree, removed after)   head 0cd6f5f (own worktree)
+Debug (env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY)   Ran 580, OK (117.0 s)                             Ran 596, OK (130.2 s)
+ReleaseSmall (SEARCHD_BINARY = own build)               Ran 580, OK (64.0 s)                              Ran 596, OK (65.9 s)
+SEARCH_SIMPLI_NO_ZIG=1                                  Ran 525, OK (skipped=43) (49.3 s)                 Ran 540, OK (skipped=44) (49.6 s)
+= the Report's counts in all six cells.
+
+== Guards, on the head
+python3 -I scripts/check_test_counts.py --run        rc 0: OK (5 steps, 600 tests), core 260, operations 9, interfaces 25, tests 300 (291 pass, 9 skip), fastmem 6
+python3 -I scripts/check_layers.py                   OK (76 files hold 600 tests; api 85 names in 22 namespaces)
+python3 -I scripts/check_requirements.py             Requirements register OK
+python3 -I scripts/check_no_home_paths.py            exit 0 (and again after `git add -A` of this evidence)
+python3 -I scripts/text_search_questions.py --check  up to date
+
+== Corpus shapes (counted from the generated folder)
+264 files, 140,622 B: md 156, txt 72, log 12, csv 4, tsv 2, json 2, yaml 2, html 2, py 3, toml 1, js 1, css 1, sh 1, xml 1, no extension 4.
+22 one-line files; longest home/garden/garden-diary-2025.txt, 1,462 lines; one CRLF file (home/lists/useful-numbers.txt);
+one exact duplicate (sourdough.md = archive/sourdough-copy.md); three near duplicates in archive/ (house-notes-2024, committee-2025,
+shopping-2026-w01-copy); 7 Tamil files, all Tamil script with no Latin letter, read by eye: natural, correct Tamil (a recipe, a letter,
+a list, a calendar whose weekdays are right for 2027); one Tamil file name, NFC. Phone numbers: 7, all 01632 960xxx; one e-mail
+address and three URLs, all on toolshare.invalid; no home path. One real place name: Cornwall (the generator's docstring says
+"No real place"); Porthwenna, Harrowdean, Fennick and the firms are invented.

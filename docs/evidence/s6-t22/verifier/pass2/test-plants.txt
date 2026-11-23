@@ -1,0 +1,12 @@
+p1-word06-drop-naatkaatti: exit 1; FAILED (failures=1, skipped=1); failing: ['test_the_judged_answers_stay_judged']
+p2-syn08-drop-treasurer-md: exit 0; OK (skipped=1); failing: none
+p3-pair04-drop-kitchen-part: exit 1; FAILED (failures=1, skipped=1); failing: ['test_two_passage_and_two_file_questions_have_two_parts_of_the_right_shape']
+p4-word02-typed-form-changed: exit 1; FAILED (failures=1, skipped=1); failing: ['test_version_1_questions_keep_their_wording']
+p5-syn05-typed-form-changed: exit 0; OK (skipped=1); failing: none
+p6-judged-share-no-newline: exit 1; FAILED (failures=1, skipped=1); failing: ['test_tightness_judged_share_first_passage_and_budget']
+p7-judged-share-off-by-one: exit 1; FAILED (failures=1, skipped=1); failing: ['test_tightness_judged_share_first_passage_and_budget']
+p8-first-passage-is-last: exit 1; FAILED (failures=1, skipped=1); failing: ['test_tightness_judged_share_first_passage_and_budget']
+p9-budget-strict: exit 0; OK (skipped=1); failing: none
+p10-budget-ignored: exit 1; FAILED (failures=1, skipped=1); failing: ['test_tightness_judged_share_first_passage_and_budget']
+p11-stale-first-ties no '<' in row["stale_first"] = row["stale_rank"] is not None and (row["file_rank"] is None
+p11 (stale_first tie) was not run: the scorer's comparison is on the next line, so the plant's pattern did not apply; 10 plants ran.

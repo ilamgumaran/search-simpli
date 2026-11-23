@@ -1,0 +1,97 @@
+"""Verifier pass 2: recompute every row and aggregate of baseline-rework-1.json with code written here,
+from fresh searchd calls (direct and index, both fields, both forms), tightness included; count single-source."""
+import json, re, statistics, subprocess, sys, hashlib
+from pathlib import Path
+B, RUN, J, BASE, ROOT = sys.argv[1], Path(sys.argv[2]), json.load(open(sys.argv[3])), json.load(open(sys.argv[4])), sys.argv[5]
+BUDGET = 4096
+def call(surface, field, text):
+    a = (["search", str(RUN/"corpus"), text, "--evidence"] if surface == "direct" else ["evidence", str(RUN/"index"), text])
+    return subprocess.run([B, *a, "--search-field", field, "--top-k", "10"], capture_output=True, check=True, cwd=RUN).stdout
+def passages(env):
+    rows = [dict(r["citation"], content=r.get("content", "")) for r in env["results"]] if "results" in env else env["evidence"]
+    return [(r["path"], r["start_line"], r["end_line"], r.get("content", "")) for r in rows]
+inside = lambda p, r: p[0] == r["path"] and p[1] <= r["start_line"] and p[2] >= r["end_line"]
+line_mismatch = 0
+def mine(q, ps, nbytes):
+    global line_mismatch
+    rs = [r for part in q["parts"] for r in part["ranges"]]
+    tin = tall = 0
+    for p in ps:
+        ls = p[3].split("\n")
+        if len(ls) != p[2] - p[1] + 1: line_mismatch += 1
+        for k, l in enumerate(ls):
+            b = len(l.encode()) + 1; tall += b
+            if any(r["path"] == p[0] and r["start_line"] <= p[1] + k <= r["end_line"] for r in rs): tin += b
+    out = {"returned": len(ps), "evidence_bytes": nbytes, "judged_share": round(tin / tall, 4) if tall else None}
+    if q["kind"] == "no-answer": return out
+    order = []
+    for p in ps:
+        if p[0] not in order: order.append(p[0])
+    fr = [i + 1 for i, x in enumerate(order) if x in q["files"]]
+    pr = [i + 1 for i, p in enumerate(ps) if any(inside(p, r) for r in rs)]
+    comp = all(any(inside(p, r) for p in ps for r in part["ranges"]) for part in q["parts"])
+    firstp = {}
+    for p in ps: firstp.setdefault(p[0], p)
+    fp = all(any(r["path"] in firstp and inside(firstp[r["path"]], r) for r in part["ranges"]) for part in q["parts"])
+    out.update(file_rank=fr[0] if fr else None, passage_rank=pr[0] if pr else None, complete=comp,
+               first_passage=fp, complete_within=comp and nbytes <= BUDGET)
+    if q.get("stale"):
+        st = {r["path"] for r in q["stale"]}
+        sr = [i + 1 for i, x in enumerate(order) if x in st]
+        out["stale_first"] = bool(sr) and (out["file_rank"] is None or sr[0] < out["file_rank"])
+    return out
+mism = 0; report = []
+for cfg, data in BASE["configs"].items():
+    surface, field, form = cfg.split("/")
+    rows = {r["id"]: r for r in data["questions"]}; got = []
+    for q in J["questions"]:
+        text = q["question"] if form == "typed" else q["query"]
+        out = call(surface, field, text); m = mine(q, passages(json.loads(out)), len(out)); m["id"] = q["id"]; m["kind"] = q["kind"]; m["ss"] = q["single_source"]
+        for k, v in m.items():
+            if k in ("id", "kind", "ss"): continue
+            if rows[q["id"]].get(k) != v: mism += 1; print("MISMATCH", cfg, q["id"], k, rows[q["id"]].get(k), v)
+        got.append(m)
+    ans = [g for g in got if g["kind"] != "no-answer"]
+    def tally(rs):
+        t = {f"file@{k}": sum(1 for g in rs if g["file_rank"] and g["file_rank"] <= k) for k in (1, 3, 10)}
+        t.update({f"passage@{k}": sum(1 for g in rs if g["passage_rank"] and g["passage_rank"] <= k) for k in (1, 3, 10)})
+        t.update(complete=sum(g["complete"] for g in rs), complete_within=sum(g["complete_within"] for g in rs),
+                 first_passage=sum(g["first_passage"] for g in rs),
+                 stale_first=sum(g.get("stale_first", False) for g in rs), with_stale=sum("stale_first" in g for g in rs),
+                 median_bytes=statistics.median(g["evidence_bytes"] for g in rs),
+                 judged_share=round(statistics.mean(g["judged_share"] for g in rs if g["judged_share"] is not None), 4))
+        return t
+    tot, woss = tally(ans), tally([g for g in ans if not g["ss"]])
+    s = data["summary"]
+    for name, mineagg, theirs in (("total", tot, s["total"]), ("without single-source", woss, s["total_without_single_source"])):
+        diffs = {k: (v, theirs[k]["hits"] if isinstance(theirs.get(k), dict) else theirs.get({"median_bytes": "evidence_bytes_median", "judged_share": "judged_share_mean"}.get(k, k)))
+                 for k, v in mineagg.items() if k != "with_stale"}
+        bad = {k: d for k, d in diffs.items() if d[0] != d[1]}
+        report.append(f"{cfg:22s} {name:22s} n={len(ans) if name=='total' else len(woss and [g for g in ans if not g['ss']])} " + " ".join(f"{k}={v}" for k, v in mineagg.items()) + ("  OK" if not bad else f"  DIFF {bad}"))
+    for kind in dict.fromkeys(g["kind"] for g in got):
+        rs = [g for g in got if g["kind"] == kind]; pk = s["per_kind"][kind]
+        if kind == "no-answer":
+            n = sum(g["returned"] > 0 for g in rs)
+            if n != pk["returned_something"]["hits"]: mism += 1; print("KIND MISMATCH", cfg, kind)
+            continue
+        t = tally(rs)
+        for k in ("file@1", "file@10", "passage@10", "complete", "complete_within", "first_passage"):
+            if t[k] != pk[k]["hits"]: mism += 1; print("KIND MISMATCH", cfg, kind, k, t[k], pk[k]["hits"])
+print("\n".join(report)); print("row and per-kind mismatches:", mism, "| passages whose content lines != end-start+1:", line_mismatch)
+# single-source, own count: tokens per readable file (extension list from the engine's list-files), exact copies once
+sys.path.insert(0, ROOT); from src.search_platform.core import tokenize
+listed = set(json.loads(subprocess.run([B, "list-files", str(RUN/"index"), "--json", "--page-size", "500"], capture_output=True, check=True).stdout)["files"][i]["path"] for i in range(0))
+pages, cur, readable = [], None, set()
+while True:
+    a = [B, "list-files", str(RUN/"index"), "--json", "--page-size", "100"] + (["--cursor", cur] if cur else [])
+    pg = json.loads(subprocess.run(a, capture_output=True, check=True).stdout); readable |= {f["path"] for f in pg["files"]}; cur = pg.get("next_cursor")
+    if not cur: break
+seen, holders = set(), {}
+for p in sorted(readable):
+    data = (RUN/"corpus"/p).read_bytes()
+    if hashlib.sha256(data).digest() in seen: continue
+    seen.add(hashlib.sha256(data).digest())
+    for t in set(tokenize(data.decode())): holders[t] = holders.get(t, 0) + 1
+ss = [q["id"] for q in J["questions"] if q["files"] and (c := [holders[t] for t in tokenize(q["query"]) if holders.get(t)]) and min(c) == 1]
+print("single-source, own count (readable = listed by the engine):", len(ss), "| judgments say:", sum(q["single_source"] for q in J["questions"]),
+      "| same set:", set(ss) == {q["id"] for q in J["questions"] if q["single_source"]})

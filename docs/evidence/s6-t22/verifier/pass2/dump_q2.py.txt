@@ -1,0 +1,19 @@
+"""Verifier pass 2: print every question (v2 judgments) with typed and query forms, flags, and range texts."""
+import json, sys, re
+from pathlib import Path
+J = json.load(open(sys.argv[1])); C = Path(sys.argv[2]); only = set(sys.argv[3].split(",")) if len(sys.argv) > 3 else None
+def lines(p):
+    l = re.split(r"\r?\n", (C/p).read_bytes().decode())
+    if l and l[-1] == "": l.pop()
+    return l
+for q in J["questions"]:
+    if only and q["kind"] not in only and q["id"] not in only: continue
+    flags = [k for k in ("was", "added") if q.get(k)]
+    print(f"== {q['id']} [{q['kind']}] typed: {q['question']}  | query: {q['query']}  | single_source={q['single_source']} {' '.join(f'{k}={q[k]}' for k in flags)}")
+    if q.get("checks"): print("   checks:", q["checks"])
+    if q.get("note"): print("   note:", q["note"])
+    for i, part in enumerate(q["parts"]):
+        for r in part["ranges"]:
+            print(f"   part{i+1} {r['path']}:{r['start_line']}-{r['end_line']} keys={r['keys']}\n      > {' / '.join(lines(r['path'])[r['start_line']-1:r['end_line']])}")
+    for r in q.get("stale", []):
+        print(f"   STALE {r['path']}:{r['start_line']}-{r['end_line']} keys={r.get('keys')}\n      > {' / '.join(lines(r['path'])[r['start_line']-1:r['end_line']])}")

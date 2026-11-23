@@ -1,0 +1,16 @@
+Query words not in the typed question (no 4-letter prefix match) and whether the answer range holds them (query_shape_probe.py.txt). Tamil rows are split by \w at vowel signs: ignore them.
+
+number-05  [number] added words ['error']; of them in the answer range: ['error']
+span-02    [two-passages] added words ['bake', 'temperature']; of them in the answer range: ['bake', 'temperature']
+span-03    [two-passages] added words ['members']; of them in the answer range: []
+span-07    [two-passages] added words ['returns']; of them in the answer range: ['returns']
+span-09    [two-passages] added words ['ற']; of them in the answer range: []
+span-11    [two-passages] added words ['shelf']; of them in the answer range: ['shelf']
+pair-01    [two-files] added words ['cost']; of them in the answer range: []
+pair-02    [two-files] added words ['ingredients']; of them in the answer range: []
+pair-04    [two-files] added words ['date']; of them in the answer range: []
+pair-06    [two-files] added words ['directions']; of them in the answer range: []
+pair-08    [two-files] added words ['யல', 'ந', 'ள']; of them in the answer range: []
+pair-09    [two-files] added words ['sent']; of them in the answer range: ['sent']
+none-11    [no-answer] added words ['jab']; of them in the answer range: []
+questions with a query differing from the typed question: 116 of 129

@@ -1,0 +1,16 @@
+"""Verifier plants for the scorer: write modified copies of the judgments."""
+import json, sys
+src, out = sys.argv[1], sys.argv[2]
+J = json.load(open(src))
+def q(i): return next(x for x in J["questions"] if x["id"] == i)
+# P1: span-05's second range moved 4 lines down (car-notes 11 -> 15, the insurance line)
+a = json.loads(json.dumps(J)); r = next(x for x in a["questions"] if x["id"] == "span-05")["parts"][1]["ranges"][0]
+r["start_line"] = r["end_line"] = r["start_line"] + 4
+json.dump(a, open(f"{out}/p1-range-moved.json", "w"), ensure_ascii=False, indent=2)
+# P2: pair-01's first part (the receipt file) removed from the judgment, files updated
+b = json.loads(json.dumps(J)); x = next(x for x in b["questions"] if x["id"] == "pair-01")
+x["parts"] = x["parts"][1:]; x["files"] = ["home/house/boiler.md"]
+json.dump(b, open(f"{out}/p2-file-removed.json", "w"), ensure_ascii=False, indent=2)
+# P2b: the same, but files left stale: the validator must refuse
+c = json.loads(json.dumps(J)); x = next(x for x in c["questions"] if x["id"] == "pair-01"); x["parts"] = x["parts"][1:]
+json.dump(c, open(f"{out}/p2b-stale-files.json", "w"), ensure_ascii=False, indent=2)
