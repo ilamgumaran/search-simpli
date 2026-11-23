@@ -1,0 +1,25 @@
+"""Verifier's spot check of worsened questions: main's and the head's ten paths, each build on its own index.
+usage: spotcheck.py <repo> <main searchd> <main index> <head searchd> <head index> <main score json> qid:field:form ..."""
+import json, subprocess, sys
+repo, msd, midx, hsd, hidx, mjson = sys.argv[1:7]
+qs = {q["id"]: q for q in json.load(open(f"{repo}/fixtures/text-search/judgments.json"))["questions"]}
+unread = set(json.load(open(mjson))["corpus"]["files_not_read"])
+def paths(sd, idx, text, field):
+    out = subprocess.run([sd, "evidence", idx, text, "--search-field", field, "--top-k", "10"], capture_output=True, check=True).stdout
+    env = json.loads(out)
+    rows = [r["citation"] for r in env["results"]] if "results" in env else env["evidence"]
+    return [r["path"] for r in rows], len(out)
+for spec in sys.argv[7:]:
+    qid, field, form = spec.split(":")
+    q = qs[qid]
+    text = q["question"] if form == "typed" else q["query"]
+    answer = set(q["files"])
+    (mp, mb), (hp, hb) = paths(msd, midx, text, field), paths(hsd, hidx, text, field)
+    print(f"\n### {qid} {field}/{form}  answer files: {sorted(answer)}  bytes {mb} -> {hb}")
+    for i in range(10):
+        a = mp[i] if i < len(mp) else ""
+        b = hp[i] if i < len(hp) else ""
+        mark = lambda p: ("*" if p in answer else " ") + ("N" if p in unread else " ")
+        print(f"  {i+1:2} {mark(a)} {a:48} | {mark(b)} {b}")
+    old_hp = [p for p in hp if p not in unread]
+    print("  new files in head's ten:", sum(1 for p in hp if p in unread), "; old files in the same relative order as main's:", [p for p in mp if p in old_hp] == [p for p in old_hp if p in mp])

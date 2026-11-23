@@ -1,0 +1,84 @@
+# S6-T23 builder, Part 2: the timing runs the rule of 2026-11-17 requires (docs/process/ROLES.md; decision 0003,
+# section 7, read as S6-T20 and S6-T21 read it). Written, committed and pushed before the first timed run (23 Nov
+# 2026). Nothing below is chosen after seeing a timed number. Regenerated for rework 1 (23 Nov 2026, after the
+# Verdict): the head is the reworked library, and the two controls are re-matched to its compiled-code delta; no
+# timed run had been taken under the Part 2 orders. Harness: S6-T14's (scripts/prototypes/s6t14/
+# run_timing.sh, gate.sh, summarize.py) over scripts/prototypes/s6t9/bench.py bench, unchanged; this file is its
+# ORDERS.
+#
+# What changes on the measured paths. The walk (indexer.walkFolder, the sniff), apply's binary check (rework 1:
+# for names outside the 19 extensions only), the manifest
+# writer's `readable` key, the CLI and ABI reports: the writer's path, never an open, a query or a find. On every
+# open: manifest.parseMeta's envelope gains one optional field (`readable`, read when present), and the head opens an
+# index whose MANIFEST meta is 77 bytes longer (its own index; main's library opens main's). The natives' compiled
+# code moves with the rebuild. So: five gated runs in the Latin-square orders below, main, main2 and two placement
+# controls matching the head's compiled-code delta, one beside the open path and one on the writer's path, every
+# open, query and find cell of the three 10k corpora, judged by the rule.
+#
+# Expectation, stated before measuring: no query or find source changes, so every query and find cell passes the
+# rule; the open cell may move by the meta's parse (77 bytes of JSON more per open, a few microseconds at most on
+# opens of about 3 to 12 ms), and passes the rule unless that is 1 % of main's open. The literal difference is
+# reported beside it.
+#
+# Builds (macOS arm64 ReleaseSmall libsearch_simpli.dylib; __text from size -m):
+#   main  = 8ffc41c, `zig build lib -Doptimize=ReleaseSmall` in a git archive of zig/ and contracts/ with its own
+#           local and global caches: 1,007,096 B, sha256 ed938358e6758fc7... (= main's committed native), __text
+#           592,564 B
+#   main2 = 8ffc41c built again in another archive copy with its own caches: byte-identical to main
+#   head  = this branch's native/macos-arm64/libsearch_simpli.dylib as committed by rework 1 (tool/build_native.sh):
+#           1,007,784 B, sha256 1097a00eb5afa00f..., __text 595,472 B (+2,908 B)
+#           (Part 2's head, replaced: 1,007,864 B, sha256 63911cf8fc39f427..., __text 595,408 B, +2,844 B)
+#   Controls: main + one never-run function (scripts/prototypes/s6t20/make_control.py, unchanged), called under a
+#   branch never true at run time:
+#   cl = place l, 30 blocks + 0 steps: snapshot_open.loadEngine, after the MANIFEST read (every open, beside the
+#        meta parse)
+#        1,007,128 B, sha256 d4e61defe3f5a9c8..., __text 595,464 B (+2,900 B)
+#   ci = place i, 32 blocks + 0 steps: indexer.walkAndApply (the writer's path, as most of the change is; never on
+#        an open, a query or a find)
+#        1,007,336 B, sha256 3d874efec02d22d1..., __text 595,496 B (+2,932 B)
+#   The head's delta is +2,908 B; the controls bracket it (+2,900 and +2,932 B). Sized before any timed run by
+#   building, for Part 2, l 31+0 (+3,016), i 31+0 (+2,848), l 29+3 (+2,900), l 29+0 (+2,760), l 28+3 (+2,796),
+#   l 29+2 (+2,900), l 29+1 (+2,896); for rework 1, l 30+0 (+2,900), i 32+0 (+2,932), i 31+2 (+2,880).
+#   (Part 2's controls, replaced: cl = l 28+3, +2,796 B; ci = i 31+0, +2,848 B.)
+#
+# Control set (fixed now): main2, cl, ci.
+# Cells, per corpus (timing-10k, prose-10k, tamil-10k, 10,000 files each, from scripts/gen_timing_corpus.py,
+# gen_prose_corpus.py and gen_tamil_timing_corpus.py with 10000 files and the default arguments; queries from
+# bench.py queries), from bench.py bench:
+#   open    open_p50 (ss_open + ss_close, 30 timed after 3 warm-ups)
+#   query   every warm query p50 (each query of the set under content, filename and both; 300 timed calls)
+#   find    every find request p50 (100 timed calls)
+#   the first query and the first find after an open are reported beside them, not judged.
+# T = max(0.010 ms, 1 % of main's five-run median for the cell). A cell fails if median_r(head - main) >= T and
+# exceeds by >= T the largest median_r(control - main) over the control set (rule of 2026-11-17). Band excursions
+# (head above every other build in 3 or more of 5 runs) are tabulated, never failing.
+#
+# Indexes: main's and the head's searchd (ReleaseSmall, --filename-index) each indexed the three corpora; the two
+# sets differ only in MANIFEST: the `readable` key (77 bytes) in the meta, the meta's and the payload's lengths and
+# the manifest checksum (docs/evidence/s6-t23/part2/manifest-10k.txt). Each build opens its own copy: head a copy of
+# the head's, the others copies of main's. Answers (bench.py answers, every query under the three fields and every
+# find; 55, 55 and 56): identical between main and every other build on the three corpora, every field but the
+# library and index paths (docs/evidence/s6-t23/part2/answers-and-old-indexes.txt; main2, cl and ci checked the same way).
+# Rework 1: the reworked head's three indexes are cmp-identical, file by file, to Part 2's head's; the reworked head,
+# cl and ci give main's answers on all three corpora (docs/evidence/s6-t23/rework1/tenk.txt, controls-answers.txt).
+#
+# Each run, from the worktree, only when the orchestrator says the machine is awake:
+#   bash scripts/prototypes/s6t14/run_timing.sh R scripts/prototypes/s6t23/part2/orders.txt \
+#     <scratch>/t/libs <scratch>/t/idx <scratch>/t/queries <scratch>/t/out
+# then python3 -I scripts/prototypes/s6t14/summarize.py main head main2,cl,ci <scratch>/t/out/query-run*.jsonl
+#
+# The load gate (gate.sh: lock absent, 5-minute load below 4.0, no toolchain at 20 % CPU or more in top's top eight)
+# runs before every process; a refused gate stops that run, which is not retried in a loop: a run not taken is
+# reported as owed. pmset -g log is read for Sleep, Wake and DarkWake inside each run's window afterwards; a run with
+# a Sleep or Wake inside it is discarded whole and retaken as the same number with "b".
+# Latin square: builds rotated left by (r - 1) mod 5 in run r, corpora rotated left by (r - 1) mod 3.
+run1:main main2 head cl ci
+corpora1:timing-10k prose-10k tamil-10k
+run2:main2 head cl ci main
+corpora2:prose-10k tamil-10k timing-10k
+run3:head cl ci main main2
+corpora3:tamil-10k timing-10k prose-10k
+run4:cl ci main main2 head
+corpora4:timing-10k prose-10k tamil-10k
+run5:ci main main2 head cl
+corpora5:prose-10k tamil-10k timing-10k

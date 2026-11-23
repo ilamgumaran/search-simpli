@@ -1,0 +1,11 @@
+timing-10k: searchd evidence, 45 calls per build (every query x content, filename, both): 0 differ
+prose-10k: searchd evidence, 45 calls per build (every query x content, filename, both): 0 differ
+tamil-10k: searchd evidence, 45 calls per build (every query x content, filename, both): 0 differ
+timing-10k: C ABI (bench.py answers, each library on its own index): 55 answers, 0 differ; fields other than lib and index paths identical: True
+prose-10k: C ABI (bench.py answers, each library on its own index): 55 answers, 0 differ; fields other than lib and index paths identical: True
+tamil-10k: C ABI (bench.py answers, each library on its own index): 56 answers, 0 differ; fields other than lib and index paths identical: True
+timing-10k: main's searchd (8ffc41c) on the head's index against main's index: 45 evidence calls (every query x content, filename, both), 0 differ or fail; list-files first page exit 0/0, identical: True
+prose-10k: main's searchd (8ffc41c) on the head's index against main's index: 45 evidence calls (every query x content, filename, both), 0 differ or fail; list-files first page exit 0/0, identical: True
+tamil-10k: main's searchd (8ffc41c) on the head's index against main's index: 45 evidence calls (every query x content, filename, both), 0 differ or fail; list-files first page exit 0/0, identical: True
+the judged folder: main's index (generation 1, 246 files) updated by the head (generation 2) against a fresh head index updated once (generation 2): 724 evidence calls (181 questions x typed, query x content, both), 0 differ
+the judged folder, rollback: main's searchd (8ffc41c) --update over the head's index (generation 2, 270 files): generation 3, added 0, removed 24, unchanged 246, documents 406 (main's own count); its MANIFEST has no readable key. The head's next --update adds the 24 again (as above).

@@ -1,0 +1,32 @@
+{
+ "renamed": 24,
+ "refused": [],
+ "order_kept": true,
+ "substring_clashes": [],
+ "map": {
+  "home/TODO.txt": "home/TODO",
+  "home/contacts.txt": "home/contacts.tsv",
+  "home/money/bank-notes.txt": "home/money/bank-notes.tsv",
+  "home/money/budget-2026.txt": "home/money/budget-2026.csv",
+  "home/money/house-costs-2026.txt": "home/money/house-costs-2026.csv",
+  "inbox/NOTES.txt": "inbox/NOTES",
+  "toolshare/Makefile.txt": "toolshare/Makefile",
+  "toolshare/README.txt": "toolshare/README",
+  "toolshare/data/loans-2026.txt": "toolshare/data/loans-2026.csv",
+  "toolshare/data/volunteer-rota.txt": "toolshare/data/volunteer-rota.csv",
+  "toolshare/logs/server-2026-01.txt": "toolshare/logs/server-2026-01.log",
+  "toolshare/logs/server-2026-02.txt": "toolshare/logs/server-2026-02.log",
+  "toolshare/logs/server-2026-03.txt": "toolshare/logs/server-2026-03.log",
+  "toolshare/logs/server-2026-04.txt": "toolshare/logs/server-2026-04.log",
+  "toolshare/logs/server-2026-05.txt": "toolshare/logs/server-2026-05.log",
+  "toolshare/logs/server-2026-06.txt": "toolshare/logs/server-2026-06.log",
+  "toolshare/logs/server-2026-07.txt": "toolshare/logs/server-2026-07.log",
+  "toolshare/logs/server-2026-08.txt": "toolshare/logs/server-2026-08.log",
+  "toolshare/logs/server-2026-09.txt": "toolshare/logs/server-2026-09.log",
+  "toolshare/logs/server-2026-10.txt": "toolshare/logs/server-2026-10.log",
+  "toolshare/logs/server-2026-11.txt": "toolshare/logs/server-2026-11.log",
+  "toolshare/logs/server-2026-12.txt": "toolshare/logs/server-2026-12.log",
+  "toolshare/scripts/backup.txt": "toolshare/scripts/backup.sh",
+  "toolshare/site/sitemap.txt": "toolshare/site/sitemap.xml"
+ }
+}

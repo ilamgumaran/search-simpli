@@ -164,4 +164,36 @@ void main() {
       expect(next.unchanged, 3);
     });
   });
+
+  group('contract 2.9.0: notRead (S6-T23, which files are text)', () {
+    test('parses the kinds, is empty when the field is absent, and round-trips', () {
+      final r = _parse(',"not_read":{"bad_name":1,"binary":2,"image":3}');
+      expect(r.notRead, {'bad_name': 1, 'binary': 2, 'image': 3});
+      expect(r.notReadTotal, 6);
+      expect(IndexFolderReport.fromJson(r.toJson()).notRead, r.notRead);
+      final older = _parse('');
+      expect(older.notRead, isEmpty);
+      expect(older.notReadTotal, 0);
+    });
+
+    test('through the native library: text of any name is read, the rest counted by kind', () {
+      final folder = Directory.systemTemp.createTempSync('ss-dart-text-in-');
+      final out = Directory.systemTemp.createTempSync('ss-dart-text-out-');
+      addTearDown(() {
+        folder.deleteSync(recursive: true);
+        out.deleteSync(recursive: true);
+      });
+      File('${folder.path}/README').writeAsStringSync('the orchard plans\n');
+      File('${folder.path}/loans.csv').writeAsStringSync('item,lent_to\nladder,Wren\n');
+      File('${folder.path}/logo.png').writeAsStringSync('orchard, text bytes under an image name\n');
+      File('${folder.path}/blob').writeAsBytesSync([0x6f, 0x72, 0x00, 0x01]);
+      final full = SearchSimpli.indexFolder(out.path, folder.path);
+      expect(full.added, 2);
+      expect(full.notRead, {'binary': 1, 'image': 1});
+      final update = SearchSimpli.indexFolder(out.path, folder.path,
+          options: const IndexFolderOptions(update: true));
+      expect(update.unchanged, 2);
+      expect(update.notRead, {'binary': 1, 'image': 1});
+    });
+  });
 }

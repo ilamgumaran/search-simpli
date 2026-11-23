@@ -1,0 +1,55 @@
+"""S6-T23 Part 2: per worsened question and configuration (direct surface; direct = index on all 181), what moved it.
+
+    python3 -I causes.py REPO SCRATCH > causes.tsv
+
+SCRATCH holds prefix-main/bin/searchd (main 8ffc41c, ReleaseSmall), prefix-head/bin/searchd (this branch),
+base2/run/index (the scorer's index under main) and score-head1/run/index (under the head). "Worse" is the
+scorer's: complete lost, complete within 4,096 bytes lost, the answer file later or out of the ten, a stale copy
+now first, or (when the file rank did not move) the passage later. Columns: new_above, the files read only since
+H2 ranked above the answer's first file; new_in_ten, how many such files are among the ten results' files;
+old_files_reordered_or_replaced, whether the files read before appear in a different order or set.
+"""
+import json, subprocess, sys
+from pathlib import Path
+ROOT = Path(sys.argv[1]); S = Path(sys.argv[2])
+sys.path.insert(0, str(ROOT / "scripts"))
+import text_search_questions as tq
+before = json.load(open(ROOT / "docs/evidence/s6-t22/baseline-rework-2.json"))["configs"]
+after = json.load(open(ROOT / "docs/evidence/s6-t23/part2/after-h2.json"))["configs"]
+J = {q["id"]: q for q in json.load(open(ROOT / "fixtures/text-search/judgments.json"))["questions"]}
+MAIN, HEAD = S / "prefix-main/bin/searchd", S / "prefix-head/bin/searchd"
+BIDX, AIDX = S / "base2/run/index", S / "score-head1/run/index"
+
+def files(binary, index, text, field):
+    out = subprocess.run([str(binary), "evidence", str(index), text, "--search-field", field, "--top-k", "10"],
+                         capture_output=True, check=True).stdout
+    env = json.loads(out)
+    rows = env.get("results") or env.get("evidence") or []
+    seen = []
+    for r in rows:
+        p = r["citation"]["path"] if "citation" in r else r["path"]
+        if p not in seen: seen.append(p)
+    return seen
+
+for cfg in ("direct/both/typed", "direct/both/query", "direct/content/typed", "direct/content/query"):
+    _, field, form = cfg.split("/")
+    bq = {q["id"]: q for q in before[cfg]["questions"]}
+    for q in after[cfg]["questions"]:
+        p = bq[q["id"]]
+        worse = []
+        if "complete" not in q: continue
+        if p["complete"] and not q["complete"]: worse.append("complete lost")
+        if p.get("complete_within") and not q.get("complete_within"): worse.append(f"within lost {p['evidence_bytes']}->{q['evidence_bytes']}")
+        if p["file_rank"] and (q["file_rank"] is None or q["file_rank"] > p["file_rank"]): worse.append(f"file {p['file_rank']}->{q['file_rank']}")
+        if p.get("stale_first") is False and q.get("stale_first"): worse.append("stale first")
+        if p.get("passage_rank") and (q.get("passage_rank") is None or q["passage_rank"] > p["passage_rank"]) and not any(w.startswith("file") for w in worse): worse.append(f"passage {p['passage_rank']}->{q['passage_rank']}")
+        if not worse: continue
+        j = J[q["id"]]; text = j["question"] if form == "typed" else j["query"]
+        a = files(HEAD, AIDX, text, field); b = files(MAIN, BIDX, text, field)
+        new = [f for f in a if not tq.readable(f)]
+        answer = set(j["files"])
+        rank_a = next((i for i, f in enumerate(a) if f in answer), None)
+        above_new = [f for f in a[: rank_a if rank_a is not None else 10] if not tq.readable(f)]
+        old_order_a = [f for f in a if tq.readable(f)]
+        reordered = old_order_a != [f for f in b if f in old_order_a] or any(f not in b for f in old_order_a)
+        print(f"{q['id']}\t{cfg}\treadable_now={j['readable_now']}\t{'; '.join(worse)}\tnew_above={above_new}\tnew_in_ten={len(new)}\told_files_reordered_or_replaced={reordered}")

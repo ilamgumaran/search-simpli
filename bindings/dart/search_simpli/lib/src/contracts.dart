@@ -992,6 +992,22 @@ class IndexFolderReport {
   /// carried forward.
   final List<String> unreadablePaths;
 
+  /// Contract 2.9.0 (S6-T23, `docs/requirements/cap-24-which-files-are-text.md`):
+  /// the files the walk did not read, counted by kind, without paths:
+  /// `bad_name` (a name no record can hold, such as one with a carriage
+  /// return), a skip-listed kind (`image`, `audio`, `video`, `archive`,
+  /// `document`, `font`, `program`, `database`), or `binary` (a name outside
+  /// the 19 extensions read before 2.9.0 whose first 8,192 bytes hold a NUL
+  /// or more than 1 % control bytes; a file of those 19 is read as before,
+  /// by valid UTF-8 alone). Only kinds with
+  /// a non-zero count; empty when none, and when the library is older than
+  /// 2.9.0 (no `not_read` field). Dot-files and ignored folders are not
+  /// walked and not counted.
+  final Map<String, int> notRead;
+
+  /// The sum of [notRead]'s counts.
+  int get notReadTotal => notRead.values.fold(0, (sum, n) => sum + n);
+
   final int documents;
   final int terms;
   final int postings;
@@ -1019,6 +1035,7 @@ class IndexFolderReport {
     required this.unreadable,
     required this.tooLargePaths,
     required this.unreadablePaths,
+    this.notRead = const {},
     required this.documents,
     required this.terms,
     required this.postings,
@@ -1045,6 +1062,12 @@ class IndexFolderReport {
         unreadablePaths: (json['unreadable_paths']! as List<Object?>)
             .map((e) => e! as String)
             .toList(growable: false),
+        notRead: json['not_read'] == null
+            ? const {}
+            : Map<String, int>.unmodifiable(
+                (json['not_read']! as Map<String, Object?>)
+                    .map((kind, n) => MapEntry(kind, n! as int)),
+              ),
         documents: json['documents']! as int,
         terms: json['terms']! as int,
         postings: json['postings']! as int,
@@ -1068,6 +1091,7 @@ class IndexFolderReport {
     'unreadable': unreadable,
     'too_large_paths': tooLargePaths,
     'unreadable_paths': unreadablePaths,
+    'not_read': notRead,
     'documents': documents,
     'terms': terms,
     'postings': postings,

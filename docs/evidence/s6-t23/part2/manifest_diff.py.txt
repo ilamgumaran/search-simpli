@@ -1,0 +1,22 @@
+"""S6-T23 Part 2: what differs between main's and the head's MANIFEST of one folder (header with bits 3 and 4: 168 B).
+
+    python3 -I manifest_diff.py MAIN_MANIFEST HEAD_MANIFEST
+"""
+import struct, sys
+KEY = b'"readable":{"id":"text-sniff-v1","head_bytes":8192,"control_share_max":0.01},'
+META = b'{"manifest_meta"'
+a, b = open(sys.argv[1], "rb").read(), open(sys.argv[2], "rb").read()
+H = 168
+diff_header = [i for i in range(H) if a[i] != b[i]]
+print(f"sizes {len(a)} -> {len(b)} (+{len(b) - len(a)}); the key with its comma is {len(KEY)} B")
+print(f"header bytes that differ lie in 156..167: {all(156 <= i < 168 for i in diff_header)} ({len(diff_header)} bytes)")
+print(f"payload length (offset 156): {struct.unpack_from('<I', a, 156)[0]} -> {struct.unpack_from('<I', b, 156)[0]}")
+print(f"manifest checksum (offset 160): {a[160:168].hex()} -> {b[160:168].hex()}")
+ma, mb = a.index(META), b.index(META)
+print(f"payload before the meta's u32 length: identical: {a[H:ma - 4] == b[H:mb - 4]}")
+print(f"meta length: {struct.unpack_from('<I', a, ma - 4)[0]} -> {struct.unpack_from('<I', b, mb - 4)[0]}")
+meta_a, meta_b = a[ma:], b[mb:]
+assert meta_b.count(KEY) == 1
+k = meta_b.index(KEY)
+print(f"from the meta to the end (the meta, then the filename and state strings): the head's is main's with the key "
+      f"inserted before {meta_b[k + len(KEY):k + len(KEY) + 8].decode()!r}: {meta_a == meta_b[:k] + meta_b[k + len(KEY):]}")

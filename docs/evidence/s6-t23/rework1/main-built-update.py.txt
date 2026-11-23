@@ -1,0 +1,36 @@
+"""S6-T23 rework 1: a main-built index updated by the reworked head (main's searchd 8ffc41c, the head's, ReleaseSmall).
+python3 -I mainbuilt.py WORKDIR   (WORKDIR must not exist)"""
+import json, os, subprocess, sys
+S = os.path.expanduser("~/workspace/repos/search-simpli-wt/S6-T23-scratch.noindex")
+HEAD, MAIN = f"{S}/prefix-head/bin/searchd", f"{S}/prefix-main/bin/searchd"
+w = sys.argv[1]; os.mkdir(w); folder, index = f"{w}/folder", f"{w}/index"; os.mkdir(folder)
+lines = "".join(f"line {i}: the marmot crossed the yard at dawn\n" for i in range(28))
+files = {
+    "server.txt": lines.encode(),
+    "manpage.txt": b"M\x08MA\x08AR\x08RM\x08MO\x08OT\x08T(1)\n\n     marmot - whistle\x07 at the burrow\n",
+    "bel.md": b"# Note\n\nthe marmot bell\x07 rang once\n",
+    "notes.md": b"# Marmot\n\nthe marmot\x00 burrow by the wall\n",
+    "server.log": lines.encode() + b"\x00" * 512,
+    "manpage": b"M\x08MA\x08AR\x08RM\x08MO\x08OT\x08T(1)\n\n     marmot - whistle\x07 at the burrow\n",
+}
+for n, b in files.items(): open(f"{folder}/{n}", "wb").write(b)
+def run(*a):
+    r = subprocess.run(list(a), capture_output=True); return r.returncode, r.stdout.decode().strip()
+def hits(searchd):
+    code, out = run(searchd, "query", index, "marmot", "--json")
+    paths = [h["path"] for h in json.loads(out)["results"]]
+    return f"exit {code}, {len(paths)} passages from {sorted(set(paths))}"
+print("folder: server.txt (28 lines), manpage.txt (backspace overstrike, BEL), bel.md (one BEL), notes.md (a stray NUL);"
+      " server.log (the 28 lines and 512 NULs) and manpage (no extension), the same bytes under names outside the 19")
+code, out = run(MAIN, "index", folder, "--out", index, "--update")
+r = json.loads(out); print("1. main --update (a fresh index):", code, "added", r["added"], "documents", r["documents"])
+print("   main's query marmot:", hits(MAIN))
+open(f"{folder}/server.txt", "ab").write(b"\x00" * 512)  # a log after an unclean shutdown
+print("2. server.txt gains 512 NULs")
+code, out = run(HEAD, "index", folder, "--out", index, "--update")
+r = json.loads(out)
+print("3. head --update:", code, {k: r[k] for k in ["added", "changed", "removed", "unchanged", "unreadable", "not_read"]})
+print("   head's query marmot:", hits(HEAD))
+code, out = run(HEAD, "index", folder, "--out", index, "--update")
+r = json.loads(out)
+print("4. head --update again:", code, {k: r[k] for k in ["added", "changed", "removed", "unchanged", "not_read"]})

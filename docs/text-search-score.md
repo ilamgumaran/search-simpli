@@ -184,14 +184,14 @@ Every table cell is *typed / query*.
   moves there, because most `both` envelopes are over budget already.
 
 **Single-source.** A question is `single_source` when the rarest query word that any readable file holds is
-held by exactly one such file. "Readable" means one of the 19 extensions the engine reads today, with exact
+held by exactly one such file. "Readable" means one of the 19 extensions the engine read before H2 (S6-T23), with exact
 copies counted once, using the repository analyzer and no stemming. For such a question, file@k mostly measures
 whether the file was read, not ranking under competition (the Verdict's finding 8). 53 of the 169 answerable
 questions are single-source. `single_source` is computed from the query form only; the typed totals "without
 single-source" leave out the same 53. Every table has a total without them.
 
 **Readable now** (rework 2). A question is `readable_now` when every part has a range in a file of one of the 19
-extensions the engine reads today. The list is fixed in the questions script, so H2 does not move the set. 146
+extensions the engine read before H2. The list is fixed in the questions script, so H2 does not move the set. 146
 of the 169 are readable now; every table has a total over them beside the full total, so H2's gain on the rest
 reads as "now readable", not as better ranking. Eight readable-now questions still name an unread file, as an
 alternative.
@@ -275,9 +275,54 @@ Counts are questions. "Stale copy first" is out of the 22 questions that name a 
 the query words, the 5 are span-07, pair-01, cur-01, cur-03 and cur-04, with either field. Rework 1 published
 8 / 3 of 12; the change is the rule applied to all questions, syn-02's mark dropped, and the status lines.
 
+## The baseline after H2 (S6-T23 Part 2, contract 2.9.0)
+
+The first baseline above stays as it was: it is what `main` at `87bfd35` (and `8ffc41c`) scores. This is the
+second, beside it: the same scorer, questions, judgments, digests and `readable_now` list, run on the engine
+that reads every file whose bytes are text (`text-sniff-v1`, [decision 0005](decisions/0005-which-files-are-text.md)).
+All 270 files are read (before: 246); no question names an unread file (before: 31). Direct search and the
+index again gave byte-identical evidence for all 181 questions in every configuration (shown: `direct_equals_index`
+in [`after-h2.json`](evidence/s6-t23/part2/after-h2.json)); the full tables are in
+[`after-h2.md`](evidence/s6-t23/part2/after-h2.md), and every cell before → after with every question that got
+worse in [`compare.md`](evidence/s6-t23/part2/compare.md). The counts equal Part 1's prototype's in every cell
+([`build.txt`](evidence/s6-t23/part2/build.txt)).
+
+Totals, before → after (typed / query):
+
+| | n | `both` file@1 | `both` file@10 | `both` complete | `content` file@1 | `content` file@10 | `content` complete |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **total** | 169 | 94 → 97 / 116 → 130 | 132 → 138 / 135 → 155 | **100 → 109 / 109 → 127** | 94 → 97 / 116 → 130 | 130 → 138 / 134 → 154 | **110 → 120 / 118 → 137** |
+| **readable now** | 146 | 94 → 90 / 115 | 131 → 129 / 133 | 100 → 102 / 109 → 108 | 94 → 90 / 115 | 129 / 132 | 110 → 113 / 118 |
+| **without single-source** | 116 | 62 → 60 / 80 → 87 | 90 → 91 / 92 → 103 | 68 → 72 / 75 → 85 | 62 → 60 / 80 → 87 | 89 → 91 / 91 → 102 | 76 → 79 / 78 → 89 |
+
+Tightness and ranking, totals (typed / query):
+
+| Field | complete within 4,096 bytes | evidence bytes, median | judged share, mean | stale copy first (of 22) |
+| --- | ---: | ---: | ---: | ---: |
+| `both` | 9 → 10 / 36 | 11,814 → 12,034 / 9,475 → 10,553 | 0.065 → 0.070 / 0.148 → 0.152 | 10 / 5 |
+| `content` | 91 → 94 / 100 → 102 | 3,482 → 3,582 / 2,809 → 2,944 | 0.069 → 0.070 / 0.145 → 0.148 | 9 → 10 / 5 |
+| `both`, readable now | 9 / 36 → 32 | 11,769 → 11,829 / 8,566 → 10,473 | 0.075 → 0.078 / 0.164 → 0.162 | 10 / 5 |
+| `content`, readable now | 91 → 90 / 100 → 91 | 3,404 → 3,478 / 2,719 → 2,914 | 0.080 → 0.078 / 0.161 → 0.158 | 9 → 10 / 5 |
+
+No-answer (12): 11 / 8 returned something, unchanged.
+
+**What H2 did not do.** Thirty questions got worse in some configuration (29 readable now, and `about-09`). None
+is lost by the walk: the files read before have the same chunks. They come from ranking and the ten-result cut. A
+newly read file (most often the four-line `toolshare/README`) takes a place above the answer. Or the added text
+shifts BM25's statistics and reorders the files read before. Or newly read passages fill the ten results and the
+envelope grows past 4,096 bytes. Each question, its cause and the plan step that owns it (H5 for passages and the
+envelope, H6 for ranking) are listed in [S6-T23's Report](tasks/S6-T23.md#report-part-2), from
+[`causes.tsv`](evidence/s6-t23/part2/causes.tsv). Ranking was not tuned in H2.
+
+**Rework 1 (23 Nov 2026).** After the verifier's finding 1 a file of the 19 extensions is read as before, not
+sniffed. The judged folder holds no such file with a NUL or control bytes, so the rerun's JSON equals the one above
+in every key but the engine's label and digest, and every total above stands
+([`after-h2-r1.json`](evidence/s6-t23/rework1/after-h2-r1.json)).
+
 ## What the engine cannot do today, kind by kind
 
-Stated from the numbers above and the per-question rows in `baseline-rework-2.json`
+Stated from the first baseline and the per-question rows in `baseline-rework-2.json` (since H2 every file of the
+folder is read; the after-H2 tables are above)
 (`configs.<surface>/<field>/<form>.questions`). Each item names the plan step that addresses it. Ranks are for
 the query form unless "typed" is said.
 

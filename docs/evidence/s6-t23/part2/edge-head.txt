@@ -1,0 +1,12 @@
+S6-T23 Part 2: the head's searchd (and main's, 8ffc41c) on Part 1's edge folder (scripts/prototypes/s6t23/edge.py builds it) and on a carriage-return probe.
+
+indexed edge: analyzer=analyzer-v2 generation=1 files_indexed=17 too_large=1 unreadable=3 budget_exhausted=0 documents=246 terms=18169 postings=25346 not_read=13
+exit 0
+{'generation': 2, 'added': 0, 'unchanged': 17, 'too_large': 1, 'unreadable': 3, 'unreadable_paths': ['data/latin1-note.txt', 'data/one-bad-byte.txt', 'data/utf16-export.tsv'], 'not_read': {'archive': 1, 'bad_name': 1, 'binary': 7, 'database': 1, 'document': 1, 'image': 2}}
+searchd: search: 17 files not searched (too_large=1 unreadable=3 budget_exhausted=0 not_read=13)
+
+probe: a folder of notes.md and 'a<CR>b.md' (a carriage return in a known-extension name)
+main index exit 1: error: InvalidPath 
+main search exit 1: error: InvalidPath 
+head index exit 0: indexed cr2: analyzer=analyzer-v2 generation=1 files_indexed=1 too_large=0 unreadable=0 budget_exhausted=0 documents=1 terms=5 postings=5 not_read=1 
+head search exit 0: query: kestrel (analyzer=analyzer-v2) 1. notes.md:1-1 score=0.016393 searchd: search: 1 files not searched (too_large=0 

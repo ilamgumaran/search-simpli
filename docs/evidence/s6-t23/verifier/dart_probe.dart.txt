@@ -1,0 +1,23 @@
+// S6-T23 verifier: the Dart binding's IndexFolderReport.notRead on the edge
+// folder copy, full and update, against the package's own native library.
+// usage: dart run --packages=<package_config.json> dart_probe.dart <folder> <out dir>
+import 'dart:convert';
+import 'package:search_simpli/search_simpli.dart';
+
+void main(List<String> args) {
+  final folder = args[0];
+  final out = args[1];
+  for (final update in [false, true]) {
+    final r = SearchSimpli.indexFolder(out, folder, options: IndexFolderOptions(update: update));
+    print('update=$update added=${r.added} unchanged=${r.unchanged} tooLarge=${r.tooLarge} unreadable=${r.unreadable} '
+        'notRead=${jsonEncode(r.notRead)} notReadTotal=${r.notReadTotal}');
+    print('  toJson has not_read: ${jsonEncode(r.toJson()['not_read'])}');
+  }
+  // an older library's report: no not_read field
+  final old = IndexFolderReport.fromJson({
+    'generation': 1, 'analyzer_id': 'analyzer-v2', 'added': 1, 'changed': 0, 'removed': 0, 'unchanged': 0,
+    'budget_exhausted': 0, 'too_large': 0, 'unreadable': 0, 'too_large_paths': <Object?>[],
+    'unreadable_paths': <Object?>[], 'documents': 1, 'terms': 1, 'postings': 1,
+  });
+  print('report without not_read: notRead=${jsonEncode(old.notRead)} total=${old.notReadTotal}');
+}

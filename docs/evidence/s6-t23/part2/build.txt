@@ -1,0 +1,21 @@
+S6-T23 Part 2: the builds behind this folder's numbers (macOS arm64, Zig 0.16.0, ReleaseSmall).
+
+searchd, the head (zig build -Doptimize=ReleaseSmall --prefix <scratch>/prefix-head, the committed source):
+  1,152,488 B, sha256 f7b608db1a3290e71d6b374e0c5a41b729c4d8309a3fc7b3d15e700f8296a114
+searchd, main 8ffc41c (<scratch>/prefix-main): 1,151,720 B, sha256 5ad3de31652ab4db88302678132c86ac5e45de25b6f3ce0630b28cf33f6bd8c1
+
+Judged set (scripts/text_search_score.py and scripts/text_search_questions.py as merged; fixtures/text-search/
+judgments.json and question-digests.json unchanged): three runs on the head's searchd, two before a usage-text-only
+edit of cli.zig (sha256 8e75e02e...) and one after it; the three JSON files are identical apart from engine.searchd_sha256,
+the Markdown apart from that digest. after-h2.json and after-h2.md are the last run:
+  json sha256 7a8783228309eb701139f28cc70fcae1a31ee3d4d602ba2e622d3ba886e7ccf0
+  md   sha256 c38ab429eef9ac2dad0d5c1ef9f1f89c8c79b0be5a3c4af7a571efe57920ae82
+compare.md: scripts/prototypes/s6t23/compare.py docs/evidence/s6-t22/baseline-rework-2.json after-h2.json (its title
+  line still says "Part 1 prototype": the script is unchanged).
+prototype-vs-build.md: the same script, Part 1's prototype.json against after-h2.json: every count identical; only
+  evidence bytes under --search-field both differ (the build's are 2 to 16 bytes smaller on 42 questions typed and 24 with the query words; no other field of any row differs),
+  because the prototype's renamed copy put the added extension into each renamed file's basename and file-name
+  section text ("NOTES.txt" for inbox/NOTES), which its path swap did not reach; shown on "NOTES inbox", both: the
+  only differing result fields are chunk_id (a hash over the path), citation.path, basename and match_sections.
+causes.tsv: causes.py.txt (main's and the head's searchd, each on its own index of the judged folder) per worsened
+  question and configuration.

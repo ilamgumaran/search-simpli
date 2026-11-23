@@ -286,8 +286,9 @@ test "S6-T2: search reads the folder and writes nothing in it or beside it" {
         const result = try runSearch(a, args.items);
         try std.testing.expectEqual(@as(u8, 0), result.status);
         try std.testing.expect(result.out.len > 0);
-        // The cap and the broken file are counted on stderr, one line.
-        try std.testing.expectEqualStrings("searchd: search: 2 files not searched (too_large=1 unreadable=1 budget_exhausted=0)\n", result.err);
+        // The cap, the broken file and (S6-T23) the picture, a skip-listed
+        // kind, are counted on stderr, one line.
+        try std.testing.expectEqualStrings("searchd: search: 3 files not searched (too_large=1 unreadable=1 budget_exhausted=0 not_read=1)\n", result.err);
     };
     try std.testing.expectEqualStrings(before, try treeListing(a, tmp.dir));
 }

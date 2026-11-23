@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.11.0 (S6-T23; contract 2.9.0; minor: an additive report field and more files read)
+
+`indexFolder` (and `searchd index`, `--update`, `searchd search`) reads every
+file whose bytes are text, with any extension or none, not only the 19
+extensions it read before (`text-sniff-v1`,
+[decision 0005](../../../docs/decisions/0005-which-files-are-text.md),
+[CAP-24](../../../docs/requirements/cap-24-which-files-are-text.md)). The
+package accepts exactly contract 2.9.0, so it is a minor version.
+
+- **`IndexFolderReport.notRead`** (`Map<String, int>`) and `notReadTotal`:
+  the files the walk did not read, counted by kind, without paths:
+  `bad_name` (a name no record can hold, such as `a\rb.md` or macOS's `Icon\r`),
+  `image`, `audio`, `video`, `archive`, `document`, `font`, `program`,
+  `database` (by extension, never opened), `binary` (a name outside the 19
+  extensions whose first 8,192 bytes hold a NUL or more than 1 % control
+  bytes, such as backspace or BEL). Only non-zero kinds; empty when none, and
+  when a report has no `not_read` field. `toJson` writes it.
+- **More files are read.** `README`, `TODO`, `.csv`, `.tsv`, `.log`, `.ini`,
+  `.xml`, `.sh` and every other text file are indexed. A file of one of the
+  19 extensions is read exactly as before: indexed when its bytes are valid
+  UTF-8, whatever NUL or control bytes it holds, so an update drops no file
+  0.10.x indexed. Files that are not UTF-8, and UTF-16 or UTF-32 with a byte
+  order mark, stay `unreadable`.
+- **A name with a carriage return or line feed** is counted under
+  `bad_name`. Before, such a name with one of the 19 extensions (`a\rb.md`)
+  failed the whole call with `InvalidPath`; other such names (macOS's
+  `Icon\r`) were never read.
+- **An index built before 0.11.0** opens unchanged; its next update with
+  `update: true` adds the newly readable files (`added`) without a rebuild.
+  A generation 0.11.0 publishes names the rule in its manifest meta
+  (`readable`); 0.10.x opens it unchanged (the key is ignored), and an
+  update by 0.10.x drops the newly read files again.
+- **Not changed.** No new call, option, error code or C ABI function;
+  `applyChanges` reads what the host names, as before; the index format
+  version is unchanged; on folders of the 19 extensions holding text, answers
+  are byte-identical (the three 10k corpora: shown in
+  `docs/evidence/s6-t23/part2/answers-and-old-indexes.txt`).
+- **Natives rebuilt:** macOS 1,007,784 B (0.10.0: 1,007,096), Android
+  976,312 B (968,048; the example's copy identical), iOS framework
+  1,005,112 B (988,232). `SOURCE-SHA256` restamped.
+
 ## 0.10.0 (S6-T21; contract 2.8.0; minor: a refusal that was not there)
 
 A caller's own generation number must now be above the highest generation the

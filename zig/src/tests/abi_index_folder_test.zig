@@ -216,3 +216,27 @@ test "S6-T21: ss_import_json refuses a number at or below the highest generation
     try std.testing.expectEqual(@as(i64, 3), abi.ss_import_json(dir_z, third.ptr, third.len));
     try std.testing.expectEqualStrings("", std.mem.span(ss_last_error()));
 }
+
+test "S6-T23 (contract 2.9.0): ss_index_folder reads text of any name and reports what it did not read by kind, full and update" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const test_io = std.testing.io;
+    try tmp.dir.createDir(test_io, "notes", .default_dir);
+    try tmp.dir.writeFile(test_io, .{ .sub_path = "notes/README", .data = "the orchard plans\n" });
+    try tmp.dir.writeFile(test_io, .{ .sub_path = "notes/loans.csv", .data = "item,lent_to\nladder,Wren\n" });
+    try tmp.dir.writeFile(test_io, .{ .sub_path = "notes/logo.png", .data = "orchard (text bytes, an image name)\n" });
+    try tmp.dir.writeFile(test_io, .{ .sub_path = "notes/blob", .data = "orchard\x00\x01" });
+    try tmp.dir.writeFile(test_io, .{ .sub_path = "notes/a\r.md", .data = "orchard\n" });
+    const notes_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(notes_z);
+    const out_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(out_z);
+    const expected = "\"unreadable_paths\":[],\"not_read\":{\"bad_name\":1,\"binary\":1,\"image\":1},\"documents\":2,";
+    for ([_]?[*:0]const u8{ null, "{\"update\":true}" }, [_][]const u8{ "\"added\":2,", "\"unchanged\":2," }) |opts, counted| {
+        const report = ss_index_folder(out_z, notes_z, opts) orelse return error.IndexFailed;
+        defer ss_free(report);
+        const text = std.mem.span(report);
+        try std.testing.expect(std.mem.indexOf(u8, text, expected) != null);
+        try std.testing.expect(std.mem.indexOf(u8, text, counted) != null);
+    }
+}

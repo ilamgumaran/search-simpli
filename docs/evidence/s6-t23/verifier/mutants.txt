@@ -1,0 +1,27 @@
+# S6-T23 verifier: three mutants of 2ab4e60, each a full git archive with its own empty Zig caches, `zig build test`
+# (Debug). Not asked for by the brief; run to see whether the rule's three new decision points are guarded.
+# m1-no-apply-sniff: apply.zig, `if (options.readable and change.content == .walk and` -> `if (false and ...`
+#                    (a known-extension file whose bytes are binary is indexed again)
+# m2-ctrl-ge:        indexer.zig sniff, `controls * 100 > head.len * 1` -> `>= ... and controls > 0`
+#                    (exactly 1 % control bytes becomes binary)
+# m3-no-badname:     indexer.zig walkFolder, `if (!apply.validRelativePath(entry.path))` -> `if (false and ...)`
+m1-no-apply-sniff: Build Summary: 13/15 steps succeeded (1 failed); 601/612 tests passed (9 skipped, 2 failed)
+error: 'indexer.test.S6-T23: a folder holding names with a carriage return indexes and searches; not-read files are reported by kind' failed:
+error: 'indexer.test.S6-T23: an index built before the rule takes the newly readable files at its next update, without a rebuild' failed:
+m2-ctrl-ge: Build Summary: 13/15 steps succeeded (1 failed); 602/612 tests passed (9 skipped, 1 failed)
+error: 'indexer.test.S6-T23: sniff's verdicts (the same bytes as tests/test_text_sniff.py)' failed:
+m3-no-badname: Build Summary: 12/15 steps succeeded (2 failed); 599/612 tests passed (9 skipped, 4 failed)
+error: 'indexer.test.S6-T23: the walk reads text of any name, skips listed kinds and binary heads, counts bad names, leaves dot-files out' failed:
+error: 'indexer.test.S6-T23: a folder holding names with a carriage return indexes and searches; not-read files are reported by kind' failed:
+error: 'indexer.test.S6-T23: an index built before the rule takes the newly readable files at its next update, without a rebuild' failed:
+error: 'abi_index_folder_test.test.S6-T23 (contract 2.9.0): ss_index_folder reads text of any name and reports what it did not read by kind, full and update' failed:
+
+m1 also against the Python suite's sniff tests (SEARCHD_BINARY = the mutant's ReleaseSmall searchd): FAIL test_names_with_a_carriage_return_index_and_search; 1 of 5 failed
+
+# Natives rebuilt by the verifier: tool/build_native.sh in a fresh archive of 2ab4e60, empty global cache, NDK 28.2.13676358: Build Summary 28/28; every file cmp-identical to the committed one:
+identical macos-arm64/libsearch_simpli.dylib
+identical android-arm64/libsearch_simpli.so
+identical ios-arm64/search_simpli.framework/search_simpli
+identical ios-arm64/search_simpli.framework/Info.plist
+identical SOURCE-SHA256
+identical example/android/.../libsearch_simpli.so

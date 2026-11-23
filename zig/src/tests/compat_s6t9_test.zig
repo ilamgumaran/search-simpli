@@ -98,6 +98,24 @@ fn expectSameStateFiles(a: std.mem.Allocator, a_dir: std.Io.Dir, b_dir: std.Io.D
     try std.testing.expectEqualSlices(u8, try incremental_state.encodeSection(a, x), try incremental_state.encodeSection(a, y2));
 }
 
+/// S6-T23 (CAP-24 FR-36): since contract 2.9.0 a walk's manifest records
+/// the readable-set rule after the chunkers. `fresh` is `committed` (the
+/// fixture this writer gave before 2.9.0) with exactly that key inserted
+/// into the meta: every other manifest field is the same, so only the
+/// payload length and the manifest's own checksum differ in the bytes.
+fn expectManifestPlusReadable(a: std.mem.Allocator, committed: []const u8, fresh: []const u8) !void {
+    const inserted = "\"readable\":" ++ manifest.readable_meta ++ ",";
+    try std.testing.expectEqual(committed.len + inserted.len, fresh.len);
+    const old = try manifest.decode(committed);
+    var new = try manifest.decode(fresh);
+    const at = std.mem.indexOf(u8, new.meta, inserted) orelse return error.TestExpectedReadableKey;
+    try std.testing.expect(std.mem.startsWith(u8, new.meta[at + inserted.len ..], "\"roots\":"));
+    const without = try std.mem.concat(a, u8, &.{ new.meta[0..at], new.meta[at + inserted.len ..] });
+    try std.testing.expectEqualStrings(old.meta, without);
+    new.meta = old.meta;
+    try std.testing.expectEqualDeep(old, new);
+}
+
 test "S6-T9: the committed v2.6 fixture is this writer's output, and a library before v2.6 refuses it at the flags" {
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
@@ -118,7 +136,11 @@ test "S6-T9: the committed v2.6 fixture is this writer's output, and a library b
     var fresh = try compat.freshIndex(a, tmp, "fresh");
     defer fresh.close(io);
     for (files) |name| {
-        try std.testing.expectEqualSlices(u8, try committed.readFileAlloc(io, name, a, .unlimited), try fresh.readFileAlloc(io, name, a, .unlimited));
+        const committed_bytes = try committed.readFileAlloc(io, name, a, .unlimited);
+        const fresh_bytes = try fresh.readFileAlloc(io, name, a, .unlimited);
+        if (std.mem.eql(u8, name, publication.current_manifest_file)) {
+            try expectManifestPlusReadable(a, committed_bytes, fresh_bytes);
+        } else try std.testing.expectEqualSlices(u8, committed_bytes, fresh_bytes);
     }
     // Against main's fixture: the documents, content lexical, source and
     // file-name lexical sections are the same bytes; the state and the

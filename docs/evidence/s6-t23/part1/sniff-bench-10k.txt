@@ -1,0 +1,21 @@
+== timing-10k
+files 10000 bytes 7269199 rounds 11 sink 2
+verdicts text 10000 utf16 0 binary 0 not_utf8 0
+memory total_ns 2336292 per_file_ns 233
+memory_nul_control total_ns 2062000 per_file_ns 206
+head   total_ns 97159625 per_file_ns 9715
+whole  total_ns 92182917 per_file_ns 9218
+== prose-10k
+files 10000 bytes 17244024 rounds 11 sink 2
+verdicts text 10000 utf16 0 binary 0 not_utf8 0
+memory total_ns 4752875 per_file_ns 475
+memory_nul_control total_ns 4218500 per_file_ns 421
+head   total_ns 105417625 per_file_ns 10541
+whole  total_ns 98414375 per_file_ns 9841
+== tamil-10k
+files 10000 bytes 27708457 rounds 11 sink 2
+verdicts text 10000 utf16 0 binary 0 not_utf8 0
+memory total_ns 21194000 per_file_ns 2119
+memory_nul_control total_ns 6831958 per_file_ns 683
+head   total_ns 119418667 per_file_ns 11941
+whole  total_ns 108797708 per_file_ns 10879

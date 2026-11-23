@@ -1,0 +1,6 @@
+files 270 bytes 141870 rounds 21 sink 0
+verdicts text 270 utf16 0 binary 0 not_utf8 0
+memory total_ns 42209 per_file_ns 156
+memory_nul_control total_ns 36125 per_file_ns 133
+head   total_ns 2129333 per_file_ns 7886
+whole  total_ns 2024833 per_file_ns 7499

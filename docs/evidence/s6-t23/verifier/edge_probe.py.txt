@@ -1,0 +1,299 @@
+"""S6-T23 verifier: an edge folder of invented files, run through every surface.
+
+usage: python3 -I edge_probe.py <scratch> <head-src> <main-src> <head searchd> <main searchd> <head dylib> <main dylib>
+
+Writes <scratch>/edge/ and prints, per file, what each surface did with it:
+head and main `index --update` (JSON report and list-files), the head's
+`search` stderr line, the head's ss_index_folder (ctypes, full and update),
+and the Python reference's walk (`_iter_text_files`, `not_read_counts`) of
+the head and of main. Content is invented.
+"""
+import ctypes
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+scratch, head_src, main_src, head_sd, main_sd, head_lib, main_lib = sys.argv[1:8]
+S = Path(scratch)
+E = S / "edge"
+if E.exists():
+    raise SystemExit("edge folder exists; remove it by its literal path first")
+E.mkdir()
+
+W = b"heron "  # 6 bytes, a word to pad with
+files: dict[str, bytes] = {}
+
+
+def pad(n: int, unit: bytes = W) -> bytes:
+    return (unit * (n // len(unit) + 1))[:n]
+
+
+# sizes around the head
+for n in (8191, 8192, 8193):
+    files[f"size/n{n}"] = pad(n - 1) + b"\n"
+# a NUL at byte 8,192 (1-based: index 8191, inside the head) and 8,193 (index 8192, outside)
+for at in (8192, 8193):
+    b = bytearray(pad(9000))
+    b[at - 1] = 0
+    files[f"nul/nul_at_{at}"] = bytes(b)
+    files[f"nul/nul_at_{at}.txt"] = bytes(b)
+# control share: 1,000-byte file with 10 (=1 %) and 11 controls; 8,192+ head with 81/82
+for count, total in ((10, 1000), (11, 1000), (81, 9000), (82, 9000)):
+    b = bytearray(pad(total))
+    for i in range(count):
+        b[50 + i * 13] = 0x01
+    files[f"ctrl/ctrl_{count}_of_{total}"] = bytes(b)
+# controls only after the head
+b = bytearray(pad(20000))
+for i in range(500):
+    b[9000 + i * 7] = 0x02
+files["ctrl/ctrl_after_head"] = bytes(b)
+# a multi-byte sequence cut by the head's end, in a valid file
+euro = "€".encode()  # 3 bytes
+for start in (8189, 8190, 8191):  # 0-based start: complete, cut after 2, cut after 1
+    b = pad(start) + euro + pad(200)
+    files[f"utf8/euro_at_{start}"] = b
+emoji = "🦉".encode()  # 4 bytes
+for start in (8188, 8189, 8190, 8191):
+    files[f"utf8/owl_at_{start}"] = pad(start) + emoji + pad(200)
+# a file of exactly 8,193 bytes whose last two bytes are one character
+files["utf8/eacute_last_8193"] = pad(8191) + "é".encode()
+# a file of exactly 8,192 bytes cut at its own end (truly invalid)
+files["utf8/cut_at_eof_8192"] = pad(8190) + euro[:2]
+# BOMs
+files["bom/utf8_bom.txt"] = b"\xef\xbb\xbfthe kestrel ledger\n"
+files["bom/utf8_bom_noext"] = b"\xef\xbb\xbfthe kestrel ledger\n"
+files["bom/utf16le_bom.txt"] = "\ufeffthe kestrel ledger\n".encode("utf-16-le")
+files["bom/utf16be_bom.csv"] = "\ufeffthe kestrel ledger\n".encode("utf-16-be")
+files["bom/utf16le_nobom.txt"] = "the kestrel ledger\n".encode("utf-16-le")
+files["bom/utf32le_bom"] = "\ufeffthe kestrel ledger\n".encode("utf-32-le")
+# tiny files
+files["tiny/empty"] = b""
+files["tiny/empty.txt"] = b""
+files["tiny/one_a"] = b"a"
+files["tiny/one_ctrl"] = b"\x01"
+files["tiny/one_ff"] = b"\x0c"
+# short files with one stray control byte (finding 1)
+files["stray/formfeed.txt"] = b"Page one of the kestrel report\n\x0cPage two\n"
+files["stray/bel_short.log"] = b"build finished for the kestrel job\x07\n"
+files["stray/bel_100.log"] = pad(99) + b"\x07"
+files["stray/bel_101.log"] = pad(100) + b"\x07"
+files["stray/fs_57.txt"] = pad(56) + b"\x1c"
+# realistic terminal shapes
+line = b"2026-11-01 12:00:00 \x1b[32mINFO\x1b[0m kestrel request served in 12 ms\n"
+files["term/ansi_colour.log"] = line * 300
+prompt = b"\x1b]0;user@box: ~/kestrel\x07\x1b[01;32muser@box\x1b[00m:\x1b[01;34m~/kestrel\x1b[00m$ "
+session = b"".join(prompt + cmd + b"\r\n" + out for cmd, out in (
+    (b"ls", b"ledger.md  notes.txt  plans\r\n"),
+    (b"make", b"cc -o kestrel main.c\r\nbuild ok\r\n"),
+    (b"git status", b"On branch main\r\nnothing to commit, working tree clean\r\n"),
+)) * 40
+files["term/typescript"] = session  # what script(1) writes: OSC titles end in BEL
+spinner = b"Installing kestrel packages |\x08/\x08-\x08\\\x08|\x08 done\n"
+files["term/spinner.log"] = (spinner + pad(120) + b"\n") * 50
+overstrike = b"".join(bytes([c, 8, c]) for c in b"NAME") + b"\n     kestrel - count birds\n"
+files["term/manpage.txt"] = overstrike * 30
+files["term/progress_cr.log"] = b"".join(b"\rdownloading kestrel %3d%%" % p for p in range(0, 101)) + b"\n"
+# whitespace shapes
+files["ws/tabs.tsv"] = b"item\tshelf\nkestrel\tS20\n"
+files["ws/crlf.txt"] = b"first kestrel line\r\nsecond line\r\n"
+files["ws/lone_cr.txt"] = b"first kestrel line\rsecond line\r"
+# a bad byte after the head
+files["late/latin1_late"] = pad(15000) + b"caf\xe9\n"
+files["late/latin1_late.txt"] = pad(15000) + b"caf\xe9\n"
+files["late/latin1_early"] = b"caf\xe9 kestrel\n"
+# binary with a text header, without and with an extension
+pdf = b"%PDF-1.7\n%\xe2\xe3\xcf\xd3\n1 0 obj\n<< /Length 40 /Filter /FlateDecode >>\nstream\nx\x9c\x00\x01\x02kestrel\nendstream\nendobj\n"
+pdf_text = b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n"
+png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x10tEXtComment\x00kestrel\x00\x00\x00\x00IEND\xaeB`\x82"
+zipb = b"PK\x03\x04\x14\x00\x00\x00\x00\x00kestrel.txtPK\x05\x06" + b"\x00" * 18
+for name, data in (("pdf", pdf), ("pdf_ascii_header", pdf_text), ("png", png), ("zip", zipb)):
+    files[f"bin/{name}_noext"] = data
+files["bin/scan.pdf"] = pdf
+files["bin/photo.PNG"] = png
+files["bin/bundle.zip"] = zipb
+# text under a skip-list extension
+for name in ("notes.doc", "notes.bin", "server.key", "data.db", "slides.key", "draft.rtf", "logo.svg", "lib.a", "track.mid"):
+    files[f"skiptext/{name}"] = b"the kestrel minutes of the meeting\n"
+# a known name holding a NUL early (finding 2) and late
+files["known/stray_nul.txt"] = b"kestrel log line one\n\x00kestrel log line two\n"
+files["known/stray_nul.log"] = b"kestrel log line one\n\x00kestrel log line two\n"
+files["known/bel.md"] = b"# Kestrel\n\ndone\x07\n"
+# large text
+MiB = 1024 * 1024
+files["big/exact_10mib.txt"] = pad(10 * MiB - 1) + b"\n"
+files["big/over_10mib.txt"] = pad(10 * MiB) + b"\n"
+files["big/over_10mib_noext"] = pad(10 * MiB) + b"\n"
+files["big/over_10mib_nul.txt"] = b"\x00" + pad(10 * MiB)
+# dot-files and ignored folders
+files[".env"] = b"TOKEN=kestrel\n"
+files[".notes/hidden.txt"] = b"kestrel hidden\n"
+files["node_modules/pkg/README"] = b"kestrel module\n"
+files["sub/.secret"] = b"kestrel secret\n"
+# odd names
+files["names/a\rb.md"] = b"kestrel behind a carriage return\n"
+files["names/line\nbreak.txt"] = b"kestrel behind a line feed\n"
+files["names/Icon\r"] = b""
+files["names/tab\tname.txt"] = b"kestrel tab name\n"
+files["names/-dash.txt"] = b"kestrel dash name\n"
+files["names/trailing space.txt "] = b"kestrel trailing space\n"
+files["names/x.averyveryverylongextension"] = b"kestrel long extension\n"
+files["names/notes.txt.bak"] = b"kestrel backup\n"
+files["names/UPPER.TXT"] = b"kestrel upper\n"
+files["names/archive.tar.gz"] = b"kestrel not really gzip\n"
+
+for rel, data in files.items():
+    p = E / rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_bytes(data)
+# invalid UTF-8 in a name, if this file system allows it
+bad_name_made = False
+try:
+    fd = os.open(os.fsencode(str(E / "names")) + b"/bad\xff.txt", os.O_WRONLY | os.O_CREAT, 0o644)
+    os.write(fd, b"kestrel bad bytes in name\n")
+    os.close(fd)
+    bad_name_made = True
+except OSError as err:
+    print(f"# invalid UTF-8 name: refused by the file system: {err}")
+# symlinks
+(E / "links").mkdir()
+(E / "links/target.txt").write_bytes(b"kestrel link target\n")
+os.symlink("target.txt", E / "links/link.txt")
+os.symlink("../ws", E / "links/dirlink")
+os.symlink("missing.txt", E / "links/dangling.txt")
+# unreadable permissions
+(E / "perm").mkdir()
+(E / "perm/locked.txt").write_bytes(b"kestrel locked\n")
+(E / "perm/locked_noext").write_bytes(b"kestrel locked\n")
+os.chmod(E / "perm/locked.txt", 0)
+os.chmod(E / "perm/locked_noext", 0)
+# a FIFO
+os.mkfifo(E / "perm/pipe")
+
+
+def run(cmd):
+    return subprocess.run(cmd, capture_output=True)
+
+
+def walked_regular():
+    out = []
+    for dirpath, dirnames, filenames in os.walk(os.fsencode(str(E))):
+        rel_dir = os.path.relpath(dirpath, os.fsencode(str(E)))
+        parts = [] if rel_dir == b"." else rel_dir.split(b"/")
+        if any(p.startswith(b".") or p in (b".git", b".search", b".zig-cache", b"__pycache__", b"node_modules", b"zig-out") for p in parts):
+            continue
+        for f in filenames:
+            full = os.path.join(dirpath, f)
+            if os.path.islink(full) or not os.path.isfile(full) or f.startswith(b"."):
+                continue
+            out.append(b"/".join(parts + [f]))
+    return sorted(out)
+
+
+regular = walked_regular()
+print(f"# regular files the walk keeps (my own walk, lstat, no dot, no ignored): {len(regular)}")
+
+results = {}
+for label, sd in (("head", head_sd), ("main", main_sd)):
+    out = S / f"edge-idx-{label}"
+    r = run([sd, "index", str(E), "--out", str(out), "--update"])
+    results[label] = {"rc": r.returncode, "stdout": r.stdout.decode("utf-8", "replace"), "stderr": r.stderr.decode("utf-8", "replace")}
+    lf = run([sd, "list-files", str(out), "--json", "--page-size", "1000"])
+    results[label]["list"] = lf.stdout.decode("utf-8", "replace") if lf.returncode == 0 else f"rc={lf.returncode} {lf.stderr!r}"
+    rr = run([sd, "index", str(E), "--out", str(S / f"edge-full-{label}")])
+    results[label]["full_line"] = (rr.returncode, rr.stdout.decode("utf-8", "replace").strip(), rr.stderr.decode("utf-8", "replace").strip())
+    sr = run([sd, "search", str(E), "kestrel", "--top-k", "3"])
+    results[label]["search"] = (sr.returncode, sr.stderr.decode("utf-8", "replace").strip())
+
+for label in ("head", "main"):
+    r = results[label]
+    print(f"\n## {label} searchd")
+    print(f"index --update rc={r['rc']} stderr={r['stderr'].strip()!r}")
+    print(f"index (full) {r['full_line']}")
+    print(f"search stderr {r['search']}")
+    if r["rc"] == 0:
+        rep = json.loads(r["stdout"])
+        print("report:", json.dumps({k: rep[k] for k in rep if k not in ("terms", "postings")}, ensure_ascii=True))
+
+indexed = {}
+for label in ("head", "main"):
+    try:
+        listing = json.loads(results[label]["list"])
+        indexed[label] = sorted(f["path"] for f in listing.get("files", []))
+    except Exception:
+        indexed[label] = None
+        print(f"{label} list-files: {results[label]['list'][:300]!r}")
+
+
+def py_walk(src):
+    code = (
+        "import sys, json; sys.path.insert(0, sys.argv[1]);"
+        "from pathlib import Path; from search_platform import core;"
+        "root = Path(sys.argv[2]);"
+        "paths = [p.relative_to(root).as_posix() for p in core._iter_text_files(root)];"
+        "nr = core.not_read_counts(root) if hasattr(core, 'not_read_counts') else None;"
+        "print(json.dumps({'paths': paths, 'not_read': nr}, ensure_ascii=True))"
+    )
+    r = subprocess.run([sys.executable, "-I", "-c", code, str(Path(src) / "src"), str(E)], capture_output=True)
+    if r.returncode != 0:
+        return {"error": r.stderr.decode("utf-8", "replace")[-600:]}
+    return json.loads(r.stdout)
+
+
+py = {"head": py_walk(head_src), "main": py_walk(main_src)}
+for label in ("head", "main"):
+    if "error" in py[label]:
+        print(f"\n## Python reference ({label}) FAILED: {py[label]['error']}")
+    else:
+        print(f"\n## Python reference ({label}): {len(py[label]['paths'])} read, not_read={py[label]['not_read']}")
+
+# ABI
+abi = {}
+for label, lib in (("head", head_lib), ("main", main_lib)):
+    L = ctypes.CDLL(lib)
+    L.ss_index_folder.restype = ctypes.c_void_p
+    L.ss_index_folder.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p]
+    L.ss_last_error.restype = ctypes.c_char_p
+    L.ss_free.argtypes = [ctypes.c_void_p]
+    rows = []
+    for mode, opts in (("full", b"{}"), ("update", b'{"update": true}')):
+        p = L.ss_index_folder(str(S / f"edge-abi-{label}").encode(), str(E).encode(), opts)
+        if not p:
+            rows.append((mode, None, L.ss_last_error().decode()))
+            continue
+        text = ctypes.string_at(p).decode()
+        L.ss_free(p)
+        rows.append((mode, json.loads(text), None))
+    abi[label] = rows
+    for mode, rep, err in rows:
+        if rep is None:
+            print(f"\n## ss_index_folder {label} {mode}: NULL {err}")
+        else:
+            print(f"\n## ss_index_folder {label} {mode}: " + json.dumps({k: rep[k] for k in rep if k not in ("terms", "postings")}, ensure_ascii=True))
+
+# per-file table
+print("\n## per file: head index | main index | Python head | Python main")
+all_paths = sorted({p.decode("utf-8", "surrogateescape") for p in regular})
+for rel in all_paths:
+    cells = []
+    for label in ("head", "main"):
+        cells.append("read" if indexed[label] is not None and rel in indexed[label] else "-")
+    for label in ("head", "main"):
+        cells.append("read" if "paths" in py[label] and rel in py[label]["paths"] else "-")
+    print(f"{rel!r:45} " + " | ".join(cells))
+extra_py = [p for p in py["head"].get("paths", []) if p not in all_paths]
+print("Python head reads outside my walk:", extra_py)
+
+# identity: walked = indexed + too_large + unreadable + budget_exhausted + not_read
+if results["head"]["rc"] == 0:
+    rep = json.loads(results["head"]["stdout"])
+    nr = sum(rep["not_read"].values())
+    n_idx = len(indexed["head"])
+    print(f"\n## identity (head --update): walked {len(regular)} = indexed {n_idx} + too_large {rep['too_large']} + unreadable {rep['unreadable']} + budget_exhausted {rep['budget_exhausted']} + not_read {nr} -> {n_idx + rep['too_large'] + rep['unreadable'] + rep['budget_exhausted'] + nr}")
+    print("stdout holds a path of a not-read file?", any(s in results["head"]["stdout"] for s in ("notes.doc", "stray_nul", "png_noext", "Icon")))
+    print("index line / search stderr hold a path?", any(s in results["head"]["full_line"][1] + results["head"]["search"][1] for s in ("notes.doc", "stray_nul", "png_noext", "Icon", "edge/")))
+# restore permissions so the folder can be removed
+os.chmod(E / "perm/locked.txt", 0o644)
+os.chmod(E / "perm/locked_noext", 0o644)

@@ -589,13 +589,15 @@ class EndToEndTests(unittest.TestCase):
                 for form in ("typed", "query"):
                     agree = out["direct_equals_index"][f"{field}/{form}"]
                     self.assertEqual(agree["identical"], agree["of"], (field, form))
-            # The engine reads none of the CSV, TSV, .log or extensionless files today,
-            # and every file of the 19 extensions the judgments' single_source assumes.
+            # S6-T23 (text-sniff-v1): every file of the folder is text, so the
+            # engine reads all of them, the CSV, TSV, .log and extensionless files
+            # too. The judgments' fixed `readable_now` list (S6-T22) still names
+            # the files of the 19 extensions; it is not the engine's set any more.
             unread = out["corpus"]["files_not_read"]
-            self.assertIn("home/money/budget-2026.csv", unread)
-            self.assertIn("inbox/NOTES", unread)
+            self.assertEqual(unread, [])
             corpus = corpus_mod.build_corpus()
-            self.assertEqual(unread, sorted(p for p in corpus if not questions_mod.readable(p)))
+            self.assertIn("inbox/NOTES", corpus)
+            self.assertFalse(questions_mod.readable("inbox/NOTES"))
             self.assertEqual(scorer.markdown(out, KINDS).count("| **total** (with an answer)"), 4)
             self.assertEqual(scorer.markdown(out, KINDS).count("| **total without single-source**"), 4)
             self.assertEqual(scorer.markdown(out, KINDS).count("| **total readable now**"), 4)

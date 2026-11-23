@@ -1,0 +1,52 @@
+# S6-T23 verifier: the three 10k corpora (scripts/gen_*_corpus.py, 10,000 files, default arguments), tenk_compare.py.txt; main's and the head's ReleaseSmall searchd each on its own --filename-index index; my own queries (words by document-frequency rank, pairs, file stems) under query --json, find --json and evidence content/filename/both
+
+## timing-10k
+main analyzer=analyzer-v2 generation=1 files_indexed=10000 too_large=0 unreadable=0 budget_exhausted=0 documents=19959 terms=24057 postings=1023806
+head analyzer=analyzer-v2 generation=1 files_indexed=10000 too_large=0 unreadable=0 budget_exhausted=0 documents=19959 terms=24057 postings=1023806 not_read=0
+identical INDEX-STATE.json (94 B)
+DIFFERS MANIFEST: 696 -> 773 B
+  key at byte 452, followed by b'"roots":'
+  head MANIFEST without the key: 696 B; byte offsets differing from main's: ([156, 160, 161, 162, 163, 164, 165, 166, 167, 252], 10)
+identical WRITER.LOCK (0 B)
+identical documents-1.hybseg (8028417 B)
+identical filename-lexical-1.hyblex (92952 B)
+identical filenames-1.hybseg (490036 B)
+identical lexical-1.hyblex (4200907 B)
+identical source-1.hybsrc (539719 B)
+identical state-1.hybstate (360159 B)
+75 queries
+c-timing: 375 calls, 0 differ []
+
+## prose-10k
+main analyzer=analyzer-v2 generation=1 files_indexed=10000 too_large=0 unreadable=0 budget_exhausted=0 documents=18766 terms=3115 postings=2238541
+head analyzer=analyzer-v2 generation=1 files_indexed=10000 too_large=0 unreadable=0 budget_exhausted=0 documents=18766 terms=3115 postings=2238541 not_read=0
+identical INDEX-STATE.json (94 B)
+DIFFERS MANIFEST: 696 -> 773 B
+  key at byte 452, followed by b'"roots":'
+  head MANIFEST without the key: 696 B; byte offsets differing from main's: ([156, 160, 162, 163, 164, 165, 166, 167, 252], 9)
+identical WRITER.LOCK (0 B)
+identical documents-1.hybseg (18865516 B)
+identical filename-lexical-1.hyblex (146333 B)
+identical filenames-1.hybseg (607567 B)
+identical lexical-1.hyblex (10015061 B)
+identical source-1.hybsrc (820567 B)
+identical state-1.hybstate (360159 B)
+30 queries
+c-prose: 150 calls, 0 differ []
+
+## tamil-10k
+main analyzer=analyzer-v2 generation=1 files_indexed=10000 too_large=0 unreadable=0 budget_exhausted=0 documents=19946 terms=21600 postings=1019062
+head analyzer=analyzer-v2 generation=1 files_indexed=10000 too_large=0 unreadable=0 budget_exhausted=0 documents=19946 terms=21600 postings=1019062 not_read=0
+identical INDEX-STATE.json (94 B)
+DIFFERS MANIFEST: 696 -> 773 B
+  key at byte 452, followed by b'"roots":'
+  head MANIFEST without the key: 696 B; byte offsets differing from main's: ([156, 160, 161, 162, 163, 164, 165, 166, 167, 252], 10)
+identical WRITER.LOCK (0 B)
+identical documents-1.hybseg (28792519 B)
+identical filename-lexical-1.hyblex (92952 B)
+identical filenames-1.hybseg (490036 B)
+identical lexical-1.hyblex (4357296 B)
+identical source-1.hybsrc (539616 B)
+identical state-1.hybstate (360159 B)
+30 queries
+c-tamil: 150 calls, 0 differ []

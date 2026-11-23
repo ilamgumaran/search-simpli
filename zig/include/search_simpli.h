@@ -165,6 +165,18 @@
  * word only hidden files or names hold is reported as an absent word is.
  * query_empty_after_analysis and vector_ignored follow the same rules as
  * under "content" (docs/requirements/cap-22-field-warnings.md). */
+
+/* Contract 2.9.0 (S6-T23) changes which files a walk reads
+ * (ss_index_folder, and searchd index and search): a file is read when its
+ * bytes are text, with any extension or none, not when its extension is
+ * one of 19 (text-sniff-v1; see ss_index_folder). ss_index_folder's report
+ * gains "not_read", the files not read counted by kind, without paths. A
+ * generation a walk publishes names the rule in its manifest meta
+ * ("readable"); readers ignore the key, and no request field, signature,
+ * error code or index format version changes. An index built before 2.9.0
+ * opens unchanged and takes the newly readable files at its next update,
+ * without a rebuild. ss_apply_changes reads what the host names, as before
+ * (docs/requirements/cap-24-which-files-are-text.md). */
 #ifndef SEARCH_SIMPLI_H
 #define SEARCH_SIMPLI_H
 
@@ -193,7 +205,7 @@ typedef struct ss_handle ss_handle;
 
 /*
  * The engine contract/build version (contracts/CONTRACTS_VERSION), e.g.
- * "2.8.0". The returned pointer is static storage owned by the library:
+ * "2.9.0". The returned pointer is static storage owned by the library:
  * never pass it to ss_free(). Cannot fail.
  */
 const char *ss_version(void);
@@ -579,6 +591,8 @@ void ss_free(char *ptr);
  * "unchanged", "budget_exhausted", "too_large", "unreadable" (all
  * integers), "too_large_paths", "unreadable_paths" (arrays of the relative
  * paths counted under "too_large"/"unreadable" — never just a bare count),
+ * "not_read" (since 2.9.0: an object counting the files the walk did not
+ * read, by kind, without paths — see "Which files are read" below),
  * "documents", "terms", "postings" (all integers). A non-"update" run
  * always reports "changed"/"removed"/"unchanged" as 0 (a full rebuild never
  * compares against a previous generation); an "update" run additionally
@@ -606,6 +620,24 @@ void ss_free(char *ptr);
  * file that is merely unreadable this run (permissions, a transient I/O
  * error, invalid UTF-8) keeps its previously indexed chunks instead — see
  * docs/incremental-indexing.md.
+ *
+ * Which files are read (contract 2.9.0, text-sniff-v1): every regular file
+ * under folder_path whose bytes are text, with any extension or none. A
+ * path with a component starting with "." or naming .git, .search,
+ * .zig-cache, __pycache__, node_modules or zig-out is not walked and not
+ * counted. Every other file not read is counted under "not_read" by kind:
+ * "bad_name" (a path no record can hold: a carriage return, line feed or
+ * NUL, not UTF-8, or over 4096 bytes), "image", "audio", "video",
+ * "archive", "document", "font", "program", "database" (an extension on
+ * the skip list, never opened), or "binary" (a name outside the 19
+ * extensions read before 2.9.0 whose first 8192 bytes hold a NUL or more
+ * than 1 % control bytes). A file of one of those 19 is not sniffed: it is
+ * read as before 2.9.0, when its bytes are valid UTF-8, a NUL or control
+ * bytes notwithstanding. Only non-zero kinds appear, keys in
+ * byte order; {} when none. A file of a UTF-16/32 byte order mark or not
+ * UTF-8 is "unreadable", as before. A file of the previous generation that
+ * is now not read is "removed". Not-read files are not in the manifest's
+ * skipped list and do not make a scope "truncated".
  *
  * Returns NULL on failure — a missing/unreadable folder_path, an
  * unrecognized "analyzer", or (with "update": true) `dir_path` already

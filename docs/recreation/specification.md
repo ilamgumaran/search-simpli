@@ -36,7 +36,7 @@ Status: reconstruction contract for the implemented reference and durable-engine
 
 ### FR-01 — Source discovery
 
-The indexer recursively discovers configured text/source extensions, skips ignored or hidden build directories, reads UTF-8 safely, records skipped files, and stores a root-relative POSIX path plus SHA-256 for every admitted source.
+The indexer recursively discovers configured text/source extensions, skips ignored or hidden build directories, reads UTF-8 safely, records skipped files, and stores a root-relative POSIX path plus SHA-256 for every admitted source. Since contract 2.9.0 (S6-T23, FR-34) the Zig walk and the Python reference admit every regular file whose bytes are text under `text-sniff-v1`, with any extension or none, and count the files they do not read by kind (FR-35).
 
 ### FR-02 — Chunking and identity
 
@@ -274,3 +274,12 @@ Status `Diagnostic · implemented` means built and verified on the invented fami
 | FR-32 | `searchd index` (full and `--update`) and `searchd apply` keep two generations unless `--keep-generations N` or `--keep-generations all` says otherwise; `ss_index_folder`, `ss_apply_changes`, `ss_import_json` and Dart keep their default (nothing deleted) | [CAP-23](../requirements/cap-23-cli-generation-retention.md) | Proposed |
 | FR-33 | A command-line publish says what retention removed: the prune fields whenever retention is in effect, one stderr line when files were deleted | [CAP-23](../requirements/cap-23-cli-generation-retention.md) | Proposed |
 | NFR-17 | With the command line's defaults at most two complete generations after a publish; deletion confined to the engine's own superseded section files directly inside the index directory | [CAP-23](../requirements/cap-23-cli-generation-retention.md) | Proposed |
+
+### CAP-24 — which files are text (S6-T23, accepted under the maintainer's direction of 22 Nov 2026)
+
+| ID | Short text | Capability spec | Status |
+|---|---|---|---|
+| FR-34 | The walk (`searchd index`, `--update`, `searchd search`, `ss_index_folder`) reads a regular file when its bytes are text under `text-sniff-v1`: an invalid record path is not read (`bad_name`) and never fails the walk; dot-files and ignored directories are not walked; a skip-listed extension is not opened; a name with one of the 19 extensions read before 2.9.0 is not sniffed and is read as before (valid UTF-8 decides; amended by S6-T23 rework 1); else the first 8,192 bytes decide (empty text; UTF-16/32 mark `unreadable`; NUL or more than 1 % control bytes `binary`; not UTF-8 `unreadable`); a text file is read whole as before. Changes FR-01; the Python reference walks the same | [CAP-24](../requirements/cap-24-which-files-are-text.md) | Implemented (S6-T23 Part 2, awaiting merge) |
+| FR-35 | A walk's report counts not-read files by kind, without paths: `not_read` on the `--update` and `ss_index_folder` JSON, ` not_read=N` on the `index` line and in the `search` stderr line; Dart `IndexFolderReport.notRead`; not in the manifest's `skipped` | [CAP-24](../requirements/cap-24-which-files-are-text.md) | Implemented (S6-T23 Part 2, awaiting merge) |
+| FR-36 | A walk-built generation records `"readable":{"id":"text-sniff-v1","head_bytes":8192,"control_share_max":0.01}` in the manifest meta; host batches and imports write none; older readers ignore it; an index built before 2.9.0 takes the newly readable files at its next update without a rebuild | [CAP-24](../requirements/cap-24-which-files-are-text.md) | Implemented (S6-T23 Part 2, awaiting merge) |
+| NFR-18 | No extra open for a known-text name, one read of at most 8,192 bytes for any other name; on the three 10k corpora answers byte-identical and index folders differing only in `MANIFEST` | [CAP-24](../requirements/cap-24-which-files-are-text.md) | Implemented (S6-T23 Part 2, awaiting merge) |

@@ -824,6 +824,11 @@ pub const Meta = struct {
     /// previous chunks, if any, kept), until a later change of the path. A
     /// result over a scope holding one says `truncated`.
     skipped: []PendingEntry = &.{},
+    /// S6-T23 (CAP-24 FR-36): the id of the rule a walk chose this
+    /// generation's files by (`readable.id`, `text-sniff-v1`); null when no
+    /// walk did (a host batch, an import) or an engine before contract 2.9.0
+    /// wrote it.
+    readable: ?[]const u8 = null,
 
     /// The chunker id a record's `chunker_index` names, or null.
     pub fn chunkerId(meta: Meta, index: u16) ?[]const u8 {
@@ -840,11 +845,13 @@ pub fn writeMeta(
     roots: []const RootEntry,
     source_section_version: u32,
 ) error{OutOfMemory}![]u8 {
-    return writeMetaPending(allocator, chunkers, roots, &.{}, &.{}, &.{}, source_section_version);
+    return writeMetaPending(allocator, chunkers, roots, &.{}, &.{}, &.{}, source_section_version, false);
 }
 
 /// `writeMeta` plus the generation's pending files (S3-T3), written as
-/// `pending` after `roots` only when there is at least one.
+/// `pending` after `roots` only when there is at least one. `readable`
+/// (S6-T23, FR-36): the generation's files were chosen by a walk under
+/// `text-sniff-v1`, written as `readable` after `chunkers`.
 pub fn writeMetaPending(
     allocator: std.mem.Allocator,
     chunkers: []const ChunkerEntry,
@@ -853,11 +860,12 @@ pub fn writeMetaPending(
     unchunked: []const PendingEntry,
     skipped: []const PendingEntry,
     source_section_version: u32,
+    readable: bool,
 ) error{OutOfMemory}![]u8 {
     var out: std.Io.Writer.Allocating = .init(allocator);
     errdefer out.deinit();
     var json = std.json.Stringify{ .writer = &out.writer };
-    writeMetaJson(&json, chunkers, roots, pending, unchunked, skipped, source_section_version) catch return error.OutOfMemory;
+    writeMetaJson(&json, chunkers, roots, pending, unchunked, skipped, source_section_version, readable) catch return error.OutOfMemory;
     return out.toOwnedSlice() catch error.OutOfMemory;
 }
 
@@ -890,7 +898,12 @@ fn writeFileList(json: *std.json.Stringify, name: []const u8, entries: []const P
     try json.endArray();
 }
 
-fn writeMetaJson(json: *std.json.Stringify, chunkers: []const ChunkerEntry, roots: []const RootEntry, pending: []const PendingEntry, unchunked: []const PendingEntry, skipped: []const PendingEntry, source_section_version: u32) !void {
+/// The walk's readable-set rule (S6-T23, FR-36), as the meta records it.
+/// `indexer.zig` holds the rule; its id and parameters are repeated here so
+/// the format module imports no writer.
+pub const readable_meta = "{\"id\":\"text-sniff-v1\",\"head_bytes\":8192,\"control_share_max\":0.01}";
+
+fn writeMetaJson(json: *std.json.Stringify, chunkers: []const ChunkerEntry, roots: []const RootEntry, pending: []const PendingEntry, unchunked: []const PendingEntry, skipped: []const PendingEntry, source_section_version: u32, readable: bool) !void {
     try json.beginObject();
     try json.objectField("manifest_meta");
     try json.write(@as(u32, 2));
@@ -914,6 +927,10 @@ fn writeMetaJson(json: *std.json.Stringify, chunkers: []const ChunkerEntry, root
         try json.endObject();
     }
     try json.endArray();
+    if (readable) {
+        try json.objectField("readable");
+        try json.print("{s}", .{readable_meta});
+    }
     try json.objectField("roots");
     try json.beginArray();
     for (roots) |root| {
@@ -952,6 +969,7 @@ pub fn parseMeta(allocator: std.mem.Allocator, meta: []const u8) error{ OutOfMem
         pending: ?std.json.Value = null,
         unchunked: ?std.json.Value = null,
         skipped: ?std.json.Value = null,
+        readable: ?std.json.Value = null,
         source_section_version: std.json.Value = .{ .integer = 0 },
     };
     const envelope = std.json.parseFromSliceLeaky(Envelope, allocator, meta, .{ .ignore_unknown_fields = true }) catch |err| switch (err) {
@@ -1020,6 +1038,15 @@ pub fn parseMeta(allocator: std.mem.Allocator, meta: []const u8) error{ OutOfMem
         .pending = pending,
         .unchunked = unchunked,
         .skipped = skipped,
+        // A shape this reader does not know is read as no rule: the key is
+        // descriptive, never needed to open or update the index.
+        .readable = if (envelope.readable) |value| switch (value) {
+            .object => |object_value| if (object_value.get("id")) |id| switch (id) {
+                .string => |text| text,
+                else => null,
+            } else null,
+            else => null,
+        } else null,
     };
 }
 
@@ -1299,6 +1326,7 @@ test "S3-T3: meta keeps root labels and origin, pending and unchunked files" {
         &.{.{ .root_id = "r-legacy", .path = "empty.txt", .size = 0 }},
         &.{.{ .root_id = "r-6f1a", .path = "huge.md", .size = 99, .reason = "too_large" }},
         0,
+        false,
     );
     try std.testing.expect(std.mem.indexOf(u8, meta, "\"required_labels\":[\"cloud-ok\"],\"retain_source\":true,\"origin\":\"host\"") != null);
     const parsed = try parseMeta(arena, meta);
@@ -1317,6 +1345,25 @@ test "S3-T3: meta keeps root labels and origin, pending and unchunked files" {
     try std.testing.expectEqual(@as(usize, 0), old.pending.len);
     try std.testing.expectError(error.InvalidMeta, parseMeta(arena, "{\"manifest_meta\":2,\"chunkers\":[],\"roots\":[{\"root_id\":\"a\",\"label\":\"A\",\"kind\":\"host\"},{\"root_id\":\"a\",\"label\":\"A\",\"kind\":\"host\"}]}"));
     try std.testing.expectError(error.InvalidMeta, parseMeta(arena, "{\"manifest_meta\":2,\"chunkers\":[],\"roots\":[],\"pending\":[{\"root_id\":\"a\",\"path\":\"\"}]}"));
+}
+
+test "S6-T23: a walk's meta records the readable rule after the chunkers; a reader ignores what it does not know" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const chunkers = [_]ChunkerEntry{.{ .id = "line-window-v1", .max_chars = 1600, .overlap_lines = 3 }};
+    const roots = [_]RootEntry{.{ .root_id = "r-legacy", .label = "folder", .kind = "local", .retain_source = true }};
+    const walked = try writeMetaPending(arena, &chunkers, &roots, &.{}, &.{}, &.{}, 2, true);
+    try std.testing.expect(std.mem.indexOf(u8, walked, "\"overlap_lines\":3}}],\"readable\":{\"id\":\"text-sniff-v1\",\"head_bytes\":8192,\"control_share_max\":0.01},\"roots\":[") != null);
+    try std.testing.expectEqualStrings("text-sniff-v1", (try parseMeta(arena, walked)).readable.?);
+    // A host batch's meta has no key, and reads as no rule.
+    const host = try writeMetaPending(arena, &chunkers, &roots, &.{}, &.{}, &.{}, 2, false);
+    try std.testing.expect(std.mem.indexOf(u8, host, "readable") == null);
+    try std.testing.expectEqual(@as(?[]const u8, null), (try parseMeta(arena, host)).readable);
+    // A key this reader does not know, and a `readable` of a shape it does
+    // not know, are ignored: what an engine before 2.9.0 does with the key.
+    const later = try parseMeta(arena, "{\"manifest_meta\":2,\"chunkers\":[],\"readable\":[\"text-sniff-v9\"],\"a_later_key\":{\"x\":1},\"roots\":[],\"source_section_version\":0}");
+    try std.testing.expectEqual(@as(?[]const u8, null), later.readable);
 }
 
 test "manifest v2 round trip binds the source section and the meta" {

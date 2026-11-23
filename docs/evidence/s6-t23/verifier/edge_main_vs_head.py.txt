@@ -1,0 +1,35 @@
+"""S6-T23 verifier: main's and the head's searchd on a copy of the edge folder
+without the three names main cannot walk (CR, LF), file by file.
+
+usage: python3 -I edge_main_vs_head.py <scratch> <head searchd> <main searchd>
+"""
+import json
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+S, head_sd, main_sd = Path(sys.argv[1]), sys.argv[2], sys.argv[3]
+src, dst = S / "edge", S / "edge-nocr"
+if dst.exists():
+    raise SystemExit("edge-nocr exists")
+shutil.copytree(src, dst, symlinks=True, ignore=lambda d, names: [n for n in names if "\r" in n or "\n" in n or n == "pipe"])
+listed = {}
+reports = {}
+for label, sd in (("head", head_sd), ("main", main_sd)):
+    out = S / f"edge-nocr-idx-{label}"
+    r = subprocess.run([sd, "index", str(dst), "--out", str(out), "--update"], capture_output=True)
+    assert r.returncode == 0, (label, r.stderr)
+    reports[label] = json.loads(r.stdout)
+    lf = subprocess.run([sd, "list-files", str(out), "--json", "--page-size", "1000"], capture_output=True)
+    listed[label] = sorted(f["path"] for f in json.loads(lf.stdout)["files"])
+for label in ("head", "main"):
+    rep = reports[label]
+    print(label, {k: rep.get(k) for k in ("added", "too_large", "unreadable", "not_read")}, "listed", len(listed[label]))
+print("read by main, not by the head:")
+for p in sorted(set(listed["main"]) - set(listed["head"])):
+    print("  ", repr(p))
+print("read by the head, not by main:", len(set(listed["head"]) - set(listed["main"])))
+print("main's unreadable_paths:", reports["main"]["unreadable_paths"])
+print("main's too_large_paths:", reports["main"]["too_large_paths"])

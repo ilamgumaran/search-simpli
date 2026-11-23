@@ -1,0 +1,172 @@
+# S6-T23 verifier: the edge folder (edge_probe.py.txt), head 2ab4e60 and main 8ffc41c, ReleaseSmall searchd built from git archives with their own caches; ss_index_folder through each commit's committed macOS dylib; the Python reference of each commit.
+
+# invalid UTF-8 name: refused by the file system: [Errno 92] Illegal byte sequence: b'<scratch>/edge/names/bad\xff.txt'
+# regular files the walk keeps (my own walk, lstat, no dot, no ignored): 84
+
+## head searchd
+index --update rc=0 stderr=''
+index (full) (0, 'indexed <scratch>/edge: analyzer=analyzer-v2 generation=1 files_indexed=39 too_large=3 unreadable=10 budget_exhausted=0 documents=60 terms=173 postings=706 not_read=32', '')
+search stderr (0, 'searchd: search: 45 files not searched (too_large=3 unreadable=10 budget_exhausted=0 not_read=32)')
+report: {"generation": 1, "analyzer_id": "analyzer-v2", "added": 39, "changed": 0, "removed": 0, "unchanged": 0, "budget_exhausted": 0, "too_large": 3, "unreadable": 10, "too_large_paths": ["big/over_10mib.txt", "big/over_10mib_noext", "big/over_10mib_nul.txt"], "unreadable_paths": ["bin/pdf_ascii_header_noext", "bom/utf16be_bom.csv", "bom/utf16le_bom.txt", "bom/utf32le_bom", "late/latin1_early", "late/latin1_late", "late/latin1_late.txt", "perm/locked.txt", "perm/locked_noext", "utf8/cut_at_eof_8192"], "not_read": {"archive": 2, "audio": 1, "bad_name": 3, "binary": 16, "database": 1, "document": 5, "image": 2, "program": 2}, "documents": 60}
+
+## main searchd
+index --update rc=1 stderr='error: InvalidPath'
+index (full) (1, '', 'error: InvalidPath')
+search stderr (1, 'error: InvalidPath')
+main list-files: "rc=1 b'error: FileNotFound\\n'"
+
+## Python reference (head): 52 read, not_read={'archive': 2, 'audio': 1, 'bad_name': 3, 'binary': 17, 'database': 1, 'document': 5, 'image': 2, 'program': 2}
+
+## Python reference (main): 25 read, not_read=None
+
+## ss_index_folder head full: {"generation": 1, "analyzer_id": "analyzer-v2", "added": 39, "changed": 0, "removed": 0, "unchanged": 0, "budget_exhausted": 0, "too_large": 3, "unreadable": 10, "too_large_paths": ["big/over_10mib.txt", "big/over_10mib_noext", "big/over_10mib_nul.txt"], "unreadable_paths": ["bin/pdf_ascii_header_noext", "bom/utf16be_bom.csv", "bom/utf16le_bom.txt", "bom/utf32le_bom", "late/latin1_early", "late/latin1_late", "late/latin1_late.txt", "perm/locked.txt", "perm/locked_noext", "utf8/cut_at_eof_8192"], "not_read": {"archive": 2, "audio": 1, "bad_name": 3, "binary": 16, "database": 1, "document": 5, "image": 2, "program": 2}, "documents": 60}
+
+## ss_index_folder head update: {"generation": 2, "analyzer_id": "analyzer-v2", "added": 0, "changed": 0, "removed": 0, "unchanged": 39, "budget_exhausted": 0, "too_large": 3, "unreadable": 10, "too_large_paths": ["big/over_10mib.txt", "big/over_10mib_noext", "big/over_10mib_nul.txt"], "unreadable_paths": ["bin/pdf_ascii_header_noext", "bom/utf16be_bom.csv", "bom/utf16le_bom.txt", "bom/utf32le_bom", "late/latin1_early", "late/latin1_late", "late/latin1_late.txt", "perm/locked.txt", "perm/locked_noext", "utf8/cut_at_eof_8192"], "not_read": {"archive": 2, "audio": 1, "bad_name": 3, "binary": 16, "database": 1, "document": 5, "image": 2, "program": 2}, "documents": 60}
+
+## ss_index_folder main full: NULL ss_index_folder: InvalidPath
+
+## ss_index_folder main update: NULL ss_index_folder: InvalidPath
+
+## per file: head index | main index | Python head | Python main
+'big/exact_10mib.txt'                         read | - | read | read
+'big/over_10mib.txt'                          - | - | read | read
+'big/over_10mib_noext'                        - | - | read | -
+'big/over_10mib_nul.txt'                      - | - | - | read
+'bin/bundle.zip'                              - | - | - | -
+'bin/pdf_ascii_header_noext'                  - | - | read | -
+'bin/pdf_noext'                               - | - | - | -
+'bin/photo.PNG'                               - | - | - | -
+'bin/png_noext'                               - | - | - | -
+'bin/scan.pdf'                                - | - | - | -
+'bin/zip_noext'                               - | - | - | -
+'bom/utf16be_bom.csv'                         - | - | read | -
+'bom/utf16le_bom.txt'                         - | - | read | read
+'bom/utf16le_nobom.txt'                       - | - | - | read
+'bom/utf32le_bom'                             - | - | read | -
+'bom/utf8_bom.txt'                            read | - | read | read
+'bom/utf8_bom_noext'                          read | - | read | -
+'ctrl/ctrl_10_of_1000'                        read | - | read | -
+'ctrl/ctrl_11_of_1000'                        - | - | - | -
+'ctrl/ctrl_81_of_9000'                        read | - | read | -
+'ctrl/ctrl_82_of_9000'                        - | - | - | -
+'ctrl/ctrl_after_head'                        read | - | read | -
+'known/bel.md'                                - | - | - | read
+'known/stray_nul.log'                         - | - | - | -
+'known/stray_nul.txt'                         - | - | - | read
+'late/latin1_early'                           - | - | read | -
+'late/latin1_late'                            - | - | read | -
+'late/latin1_late.txt'                        - | - | read | read
+'links/target.txt'                            read | - | read | read
+'names/-dash.txt'                             read | - | read | read
+'names/Icon\r'                                - | - | - | -
+'names/UPPER.TXT'                             read | - | read | read
+'names/a\rb.md'                               - | - | - | read
+'names/archive.tar.gz'                        - | - | - | -
+'names/line\nbreak.txt'                       - | - | - | read
+'names/notes.txt.bak'                         read | - | read | -
+'names/tab\tname.txt'                         read | - | read | read
+'names/trailing space.txt '                   read | - | read | -
+'names/x.averyveryverylongextension'          read | - | read | -
+'nul/nul_at_8192'                             - | - | - | -
+'nul/nul_at_8192.txt'                         - | - | - | read
+'nul/nul_at_8193'                             read | - | read | -
+'nul/nul_at_8193.txt'                         read | - | read | read
+'perm/locked.txt'                             - | - | read | read
+'perm/locked_noext'                           - | - | read | -
+'size/n8191'                                  read | - | read | -
+'size/n8192'                                  read | - | read | -
+'size/n8193'                                  read | - | read | -
+'skiptext/data.db'                            - | - | - | -
+'skiptext/draft.rtf'                          - | - | - | -
+'skiptext/lib.a'                              - | - | - | -
+'skiptext/logo.svg'                           - | - | - | -
+'skiptext/notes.bin'                          - | - | - | -
+'skiptext/notes.doc'                          - | - | - | -
+'skiptext/server.key'                         - | - | - | -
+'skiptext/slides.key'                         - | - | - | -
+'skiptext/track.mid'                          - | - | - | -
+'stray/bel_100.log'                           read | - | read | -
+'stray/bel_101.log'                           read | - | read | -
+'stray/bel_short.log'                         - | - | - | -
+'stray/formfeed.txt'                          read | - | read | read
+'stray/fs_57.txt'                             - | - | - | read
+'term/ansi_colour.log'                        read | - | read | -
+'term/manpage.txt'                            - | - | - | read
+'term/progress_cr.log'                        read | - | read | -
+'term/spinner.log'                            - | - | - | -
+'term/typescript'                             read | - | read | -
+'tiny/empty'                                  read | - | read | -
+'tiny/empty.txt'                              read | - | read | read
+'tiny/one_a'                                  read | - | read | -
+'tiny/one_ctrl'                               - | - | - | -
+'tiny/one_ff'                                 read | - | read | -
+'utf8/cut_at_eof_8192'                        - | - | read | -
+'utf8/eacute_last_8193'                       read | - | read | -
+'utf8/euro_at_8189'                           read | - | read | -
+'utf8/euro_at_8190'                           read | - | read | -
+'utf8/euro_at_8191'                           read | - | read | -
+'utf8/owl_at_8188'                            read | - | read | -
+'utf8/owl_at_8189'                            read | - | read | -
+'utf8/owl_at_8190'                            read | - | read | -
+'utf8/owl_at_8191'                            read | - | read | -
+'ws/crlf.txt'                                 read | - | read | read
+'ws/lone_cr.txt'                              read | - | read | read
+'ws/tabs.tsv'                                 read | - | read | -
+Python head reads outside my walk: ['links/link.txt']
+
+## identity (head --update): walked 84 = indexed 39 + too_large 3 + unreadable 10 + budget_exhausted 0 + not_read 32 -> 84
+stdout holds a path of a not-read file? False
+index line / search stderr hold a path? False
+
+# main and the head on a copy without the three CR/LF names (edge_main_vs_head.py.txt): files main read that the head no longer reads
+head {'added': 41, 'too_large': 3, 'unreadable': 8, 'not_read': {'archive': 2, 'audio': 1, 'binary': 16, 'database': 1, 'document': 5, 'image': 2, 'program': 2}} listed 41
+main {'added': 18, 'too_large': 2, 'unreadable': 2, 'not_read': None} listed 18
+read by main, not by the head:
+   'bom/utf16le_nobom.txt'
+   'known/bel.md'
+   'known/stray_nul.txt'
+   'nul/nul_at_8192.txt'
+   'stray/fs_57.txt'
+   'term/manpage.txt'
+read by the head, not by main: 29
+main's unreadable_paths: ['bom/utf16le_bom.txt', 'late/latin1_late.txt']
+main's too_large_paths: ['big/over_10mib.txt', 'big/over_10mib_nul.txt']
+
+# the Python reference against the engine, candidate sets (py_vs_engine.py.txt), on that copy
+== head Python vs head engine
+engine candidates 52 python candidates 52
+python only: ['links/link.txt']
+engine only: ['big/over_10mib_nul.txt']
+engine not_read: {'archive': 2, 'audio': 1, 'binary': 16, 'database': 1, 'document': 5, 'image': 2, 'program': 2}
+python not_read: {'archive': 2, 'audio': 1, 'binary': 17, 'database': 1, 'document': 5, 'image': 2, 'program': 2}
+== main Python vs main engine
+engine candidates 22 python candidates 23
+python only: ['links/link.txt']
+engine only: []
+Traceback (most recent call last):
+  File "<scratch>/py_vs_engine.py", line 17, in <module>
+    print("engine not_read:", rep["not_read"])
+KeyError: 'not_read'
+
+# How common is the shape of finding 1 (control bytes that are not TAB, LF, VT, FF, CR or ESC)? Measured by the verifier
+# with the rule's byte set over the first 8,192 bytes (no file kept; nothing quoted):
+- `man ls` piped to a file (what `man ls > ls.txt` saves on this Mac): 27,493 bytes, 786 backspaces (0x08, the
+  overstrike for bold and underline); head share 4.65 %: binary. As `ls.txt` it was read by main; now not read.
+- a script(1) session whose prompt sets the terminal title (OSC ... BEL, 0x07): the probe's `term/typescript` with
+  commands that print a line or two: 0.87 %, text; the same prompt with output-less commands (`cd`, `pwd`): 1.29 %,
+  binary.
+- ANSI-coloured logs (ESC [ ... m): ESC is allowed, so `term/ansi_colour.log` is text; carriage-return progress
+  lines (`term/progress_cr.log`) are text; spinners drawn with backspaces (`term/spinner.log`) are binary.
+- a short note with one BEL (`stray/bel_short.log`, 36 B; `known/bel.md`) or one 0x1C (`stray/fs_57.txt`): binary,
+  because 1 control byte in fewer than 100 bytes is over 1 %; `stray/bel_100.log` (100 B) is text.
+# Before 2.9.0, does macOS's Icon<CR> fail a walk? (main 8ffc41c and head 2ab4e60, ReleaseSmall)
+folder: note.md + "Icon\r" (empty)
+main index: exit 0, files_indexed=1
+main search wombat: exit 0, note.md:1-1
+folder + "a\rb.md":
+main index: exit 1, error: InvalidPath
+head index: exit 0, files_indexed=1 ... not_read=2
+So Icon<CR> did not fail main's walk (no extension, never a candidate, as ADR 0005 section 10 says); only a name of
+the 19 extensions holding a CR did. incremental-indexing.md's "Before 2.9.0 such a name (macOS's Icon\r) failed the
+whole walk with InvalidPath" and PROJECT-STATE.md's "(macOS's Icon\r) ... instead of failing the walk" say otherwise.
+

@@ -1,0 +1,50 @@
+"""Verifier's own tally of the scorer's per-question rows (index surface; direct checked equal)."""
+import json, sys
+m, h = (json.load(open(p)) for p in sys.argv[1:3])
+print("corpus main: files", m["corpus"]["files"], "read", m["corpus"]["files_read_by_engine"] if not isinstance(m["corpus"]["files_read_by_engine"], list) else len(m["corpus"]["files_read_by_engine"]), "not_read", len(m["corpus"]["files_not_read"]))
+print("corpus head: files", h["corpus"]["files"], "read", h["corpus"]["files_read_by_engine"] if not isinstance(h["corpus"]["files_read_by_engine"], list) else len(h["corpus"]["files_read_by_engine"]), "not_read", len(h["corpus"]["files_not_read"]))
+print("not_read_questions main/head:", len(m["not_read_questions"]), len(h["not_read_questions"]))
+print("direct_equals_index main/head:", m["direct_equals_index"] if not isinstance(m["direct_equals_index"], dict) else {k: v for k, v in m["direct_equals_index"].items()}, "|", h["direct_equals_index"] if not isinstance(h["direct_equals_index"], dict) else h["direct_equals_index"])
+for field in ("both", "content"):
+    for subset in ("all", "readable_now"):
+        cells = []
+        for metric in ("file1", "complete", "complete_within"):
+            parts = []
+            for form in ("typed", "query"):
+                vals = []
+                for d in (m, h):
+                    qs = [q for q in d["configs"][f"index/{field}/{form}"]["questions"] if q.get("parts", 0) > 0]
+                    if subset == "readable_now":
+                        qs = [q for q in qs if q["readable_now"]]
+                    if metric == "file1":
+                        vals.append(sum(1 for q in qs if q["file_rank"] == 1))
+                    else:
+                        vals.append(sum(1 for q in qs if q[metric]))
+                parts.append(f"{vals[0]} -> {vals[1]}")
+            cells.append(f"{metric} {' / '.join(parts)}")
+        n = len([q for q in h["configs"][f"index/{field}/typed"]["questions"] if q.get("parts", 0) > 0 and (subset == "all" or q["readable_now"])])
+        print(f"{field:8} {subset:13} n={n}: " + "; ".join(cells))
+# direct == index rows
+for d, lab in ((m, "main"), (h, "head")):
+    same = all(d["configs"][f"direct/{f}/{fm}"]["questions"] == d["configs"][f"index/{f}/{fm}"]["questions"] for f in ("both", "content") for fm in ("typed", "query"))
+    print(lab, "direct rows == index rows:", same)
+# worsened questions
+worse = {}
+for field in ("both", "content"):
+    for form in ("typed", "query"):
+        key = f"index/{field}/{form}"
+        mq = {q["id"]: q for q in m["configs"][key]["questions"]}
+        for q in h["configs"][key]["questions"]:
+            a = mq[q["id"]]
+            if q.get("parts", 0) == 0: continue
+            why = []
+            fr = lambda r: 99 if r is None else r
+            if fr(q["file_rank"]) > fr(a["file_rank"]): why.append(f"file {a['file_rank']}->{q['file_rank']}")
+            if fr(q["passage_rank"]) > fr(a["passage_rank"]): why.append(f"passage {a['passage_rank']}->{q['passage_rank']}")
+            if a["complete"] and not q["complete"]: why.append("complete lost")
+            if a["complete_within"] and not q["complete_within"]: why.append(f"within lost ({a['evidence_bytes']}->{q['evidence_bytes']})")
+            if why:
+                worse.setdefault(q["id"], []).append(f"{field}/{form}: " + ", ".join(why))
+print(f"\nquestions worse in some configuration (rank, complete, within): {len(worse)}")
+for qid in sorted(worse):
+    print(" ", qid, "|", " ; ".join(worse[qid]))

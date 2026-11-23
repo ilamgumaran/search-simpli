@@ -25,7 +25,7 @@ class SearchSimpliBindings {
       : _lookup = lookup;
 
   /// The engine contract/build version (contracts/CONTRACTS_VERSION), e.g.
-  /// "2.0.0". The returned pointer is static storage owned by the library:
+  /// "2.9.0". The returned pointer is static storage owned by the library:
   /// never pass it to ss_free(). Cannot fail.
   ffi.Pointer<ffi.Char> ss_version() {
     return _ss_version();
@@ -68,6 +68,17 @@ class SearchSimpliBindings {
   /// ss_query, ss_find and the listings work, and only ss_read_span and
   /// ss_outline answer SS_ERR_CAPACITY "re-index required: source section
   /// unavailable (<reason>)".
+  ///
+  /// Since 2.1.0 (S4-T1) ss_open is lazy: it validates the manifest and the
+  /// document and lexical sections and decodes what ss_status needs. The
+  /// source section (opened, not read, by ss_open), the per-root statistics
+  /// and the phrase position tables load at their first use (the first
+  /// ss_read_span, ss_outline or ss_list_files that reads the source; the
+  /// first scored query; the first ss_find), once per handle: a second thread
+  /// calling during a load waits for it. A damaged source section therefore
+  /// fails that first read, not ss_open (ss_status says "source":
+  /// "unverified" until then); damaged positions fail the first ss_find with
+  /// SS_ERR_CORRUPT_SNAPSHOT.
   ffi.Pointer<ss_handle> ss_open(
     ffi.Pointer<ffi.Char> dir_path,
   ) {
@@ -109,9 +120,17 @@ class SearchSimpliBindings {
   /// "truncated"      a visible file was given but not indexed in full
   /// "roots"          [{"root_id","label","kind","files","documents","pending"}]
   /// "pending_paths"  [{"root_id","path"}]
-  /// "has_source"     visible files have retained, readable source bytes
+  /// "has_source"     visible files have retained source bytes (false once
+  /// the section is known to be lost or damaged)
   /// "has_positions"  the lexical section holds positions (phrase works)
   /// "chunkers"       the chunker ids visible documents use
+  /// and since contract 2.1.0 by:
+  /// "source"         "absent" | "unverified" (retained, not read yet) |
+  /// "verified" | "unavailable" (lost or damaged); reading
+  /// the status never loads the source section
+  /// and since contract 2.2.0, only on a filename-enabled generation, by:
+  /// "filename_policy_id"  "filename-field-v1", read from the manifest alone
+  /// (the filename sections are not read)
   /// All counts, the v1 ones included, are over the default scope: every
   /// root, no principal labels (the scope ss_query uses without options), so
   /// a labelled file is not counted; ss_roots() counts over a scope you name.
@@ -179,6 +198,18 @@ class SearchSimpliBindings {
   /// candidates, and BM25 counts over
   /// the visible scope; absent = every
   /// root, the 1.x behaviour exactly
+  /// "search_field"      "content" (default) | "filename" |
+  /// "both" (since 2.2.0): filename and
+  /// both need retrieval_mode "lexical"
+  /// given explicitly and no profile, and
+  /// a generation built with
+  /// filename_index (else NULL,
+  /// "FilenameIndexUnavailable"). The
+  /// first such query on a handle loads
+  /// the filename sections (once; a
+  /// damaged one fails it, ss_last_error
+  /// naming the check, while content
+  /// queries keep working)
   ///
   /// Returns a heap-allocated, null-terminated JSON object on success — the
   /// caller must free it with ss_free() — with fields `tool`, `query`, `index`,
@@ -481,6 +512,8 @@ class SearchSimpliBindings {
   /// "unchanged", "budget_exhausted", "too_large", "unreadable" (all
   /// integers), "too_large_paths", "unreadable_paths" (arrays of the relative
   /// paths counted under "too_large"/"unreadable" — never just a bare count),
+  /// "not_read" (since 2.9.0: an object counting the files the walk did not
+  /// read, by kind, without paths — see "Which files are read" below),
   /// "documents", "terms", "postings" (all integers). A non-"update" run
   /// always reports "changed"/"removed"/"unchanged" as 0 (a full rebuild never
   /// compares against a previous generation); an "update" run additionally
@@ -508,6 +541,24 @@ class SearchSimpliBindings {
   /// file that is merely unreadable this run (permissions, a transient I/O
   /// error, invalid UTF-8) keeps its previously indexed chunks instead — see
   /// docs/incremental-indexing.md.
+  ///
+  /// Which files are read (contract 2.9.0, text-sniff-v1): every regular file
+  /// under folder_path whose bytes are text, with any extension or none. A
+  /// path with a component starting with "." or naming .git, .search,
+  /// .zig-cache, __pycache__, node_modules or zig-out is not walked and not
+  /// counted. Every other file not read is counted under "not_read" by kind:
+  /// "bad_name" (a path no record can hold: a carriage return, line feed or
+  /// NUL, not UTF-8, or over 4096 bytes), "image", "audio", "video",
+  /// "archive", "document", "font", "program", "database" (an extension on
+  /// the skip list, never opened), or "binary" (a name outside the 19
+  /// extensions read before 2.9.0 whose first 8192 bytes hold a NUL or more
+  /// than 1 % control bytes). A file of one of those 19 is not sniffed: it is
+  /// read as before 2.9.0, when its bytes are valid UTF-8, a NUL or control
+  /// bytes notwithstanding. Only non-zero kinds appear, keys in
+  /// byte order; {} when none. A file of a UTF-16/32 byte order mark or not
+  /// UTF-8 is "unreadable", as before. A file of the previous generation that
+  /// is now not read is "removed". Not-read files are not in the manifest's
+  /// skipped list and do not make a scope "truncated".
   ///
   /// Returns NULL on failure — a missing/unreadable folder_path, an
   /// unrecognized "analyzer", or (with "update": true) `dir_path` already
@@ -683,7 +734,11 @@ class SearchSimpliBindings {
   /// Publish one new generation in `dir_path` (created if missing) from
   /// host-fed changes, exactly as `searchd apply` does
   /// (docs/folder-knowledge-implementation.md section 6). Close and reopen
-  /// any handle on `dir_path` afterwards to see it.
+  /// any handle on `dir_path` afterwards to see it. Until then a handle keeps
+  /// answering the generation it opened, in every build mode, also after this
+  /// call prunes that generation's files ("keep_generations"): the handle holds
+  /// its section files from ss_open and its lazy loads read those bytes
+  /// (S4-T6; zig/tests/abi_test.c).
   ///
   /// changes_json  {"expect_generation"?: N, "roots"?: [{"root_id","label"?,
   /// "kind"?,"required_labels"?,"retain_source"?,"path"?}],
@@ -696,7 +751,10 @@ class SearchSimpliBindings {
   /// opts_json     NULL or {"allow_file_reads"?: bool (default false; a
   /// "file" change is refused without it), "max_file_bytes"?,
   /// "max_total_bytes"?, "analyzer"?, "max_chars"?,
-  /// "overlap_lines"?, "keep_generations"?}
+  /// "overlap_lines"?, "keep_generations"?, "filename_index"?:
+  /// bool (since 2.2.0; true on a new directory builds the
+  /// filename channel; omitted, an existing directory keeps
+  /// its setting; a value that differs from it is refused)}
   ///
   /// Returns the report ({"generation","analyzer_id","added","changed",
   /// "removed","moved","pending","unchanged","too_large","too_large_paths",

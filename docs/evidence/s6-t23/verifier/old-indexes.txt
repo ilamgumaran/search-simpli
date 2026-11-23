@@ -1,0 +1,48 @@
+# S6-T23 verifier: an existing index across versions, on the judged folder (270 files), main 8ffc41c and head 2ab4e60 ReleaseSmall searchd
+# 1. main builds the judged folder (pre-2.9.0 index)
+indexed <scratch>/score-head/corpus: analyzer=analyzer-v2 generation=1 files_indexed=246 too_large=0 unreadable=0 budget_exhausted=0 documents=406 terms=1651 postings=9877
+MANIFEST 576 bytes; readable key: False
+# 2. the head updates it (no rebuild)
+{'generation': 2, 'added': 24, 'changed': 0, 'removed': 0, 'unchanged': 246, 'unreadable': 0, 'too_large': 0, 'not_read': {}, 'documents': 454}
+MANIFEST 653 bytes; readable key: True
+# 3. main reads the head-written index
+main list-files: 270 files
+query: tilecutter shelf (analyzer=analyzer-v2)
+1. toolshare/data/inventory.yaml:86-132 score=0.016393
+2. toolshare/data/inventory.yaml:1-88 score=0.016129
+3. toolshare/docs/handbook.md:149-154 score=0.015873
+{"query":"server log reminder run","analyzer_id":"analyzer-v2","evidence":[{"chunk_id":"59e492a0521a57f3fd87","path":"toolshare/config/server.yaml","start_line":1,"end_line":8,"content":"# Tool Share web server settings\nserver:\n  host: 0.0.0.0\n  port: 8086\n  workers: 2\nmail:\n  from: loans@tool
+# 4. main updates the head-written index
+{'generation': 3, 'added': 0, 'changed': 0, 'removed': 24, 'unchanged': 246, 'unreadable': 0, 'too_large': 0, 'not_read': None, 'documents': 406}
+MANIFEST 576 bytes; readable key: False
+# 5. the head updates again
+{'generation': 4, 'added': 24, 'changed': 0, 'removed': 0, 'unchanged': 246, 'unreadable': 0, 'too_large': 0, 'not_read': {}, 'documents': 454}
+MANIFEST 653 bytes; readable key: True
+
+# A known-extension text file that gains NUL bytes (finding 2 of the Report), against one that gains a Latin-1 byte
+# head index, then the log gains NUL padding (as after an unclean shutdown), then --update
+{'generation': 1, 'added': 2, 'changed': 0, 'removed': 0, 'unchanged': 0, 'unreadable': 0, 'unreadable_paths': [], 'not_read': {}, 'documents': 2}
+{'generation': 2, 'added': 0, 'changed': 0, 'removed': 1, 'unchanged': 1, 'unreadable': 0, 'unreadable_paths': [], 'not_read': {'binary': 1}, 'documents': 1}
+head query marmot:
+query: marmot (analyzer=analyzer-v2)
+# main on the same folder
+{'generation': 1, 'added': 2, 'changed': 0, 'removed': 0, 'unchanged': 0, 'unreadable': 0, 'unreadable_paths': [], 'not_read': None, 'documents': 3}
+main query marmot:
+query: marmot (analyzer=analyzer-v2)
+1. server.txt:1-28 score=0.016393
+# contrast: a Latin-1 byte instead of NULs
+{'generation': 1, 'added': 2, 'changed': 0, 'removed': 0, 'unchanged': 0, 'unreadable': 0, 'unreadable_paths': [], 'not_read': {}, 'documents': 2}
+{'generation': 2, 'added': 0, 'changed': 0, 'removed': 0, 'unchanged': 1, 'unreadable': 1, 'unreadable_paths': ['server.txt'], 'not_read': {}, 'documents': 2}
+head query marmot:
+query: marmot (analyzer=analyzer-v2)
+1. server.txt:1-28 score=0.016393
+# search stderr on the NUL folder
+searchd: search: 1 files not searched (too_large=0 unreadable=0 budget_exhausted=0 not_read=1)
+
+# The key after a host batch (FR-36: a host batch writes none), on the NUL folder's head index (generation 2)
+searchd apply (one add, content_base64): generation=3 added=1 unchanged=1
+readable key after a host batch: False
+the next walk (--update): generation 4, added 0, removed 1 (the host's file, outside the folder: complete_root, as on main), unchanged 1, not_read {"binary": 1}
+readable key after the next walk: True
+So the key names the rule of the last publisher, not of the index's history: after a host batch a walk-built index
+reads as "no rule" until the next walk, as CAP-24 FR-36 and manifest-format-v2.md say.
