@@ -50,7 +50,8 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 
 - [Layers: the core and the interfaces](layers.md)
 - [Local LLM/agent tool protocol](tool-protocol.md)
-- [Tool schemas for the nine folder-knowledge tools](tool-schemas.md)
+- [Tool schemas for the ten folder-knowledge tools](tool-schemas.md)
+- [Pattern search (`scan`): exact strings and a small pattern language](scan.md)
 - [MCP server (`searchd mcp`)](mcp-server.md)
 - [Searching a folder directly (`searchd search`), and when to build an index](direct-search.md)
 - [Zig JSON-RPC service](zig-rpc-service.md)

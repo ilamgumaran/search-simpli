@@ -1,0 +1,77 @@
+# S6-T24 builder, Part 2: the timing runs the rule of 2026-11-17 requires (docs/process/ROLES.md; decision 0003,
+# section 7, read as S6-T20, S6-T21 and S6-T23 read it). Written, committed and pushed before any timed run (23 Nov
+# 2026). Nothing below is chosen after seeing a timed number; no timed run has been taken. The builder stops here:
+# the runs wait for the maintainer's word that the machine is to be kept awake. Harness: S6-T14's
+# (scripts/prototypes/s6t14/run_timing.sh, gate.sh, summarize.py) over scripts/prototypes/s6t9/bench.py bench,
+# unchanged; this file is its ORDERS.
+#
+# What changes on the measured paths. `scan` is new code (core/pattern.zig, core/scan.zig, ops.scan,
+# ScopedService.scan, ss_scan and the other interfaces); no open, query or find source line changes. Against main
+# (43a308d), zig/src also changes: core.zig (imports and `api` entries, no run-time code), unicode_tables.zig (one
+# more table, `digit_ranges`, read by `scan` only), apply.zig (ruling 8: read-and-caps moved out of applyParsed,
+# the writer's path only, no behaviour change, commit 540bb09), ops.zig, service.zig, abi.zig, rpc.zig, mcp.zig,
+# cli.zig and main.zig (a new method each). An index built by the head is byte-identical to main's (every file of
+# the three 10k corpora's and the judged folder's index folders, cmp; docs/tasks/S6-T24.md, Report (Part 2)). The
+# natives' compiled code moves with the rebuild: the dylib's __text grows by 44,500 B. So: five gated runs in the
+# Latin-square orders below, main, main2 and two placement controls matching the head's compiled-code delta, one
+# beside the open path and one on the writer's path, every open, query and find cell of the three 10k corpora,
+# judged by the rule.
+#
+# Expectation, stated before measuring: no open, query or find source changes, so every cell passes the rule; a
+# move from code placement alone is what the two controls, of the same __text delta, are there to bracket.
+#
+# Builds (macOS arm64 ReleaseSmall libsearch_simpli.dylib; __text from size -m):
+#   main  = 43a308d, `zig build lib -Doptimize=ReleaseSmall` in a git archive of zig/ and contracts/ with its own
+#           local and global caches: 1,007,784 B, sha256 1097a00eb5afa00f... (= main's committed native), __text
+#           595,472 B
+#   main2 = 43a308d built again in another archive copy with its own caches: byte-identical to main
+#   head  = this branch's native/macos-arm64/libsearch_simpli.dylib as committed with this file
+#           (tool/build_native.sh): 1,064,152 B, sha256 005db2d25b615507..., __text 639,972 B (+44,500 B)
+#   Controls: main + one never-run function (scripts/prototypes/s6t20/make_control.py, unchanged), called under a
+#   branch never true at run time, each in its own archive of 43a308d with its own caches:
+#   cl = place l, 504 blocks + 0 steps: snapshot_open.loadEngine, after the MANIFEST read (every open)
+#        1,056,904 B, sha256 5d7c2a22bf3f68ae..., __text 639,956 B (+44,484 B)
+#   ci = place i, 516 blocks + 0 steps: indexer.walkAndApply (the writer's path; never on an open, a query or a find)
+#        1,057,464 B, sha256 4eb39aa12cdc3048..., __text 640,116 B (+44,644 B)
+#   The head's delta is +44,500 B; the controls bracket it (+44,484 and +44,644 B). Sized before any timed run by
+#   building l 459+0 (+40,512 B) and i 459+0 (+39,684 B), then scaling the block count to the head's delta.
+#
+# Control set (fixed now): main2, cl, ci.
+# Cells, per corpus (timing-10k, prose-10k, tamil-10k, 10,000 files each, from scripts/gen_timing_corpus.py,
+# gen_prose_corpus.py and gen_tamil_timing_corpus.py with 10000 files and the default arguments; queries from
+# bench.py queries), from bench.py bench:
+#   open    open_p50 (ss_open + ss_close, 30 timed after 3 warm-ups)
+#   query   every warm query p50 (each query of the set under content, filename and both; 300 timed calls)
+#   find    every find request p50 (100 timed calls)
+#   the first query and the first find after an open are reported beside them, not judged.
+# `scan` has no main to compare with and is not a cell; its own cost is ADR 0006 section 9's measurement.
+# T = max(0.010 ms, 1 % of main's five-run median for the cell). A cell fails if median_r(head - main) >= T and
+# exceeds by >= T the largest median_r(control - main) over the control set (rule of 2026-11-17). Band excursions
+# (head above every other build in 3 or more of 5 runs) are tabulated, never failing.
+#
+# Indexes: main's and the head's searchd (ReleaseSmall, --filename-index) each indexed the three corpora; the two
+# sets are cmp-identical, file by file. Each build opens its own copy: head a copy of the head's, the others copies
+# of main's. Answers (bench.py answers, every query under the three fields and every find; 55, 55 and 56):
+# identical between main and every other build (main2, head, cl, ci) on the three corpora, every field but the
+# library and index paths.
+#
+# Each run, from the worktree, only when the orchestrator says the machine is awake:
+#   bash scripts/prototypes/s6t14/run_timing.sh R scripts/prototypes/s6t24/part2/orders.txt \
+#     <scratch>/t/libs <scratch>/t/idx <scratch>/t/queries <scratch>/t/out
+# then python3 -I scripts/prototypes/s6t14/summarize.py main head main2,cl,ci <scratch>/t/out/query-run*.jsonl
+#
+# The load gate (gate.sh: lock absent, 5-minute load below 4.0, no toolchain at 20 % CPU or more in top's top eight)
+# runs before every process; a refused gate stops that run, which is not retried in a loop: a run not taken is
+# reported as owed. pmset -g log is read for Sleep, Wake and DarkWake inside each run's window afterwards; a run with
+# a Sleep or Wake inside it is discarded whole and retaken as the same number with "b".
+# Latin square: builds rotated left by (r - 1) mod 5 in run r, corpora rotated left by (r - 1) mod 3.
+run1:main main2 head cl ci
+corpora1:timing-10k prose-10k tamil-10k
+run2:main2 head cl ci main
+corpora2:prose-10k tamil-10k timing-10k
+run3:head cl ci main main2
+corpora3:tamil-10k timing-10k prose-10k
+run4:cl ci main main2 head
+corpora4:timing-10k prose-10k tamil-10k
+run5:ci main main2 head cl
+corpora5:prose-10k tamil-10k timing-10k

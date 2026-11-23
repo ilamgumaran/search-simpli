@@ -13,12 +13,16 @@
 - `grep -rn` (LC_ALL=C) gives the same lines for every question that names grep
   arguments; a question that does not names its reason.
 
-`ScanAcceptanceTests` (added with the engine) runs `searchd scan` over the folder.
+`ScanAcceptanceTests` (added with the engine) runs `searchd scan` over the folder and
+over an index of it.
 All content is invented."""
 
 import json
+import os
 import shutil
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -28,6 +32,11 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import exact_string_questions as questions_mod  # noqa: E402
 import gen_text_search_corpus as corpus_mod  # noqa: E402
+
+sys.path.insert(0, str(ROOT / "tests"))
+from test_folder_surfaces import build_searchd  # noqa: E402
+
+NO_ZIG = os.environ.get("SEARCH_SIMPLI_NO_ZIG") == "1"
 
 FIXTURE = ROOT / "fixtures" / "text-search" / "exact-strings.json"
 DIGESTS = ROOT / "fixtures" / "text-search" / "exact-string-digests.json"
@@ -125,6 +134,65 @@ class ExactStringSetTests(unittest.TestCase):
                 self.assertTrue(q["grep"]["reason"], q["id"])
         self.assertEqual(len(reasons), 6, reasons)
         self.assertEqual(questions_mod.grep_disagreements(self.data, grep), [])
+
+
+@unittest.skipIf(NO_ZIG, "SEARCH_SIMPLI_NO_ZIG=1: this environment deliberately has no Zig (CI)")
+class ScanAcceptanceTests(unittest.TestCase):
+    """`searchd scan` answers every frozen question: its lines in order, `case_applied`, and for a
+    literal question its offsets; over an index of the folder and over the folder itself, paged to the
+    end with `max_hits_per_file` 1000 and no file capped."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.scratch_dir = tempfile.TemporaryDirectory()
+        scratch = Path(cls.scratch_dir.name)
+        cls.binary = build_searchd(scratch)
+        cls.folder = scratch / "folder"
+        for path, data in corpus_mod.build_corpus().items():
+            target = cls.folder / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+        cls.index = scratch / "index"
+        subprocess.run([str(cls.binary), "index", str(cls.folder), "--out", str(cls.index)], check=True,
+                       capture_output=True, stdin=subprocess.DEVNULL, timeout=300)
+        cls.data = json.loads(FIXTURE.read_text(encoding="utf-8"))
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.scratch_dir.cleanup()
+
+    def answer(self, where, request):
+        hits, cursor, first, capped = [], None, None, 0
+        while True:
+            args = [str(self.binary), "scan", *where, request["pattern"], "--json", "--case", request["case"],
+                    "--page-size", "100", "--max-per-file", "1000", "--time-ms", "30000"]
+            args += (["--regex"] if request["mode"] == "regex" else []) + (["--word"] if request["whole_word"] else [])
+            args += ["--cursor", cursor] if cursor else []
+            done = subprocess.run(args, capture_output=True, stdin=subprocess.DEVNULL, timeout=120)
+            self.assertEqual(done.returncode, 0, done.stderr)
+            page = json.loads(done.stdout)
+            first = first or page
+            hits += page["hits"]
+            capped += page["files_capped"]
+            cursor = page["next_cursor"]
+            if cursor is None:
+                return first, hits, capped
+
+    def test_every_question_over_the_index_and_the_folder(self):
+        answered = 0
+        for where in ((str(self.index),), ("--folder", str(self.folder))):
+            for q in self.data["questions"]:
+                first, hits, capped = self.answer(where, q["request"])
+                label = f"{q['id']} {where[0]}"
+                self.assertEqual([f"{h['path']}:{h['line']}" for h in hits], q["expect"]["lines"], label)
+                self.assertEqual(first["case_applied"], q["expect"]["case_applied"], label)
+                self.assertEqual(capped, 0, label)
+                self.assertEqual(first["stopped"], "none", label)
+                for key, spans in q["expect"].get("offsets", {}).items():
+                    hit = next(h for h in hits if f"{h['path']}:{h['line']}" == key)
+                    self.assertEqual(hit["match_offsets"], spans, f"{label} {key}")
+                answered += 1
+        self.assertEqual(answered, 128)
 
 
 if __name__ == "__main__":

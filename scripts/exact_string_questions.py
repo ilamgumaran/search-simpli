@@ -22,7 +22,7 @@ Python reference's `scan`:**
 - a regex question carries, beside the pattern sent to `scan`, a pattern for
   Python's `re` written by hand for this generator (`expect_re`), in which
   `{W}` is a class of the analyser's word code points built here from
-  `unicodedata` (letters, digits of every number category, marks, ZWNJ, ZWJ;
+  `unicodedata` (letters, digits of every number category, the marks Mn and Mc, ZWNJ, ZWJ;
   no `_`) and `{NW}` its complement;
 - `whole_word`: the code points before and after the match are not word code
   points (or are the line's ends).
@@ -214,7 +214,7 @@ Q("none-08", "no-answer", "An ERROR line about a 500", r"ERROR .*\b500\b", mode=
 # Deriving the answers.
 # ---------------------------------------------------------------------------
 
-WORD_CATEGORIES = {"Lu", "Ll", "Lt", "Lm", "Lo", "Nd", "Nl", "No", "Mn", "Mc", "Me"}
+WORD_CATEGORIES = {"Lu", "Ll", "Lt", "Lm", "Lo", "Nd", "Nl", "No", "Mn", "Mc"}
 
 
 def is_word(ch: str) -> bool:

@@ -1,0 +1,72 @@
+"""S6-T24 byte identity: main's and the head's searchd (ReleaseSmall) index each corpus into their own folder;
+the folders are compared file by file, then every query is asked of each build on its own index and the outputs
+compared byte for byte. Usage: python3 -I identity.py MAIN_SEARCHD HEAD_SEARCHD WORK CORPUS_DIR..."""
+import filecmp
+import random
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+main_bin, head_bin, work = sys.argv[1], sys.argv[2], Path(sys.argv[3])
+corpora = [Path(p) for p in sys.argv[4:]]
+
+
+def run(binary, *args):
+    done = subprocess.run([binary, *args], capture_output=True, stdin=subprocess.DEVNULL, timeout=600)
+    return done.returncode, done.stdout, done.stderr
+
+
+def words_of(folder, rng, count):
+    files = sorted(p for p in folder.rglob("*") if p.is_file())
+    out = []
+    while len(out) < count:
+        text = rng.choice(files).read_bytes().decode("utf-8", "replace")
+        found = re.findall(r"\w{3,}", text)
+        if found:
+            out.append(rng.choice(found).lower())
+    return out
+
+
+for corpus in corpora:
+    name = corpus.name
+    indexes = {}
+    for label, binary in (("main", main_bin), ("head", head_bin)):
+        out = work / f"{name}-{label}"
+        if not out.exists():
+            code, _, err = run(binary, "index", str(corpus), "--out", str(out), "--filename-index")
+            if code:
+                # an older build without --filename-index on index: plain index
+                code, _, err = run(binary, "index", str(corpus), "--out", str(out))
+            assert code == 0, err
+        indexes[label] = out
+    a, b = indexes["main"], indexes["head"]
+    names_a = sorted(p.relative_to(a).as_posix() for p in a.rglob("*") if p.is_file())
+    names_b = sorted(p.relative_to(b).as_posix() for p in b.rglob("*") if p.is_file())
+    same_files = names_a == names_b
+    differ = [n for n in names_a if n in names_b and not filecmp.cmp(a / n, b / n, shallow=False)]
+    print(f"{name}: index folders: {len(names_a)} files main, {len(names_b)} head, same names {same_files}, "
+          f"byte-different {differ}")
+    rng = random.Random(2411)
+    words = words_of(corpus, rng, 20)
+    queries = words[:10] + [" ".join(words[i:i + 2]) for i in range(10, 20, 2)] + [w[:3] + "*" for w in words[:5]]
+    calls = []
+    for q in queries:
+        calls.append(("query", q, "--json", "--top-k", "10"))
+        calls.append(("evidence", q, "--top-k", "5"))
+        mode = "prefix" if q.endswith("*") else "words"
+        calls.append(("find", q, "--json", "--mode", mode, "--page-size", "100"))
+        if " " in q:
+            calls.append(("find", f'"{q}"', "--json", "--page-size", "100"))
+    calls.append(("list-files", "--json", "--page-size", "1000"))
+    calls.append(("roots", "--json"))
+    differ_calls = 0
+    for call in calls:
+        verb, *rest = call
+        out_a = run(main_bin, verb, str(a), *rest)
+        out_b = run(head_bin, verb, str(b), *rest)
+        if out_a != out_b:
+            differ_calls += 1
+            print("  DIFF", call, out_a[0], out_b[0], out_a[2][:200], out_b[2][:200])
+    print(f"{name}: {len(calls)} calls (query, evidence, find words/prefix/phrase, list-files, roots), "
+          f"{differ_calls} differ (stdout, stderr and exit code compared)")

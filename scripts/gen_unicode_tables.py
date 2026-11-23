@@ -24,6 +24,7 @@ Three tables are produced:
    write vowels as marks, so splitting at them cut `கணினி` in two). With
    `--python-marks` the same table is emitted as `src/search_platform/_marks.py`
    for the Python reference tokenizer.
+   Table 1c, `digit_ranges` (S6-T24), holds General_Category Nd alone: `scan`'s `\d`.
 2. `casefold_pairs`: sorted (from, to) codepoint pairs for every codepoint
    whose `str.casefold()` result is a single codepoint different from the
    input. Multi-codepoint casefold expansions (e.g. German sharp s, a
@@ -312,6 +313,7 @@ def main():
 
     letter_digit_ranges = gen_letter_digit_ranges()
     mark_ranges = gen_letter_digit_ranges(MARK_CATEGORIES)
+    digit_ranges = gen_letter_digit_ranges({"Nd"})
     casefold_pairs = gen_casefold_pairs()
     decomposition, combining = gen_decomposition_and_combining_class()
     composition_pairs = gen_composition_pairs(decomposition)
@@ -345,6 +347,12 @@ def main():
     out.append("/// (S1-T14: marks that stay attached to the letter before them).")
     out.append("pub const mark_ranges = [_]CodepointRange{")
     out.append(fmt_ranges(mark_ranges))
+    out.append("};")
+    out.append("")
+    out.append(f"/// {len(digit_ranges)} ranges covering Unicode General_Category Nd (S6-T24: `scan`'s")
+    out.append("/// `\\d`, decimal digits of every script; `letter_digit_ranges` merges them with letters).")
+    out.append("pub const digit_ranges = [_]CodepointRange{")
+    out.append(fmt_ranges(digit_ranges))
     out.append("};")
     out.append("")
     out.append(f"/// {len(casefold_pairs)} single-codepoint simple case-fold exceptions")

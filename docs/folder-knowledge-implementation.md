@@ -780,7 +780,7 @@ macOS library from 569,064 to 697,544 bytes (the ABI now links `find`,
 `contracts/tools/<name>.request.schema.json` and `<name>.result.schema.json`
 (JSON Schema 2020-12, `additionalProperties: false`) for `search_knowledge`,
 `read_chunk`, `list_sources`, `index_status`, `find`, `outline`, `read_span`,
-`list_files`, `apply_changes`. A test loads each schema and validates recorded
+`list_files`, `apply_changes`, and since S6-T24 `scan` ([scan](scan.md)). A test loads each schema and validates recorded
 real responses from the fixture (§12) against it, using the repository's own
 minimal validator (standard library only). `skills/folder-knowledge/SKILL.md`
 sections: when to use which tool; the search → read → cite loop; how to quote a
@@ -801,8 +801,9 @@ latest stable revision the conformance client implements; the task records
 the exact string. Methods: `initialize`, `notifications/initialized`,
 `ping`, `tools/list`, `tools/call`, `resources/list`, `resources/read`,
 `resources/templates/list` (one template `search://{root_id}/{path}`). Tools:
-the eight read tools by default (`search_knowledge`, `read_chunk`,
-`list_sources`, `index_status`, `find`, `outline`, `read_span`, `list_files`);
+the nine read tools by default (`search_knowledge`, `read_chunk`,
+`list_sources`, `index_status`, `find`, `outline`, `read_span`, `list_files`,
+and since S6-T24 `scan`);
 `apply_changes` only with `--allow-write`. `tools/call` results carry the
 canonical JSON of §8 as `structuredContent` and the same JSON serialized in one
 `text` content block; parity with the RPC server is checked on the canonical

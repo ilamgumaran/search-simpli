@@ -110,7 +110,7 @@ from its tables.
 
 | Layer | Folder (`zig/src/`) | Module | Files | May import |
 |---|---|---|---:|---|
-| core | `core/` | `core` (`core/core.zig`) | 36 | core only |
+| core | `core/` | `core` (`core/core.zig`) | 38 | core only |
 | operations | `ops/` | `operations` (`ops/operations.zig`) | 4 | core and operations |
 | interfaces | `interfaces/` | `interfaces` (`interfaces/interfaces.zig`) | 5 | core and operations; another interface only as an allowed pair |
 
@@ -139,8 +139,10 @@ from its tables.
 | `core/lifecycle.zig` | core | the writer lock, generation retention and pruning |
 | `core/manifest.zig` | core | the generation manifest |
 | `core/nfc.zig` | core | Unicode normalization form C |
+| `core/pattern.zig` | core | `scan`'s matcher: the pattern subset, the Pike VM, the literal paths, case folding |
 | `core/postings.zig` | core | the inverted index, positions and sparse BM25 scoring |
 | `core/publication.zig` | core | atomic publication and recovery |
+| `core/scan.zig` | core | `scan`: lines matching a literal or a pattern, over an index or a folder, paged and budgeted |
 | `core/scope.zig` | core | roots, request scope and visible-scope statistics |
 | `core/scoring.zig` | core | BM25, cosine similarity and reciprocal-rank fusion |
 | `core/segment.zig` | core | the documents section format (`HYBSEG`) |

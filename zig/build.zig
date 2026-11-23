@@ -114,7 +114,7 @@ fn contractsVersionOptions(b: *std.Build) *std.Build.Step.Options {
 
 /// The tools whose schemas `contracts/tools/` holds (S3-T5), in the MCP
 /// server's listing order: CAP-13's four, the four folder reads, the write.
-const tool_names = [_][]const u8{ "search_knowledge", "read_chunk", "list_sources", "index_status", "find", "outline", "read_span", "list_files", "apply_changes" };
+const tool_names = [_][]const u8{ "search_knowledge", "read_chunk", "list_sources", "index_status", "find", "outline", "read_span", "list_files", "scan", "apply_changes" };
 
 /// S3-T6: `@import("tool_schemas")` for `src/interfaces/mcp.zig`: for every tool,
 /// `<tool>_request` and `<tool>_result`, the file

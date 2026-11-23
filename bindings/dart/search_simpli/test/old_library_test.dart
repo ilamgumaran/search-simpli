@@ -55,7 +55,7 @@ void main() {
     expect(
       () => SearchSimpli.open(dir.path, library: hollow),
       throwsA(isA<ContractsVersionMismatchException>().having(
-          (e) => e.actual, 'actual', '$expectedContractsVersion without ss_find, ss_outline, ss_read_span, ss_list_files, ss_roots, ss_apply_changes')),
+          (e) => e.actual, 'actual', '$expectedContractsVersion without ss_find, ss_outline, ss_read_span, ss_list_files, ss_roots, ss_apply_changes, ss_scan')),
     );
     expect(() => SearchSimpli.applyChanges(dir.path, {'changes': []}, library: hollow),
         throwsA(isA<ContractsVersionMismatchException>()));
@@ -63,7 +63,7 @@ void main() {
 
   test('the packaged library has every new symbol', () {
     final library = openSearchSimpliLibrary();
-    for (final name in ['ss_find', 'ss_outline', 'ss_read_span', 'ss_list_files', 'ss_roots', 'ss_apply_changes']) {
+    for (final name in ['ss_find', 'ss_outline', 'ss_read_span', 'ss_list_files', 'ss_roots', 'ss_apply_changes', 'ss_scan']) {
       expect(library.providesSymbol(name), isTrue, reason: name);
     }
   });

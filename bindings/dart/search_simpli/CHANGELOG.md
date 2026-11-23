@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.12.0 (S6-T24; contract 2.10.0; minor: one new method)
+
+`SearchSimpli.scan` (`ss_scan`, [CAP-25](../../../docs/requirements/cap-25-pattern-search.md),
+[decision 0006](../../../docs/decisions/0006-pattern-search.md),
+[`docs/scan.md`](../../../docs/scan.md)): every line of the visible files that
+holds an exact string or matches a pattern, line by line over the retained
+source bytes, read-only. The package accepts exactly contract 2.10.0 and
+requires the `ss_scan` symbol, so it is a minor version; nothing else changes.
+
+- **`scan(pattern, {...})`** → `ScanResult` with `hits` (`ScanHit`: `rootId`,
+  `path`, `line`, `text`, `textTruncated`, `matchOffsets`, `before`,
+  `after`), `caseApplied`, `filesMatched`, `filesScanned`, `filesCapped`,
+  `bytesScanned`, `pendingFiles`, `notScanned`, `truncated`, `stopped`,
+  `nextCursor`. New enums `ScanMode`, `ScanCase`, `ScanStopped`; new class
+  `ScanContextLine`.
+- **`\w` and whole words** use the analyser's word code points: letters and
+  digits by category and the marks Mn and Mc, so a Tamil word is one word,
+  and `_` is not a word character (`tide_pool` holds the whole words `tide`
+  and `pool`).
+- **Refusals** carry `SS_ERR_INVALID_ARGUMENT` (a pattern outside the subset,
+  a field out of range, a cursor from another generation or request) or
+  `SS_ERR_CAPACITY` (a generation without source bytes; one line that alone
+  takes longer than `timeBudgetMs`).
+- A folder scan with nothing prepared is on the command line only
+  (`searchd scan --folder`); the library scans an open index.
+
 ## 0.11.0 (S6-T23; contract 2.9.0; minor: an additive report field and more files read)
 
 `indexFolder` (and `searchd index`, `--update`, `searchd search`) reads every

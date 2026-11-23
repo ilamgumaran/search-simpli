@@ -3,6 +3,7 @@ const find_module = @import("core").api.find;
 const scoring = @import("core").api.scoring;
 const hybrid = @import("core").api.hybrid;
 const postings = @import("core").api.postings;
+const scan_module = @import("core").api.scan;
 const scope = @import("core").api.scope;
 const source_section = @import("core").api.source;
 const std = @import("std");
@@ -549,6 +550,53 @@ pub const ScopedService = struct {
         return completenessOf(resolved);
     }
 
+    /// S6-T24: `scan` over the request's scope. The files are those the
+    /// caller may see (indexed, with or without chunks), by root then path;
+    /// `pending_files` and `not_scanned` count the generation's pending and
+    /// skipped files the caller may see in the request's `path_prefix` and
+    /// `name_glob`, and files of roots that keep no bytes. A generation
+    /// without a readable source section is refused as `read_span` is.
+    /// `roots` in the answer is the roots the request could see.
+    pub fn scan(scoped: ScopedService, allocator: std.mem.Allocator, request: scan_module.Request, scope_request: scope.Request) !ScanResult {
+        const resolved = try resolve(scoped.service, allocator, scope_request);
+        defer resolved.deinit(allocator);
+        const folder = resolved.folder;
+        var roots = std.ArrayList([]const u8).empty;
+        for (folder.roots, resolved.allowed) |root, allowed| if (allowed) try roots.append(allocator, root.root_id);
+        const section = (try folder.sourceSection()) orelse return .{ .outcome = .{ .failed = try sourceUnavailable(allocator, folder.*) }, .roots = roots.items };
+        const engine = scoped.service.engine;
+        var candidates = std.ArrayList(scan_module.Candidate).empty;
+        var seen = std.StringHashMapUnmanaged(void).empty;
+        defer seen.deinit(allocator);
+        for (engine.documents, 0..) |document, index| {
+            if (document.path.len == 0 or !resolved.documentVisible(engine.documents, index)) continue;
+            const gop = try seen.getOrPut(allocator, document.path);
+            if (gop.found_existing) continue;
+            const root = folder.roots[folder.document_roots[index]];
+            try candidates.append(allocator, .{ .root_id = root.root_id, .path = scope.relativePath(root, document.path), .record = document.path, .retained = root.retain_source });
+        }
+        for (folder.unchunked) |entry| {
+            if (!resolved.listedVisible(entry)) continue;
+            const root = folder.roots[folder.rootIndex(entry.root_id).?];
+            try candidates.append(allocator, .{ .root_id = entry.root_id, .path = entry.path, .record = try scope.recordPath(allocator, entry.root_id, entry.path), .retained = root.retain_source });
+        }
+        var pending: usize = 0;
+        for (folder.pending) |entry| if (resolved.listedVisible(entry) and scan_module.inScope(request, entry.path)) {
+            pending += 1;
+        };
+        var not_scanned = scan_module.NotScanned{};
+        for (folder.skipped) |entry| if (resolved.listedVisible(entry) and scan_module.inScope(request, entry.path)) {
+            const reason = entry.reason orelse "unreadable";
+            if (std.mem.eql(u8, reason, "too_large")) not_scanned.too_large += 1 else if (std.mem.eql(u8, reason, "budget_exhausted")) not_scanned.budget_exhausted += 1 else not_scanned.unreadable += 1;
+        };
+        var scoped_request = request;
+        scoped_request.scope_roots = roots.items;
+        scoped_request.scope_labels = scope_request.principal_labels;
+        const src = try scan_module.indexSource(allocator, scoped_request, section, engine.generation, candidates.items, pending, not_scanned);
+        var clock = scan_module.IoClock{ .io = folder.loads.io };
+        return .{ .outcome = try scan_module.run(allocator, scoped_request, src, clock.clock()), .roots = roots.items };
+    }
+
     /// `outline` gated by the scope, like `readSpan`.
     pub fn outline(scoped: ScopedService, allocator: std.mem.Allocator, request: scope.Request, root_id: []const u8, path: []const u8) !source_section.OutlineResult {
         const resolved = try resolve(scoped.service, allocator, request);
@@ -562,6 +610,9 @@ pub const ScopedService = struct {
         return source_section.outline(allocator, section, record);
     }
 };
+
+/// `ScopedService.scan`'s answer and the roots the request could see.
+pub const ScanResult = struct { outcome: scan_module.Outcome, roots: []const []const u8 };
 
 const FrequencyProvider = struct {
     view: scope.View,

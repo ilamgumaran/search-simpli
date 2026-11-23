@@ -206,6 +206,8 @@ pub fn handleLineWith(
         try writeOperation(output, id, try ops.indexStatus(allocator, service, params, server.caller));
     } else if (std.mem.eql(u8, method, "find")) {
         try runOperation(service, server.*, allocator, id, params, output, ops.find);
+    } else if (std.mem.eql(u8, method, "scan")) {
+        try runOperation(service, server.*, allocator, id, params, output, ops.scan);
     } else if (std.mem.eql(u8, method, "outline")) {
         try runOperation(service, server.*, allocator, id, params, output, ops.outline);
     } else if (std.mem.eql(u8, method, "read_span")) {

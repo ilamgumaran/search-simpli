@@ -17,6 +17,7 @@
  * function (ss_apply_changes, ss_find, ss_outline, ss_read_span,
  * ss_list_files, ss_roots), each with its error paths; the v1 goldens are
  * kept as byte prefixes and the 2.0.0 additions checked after them.
+ * Contract 2.10.0 (S6-T24): one more, ss_scan, with its error paths.
  */
 
 #ifndef _POSIX_C_SOURCE
@@ -172,7 +173,7 @@ int main(void) {
         return 1;
     }
 
-    expect_streq("ss_version", "2.9.0", ss_version());
+    expect_streq("ss_version", "2.10.0", ss_version());
 
     long long generation = ss_import_json(dir, demo_interchange_json, strlen(demo_interchange_json));
     expect_true("ss_import_json publishes generation 1", generation == 1, "unexpected generation/error code");
@@ -353,6 +354,24 @@ int main(void) {
             /* The demo snapshot (import-json, HYBLEX01) has no positions. */
             ok = ok && refused(ss_find(handle, "{\"query\":\"\\\"exact lexical\\\"\"}"), "SS_ERR_CAPACITY", "positions absent", why, sizeof why);
             expect_true("ss_find answers words, phrase and pages; stale/malformed cursor, empty query, page size, unknown field, missing query, NULL handle, absent positions are refused", ok, why);
+        }
+        {
+            /* Contract 2.10.0 (S6-T24): ss_scan, every line holding a string or matching a pattern. */
+            static const char *const literal[] = {"\"source\":\"index\"", "\"root_id\":\"notes\"", "\"path\":\"week.md\"",
+                                                  "\"case_applied\":\"insensitive\"", "\"pending_files\":1", "\"stopped\":\"none\"", NULL};
+            static const char *const pattern[] = {"\"path\":\"long.txt\",\"line\":450,\"text\":\"line 450\"", "\"match_offsets\":[[0,8]]", NULL};
+            static const char *const paged[] = {"\"next_cursor\":\"1:", NULL};
+            int ok = holds(ss_scan(folder, "{\"pattern\":\"harbour, island\"}"), literal, why, sizeof why);
+            ok = ok && holds(ss_scan(folder, "{\"pattern\":\"^line 4\\\\d{2}$\",\"mode\":\"regex\",\"path_prefix\":\"long\",\"page_size\":100,\"max_hits_per_file\":1000}"), pattern, why, sizeof why);
+            ok = ok && holds(ss_scan(folder, "{\"pattern\":\"line\",\"page_size\":1}"), paged, why, sizeof why);
+            ok = ok && refused(ss_scan(folder, "{\"pattern\":\"a(\",\"mode\":\"regex\"}"), "SS_ERR_INVALID_ARGUMENT", "pattern not supported at byte 1: a group is not closed", why, sizeof why);
+            ok = ok && refused(ss_scan(folder, "{\"pattern\":\"line\",\"cursor\":\"7:0000000000000000:0:1:0\"}"), "SS_ERR_INVALID_ARGUMENT", "stale cursor", why, sizeof why);
+            ok = ok && refused(ss_scan(folder, "{\"pattern\":\"x\",\"bogus\":true}"), "SS_ERR_INVALID_ARGUMENT", "unknown field", why, sizeof why);
+            ok = ok && refused(ss_scan(folder, NULL), "SS_ERR_INVALID_ARGUMENT", "pattern is required", why, sizeof why);
+            ok = ok && refused(ss_scan(NULL, "{\"pattern\":\"x\"}"), "SS_ERR_INVALID_ARGUMENT", "null handle", why, sizeof why);
+            /* The demo snapshot (import-json) retains no source bytes. */
+            ok = ok && refused(ss_scan(handle, "{\"pattern\":\"lexical\"}"), "SS_ERR_CAPACITY", "source", why, sizeof why);
+            expect_true("ss_scan answers a literal, a regex with offsets and pages; an unsupported pattern, stale cursor, unknown field, missing pattern, NULL handle, absent source are refused", ok, why);
         }
         {
             static const char *const outline[] = {

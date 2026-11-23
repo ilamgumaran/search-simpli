@@ -94,6 +94,48 @@ void main() {
     }
   });
 
+  test('scan (contract 2.10.0): typed hits, context, paging, scope, refusals with codes', () {
+    final result = engine.scan('count me in', contextLines: 1);
+    expect(result.source, 'index');
+    expect(result.generation, 1);
+    expect(result.caseApplied, ScanCase.insensitive);
+    expect(result.scope.roots, ['home', 'laptop', 'school']);
+    expect(result.stopped, ScanStopped.none);
+    expect(result.hits, isNotEmpty);
+    for (final hit in result.hits) {
+      final match = hit.matchOffsets.first;
+      expect(hit.text.runes.toList().sublist(match.start, match.end), 'count me in'.runes.toList());
+      expect(hit.before.length + hit.after.length, inInclusiveRange(1, 2));
+      if (hit.before.isNotEmpty) expect(hit.before.single.line, hit.line - 1);
+    }
+    expect(result.notScanned.keys, unorderedEquals(['too_large', 'unreadable', 'budget_exhausted', 'not_retained']));
+    // Paging one line at a time gives the same lines.
+    final paged = <String>[];
+    String? cursor;
+    do {
+      final page = engine.scan('count me in', contextLines: 1, pageSize: 1, cursor: cursor);
+      paged.addAll(page.hits.map((h) => '${h.rootId}/${h.path}:${h.line}'));
+      cursor = page.nextCursor;
+    } while (cursor != null);
+    expect(paged, result.hits.map((h) => '${h.rootId}/${h.path}:${h.line}').toList());
+    // A regex, case, whole word, roots and a glob.
+    final regex = engine.scan(r'\d{1,2}:\d{2}', mode: ScanMode.regex, roots: ['school'], nameGlob: '*.md');
+    expect(regex.hits.every((h) => h.rootId == 'school' && h.path.endsWith('.md')), isTrue);
+    expect(engine.scan('Tide').caseApplied, ScanCase.sensitive);
+    expect(engine.scan('tid', wholeWord: true).hits, isEmpty);
+    expect(engine.scan('tide', roots: ['nowhere']).hits, isEmpty);
+    for (final call in [
+      ('unsupported', () => engine.scan('a(', mode: ScanMode.regex)),
+      ('line break', () => engine.scan(r'a\n', mode: ScanMode.regex)),
+      ('page size', () => engine.scan('tide', pageSize: 101)),
+      ('budget', () => engine.scan('tide', timeBudgetMs: 30001)),
+      ('cursor', () => engine.scan('tide', cursor: '99:0')),
+      ('stale cursor', () => engine.scan('tide', cursor: '99:0000000000000000:0:1:0')),
+    ]) {
+      expect(call.$2, throwsA(isA<SearchSimpliException>().having((e) => e.code, 'code', 'SS_ERR_INVALID_ARGUMENT')), reason: call.$1);
+    }
+  });
+
   test('a generation without positions or source answers CAPACITY', () {
     final legacy = Directory.systemTemp.createTempSync('ss-dart-legacy-');
     addTearDown(() => legacy.deleteSync(recursive: true));
@@ -108,6 +150,7 @@ void main() {
     expect(() => old.readSpan('r-legacy', 'a.md', 1, 1),
         throwsA(isA<SearchSimpliException>().having((e) => e.code, 'code', 'SS_ERR_CAPACITY').having((e) => e.message, 'message', contains('source absent'))));
     expect(() => old.outline('r-legacy', 'a.md'), throwsA(isA<SearchSimpliException>().having((e) => e.code, 'code', 'SS_ERR_CAPACITY')));
+    expect(() => old.scan('lexical'), throwsA(isA<SearchSimpliException>().having((e) => e.code, 'code', 'SS_ERR_CAPACITY')));
   });
 
   test('a damaged source section surfaces at the first read, not at open (contract 2.1.0, S4-T1)', () {

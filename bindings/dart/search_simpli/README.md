@@ -77,8 +77,8 @@ wrote — see the [root README](../../../README.md) and
 
 - `SearchSimpli.open(String snapshotDir, {DynamicLibrary? library})` — opens
   a snapshot. Asserts the native library's `ss_version()` equals this
-  package's `CONTRACTS_VERSION` (`2.9.0`) and that it exports every 2.0.0
-  function before touching `snapshotDir` at
+  package's `CONTRACTS_VERSION` (`2.10.0`) and that it exports every 2.0.0
+  function and `ss_scan` before touching `snapshotDir` at
   all; throws `ContractsVersionMismatchException` on a mismatch (an older
   library) and
   `SearchSimpliException` if `ss_open` itself fails (missing/corrupt
@@ -121,6 +121,14 @@ wrote — see the [root README](../../../README.md) and
   `ApplyChangesReport` (host-fed changes, §6). Every result keeps the
   engine's JSON as `json`: the same bytes `searchd serve` and
   `searchd <command> --json` return. `query` also takes `roots`.
+- Contract 2.10.0: `engine.scan(pattern, {mode, caseMode, wholeWord, roots,
+  principalLabels, pathPrefix, nameGlob, contextLines, maxHitsPerFile,
+  pageSize, cursor, timeBudgetMs})` → `ScanResult`: every line holding an
+  exact string (`ScanMode.literal`) or matching a pattern of the regex
+  subset (`ScanMode.regex`), with `matchOffsets` in code points and
+  `before`/`after` lines; `stopped` is `ScanStopped.time` when the budget ran
+  out (pass `nextCursor` back). Read-only. The rules and the subset:
+  [`docs/scan.md`](../../../docs/scan.md).
 - `engine.close()` — frees the native handle. Safe to call once; a second
   call throws `StateError`. Not safe to race with any other call on the
   same `SearchSimpli` instance (matches `ss_close`'s contract).

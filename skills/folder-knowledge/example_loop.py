@@ -33,9 +33,9 @@ REPO = Path(__file__).resolve().parents[2]
 PACK = REPO / "fixtures" / "family-folder"
 NEGATIVE = "I found no matching indexed passages in the selected folders."
 CAVEAT = "Some files are still pending or could not be indexed in full, so this may not cover everything."
-# The eight read tools. apply_changes and roots are deliberately not here.
+# The nine read tools. apply_changes and roots are deliberately not here.
 READ_TOOLS = ("search_knowledge", "read_chunk", "list_sources", "index_status",
-              "find", "outline", "read_span", "list_files")
+              "find", "outline", "read_span", "list_files", "scan")
 STOP = {"the", "a", "an", "is", "are", "was", "what", "when", "did", "do", "does", "say", "said", "about",
         "to", "of", "in", "my", "me", "it", "after", "next", "there", "anything", "teacher"}
 

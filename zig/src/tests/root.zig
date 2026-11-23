@@ -71,6 +71,7 @@ pub const state_v3_test = @import("state_v3_test.zig");
 pub const compat_s6t9_test = @import("compat_s6t9_test.zig");
 pub const offsets_v4_test = @import("offsets_v4_test.zig");
 pub const nfr13_arena_test = @import("nfr13_arena_test.zig");
+pub const scan_service_test = @import("scan_service_test.zig");
 pub const reload_test = @import("reload_test.zig");
 pub const both_view_test = @import("core").both_view_test;
 pub const field_warnings_test = @import("interfaces").field_warnings_test;
@@ -186,4 +187,5 @@ test "load every engine module test suite" {
     _ = direct_search_test;
     _ = filename_response_test;
     _ = abi_index_folder_test;
+    _ = scan_service_test;
 }

@@ -87,6 +87,8 @@ pub fn main(init: std.process.Init) !void {
         .search => |a| try runFolderCommand(init, a, cli.runSearchFolder),
         // S3-T4: the folder-knowledge commands; 1 after a refusal's stderr line.
         .find => |a| try runFolderCommand(init, a, cli.runFind),
+        // S6-T24: scan an index or, with --folder, a folder.
+        .scan => |a| try runFolderCommand(init, a, cli.runScan),
         .outline => |a| try runFolderCommand(init, a, cli.runOutline),
         .read_span => |a| try runFolderCommand(init, a, cli.runReadSpan),
         .list_files => |a| try runFolderCommand(init, a, cli.runListFiles),

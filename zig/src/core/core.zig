@@ -255,6 +255,63 @@ pub const api = struct {
         pub const stale_cursor_message = internal.find.stale_cursor_message;
     };
 
+    // --------------------------------------------------------------------- scan
+
+    /// `scan`'s pattern options (`pattern.zig`): the matcher itself is internal.
+    pub const pattern = struct {
+        /// `literal` (the default) or `regex`; `Mode.parse` reads the name.
+        pub const Mode = internal.pattern.Mode;
+        /// `sensitive`, `insensitive` or `smart` (the default); `Case.parse` reads the name.
+        pub const Case = internal.pattern.Case;
+    };
+
+    /// `scan`: every line in scope holding a literal or matching a pattern, in
+    /// path then line order, paged by a cursor, inside a time budget (`scan.zig`;
+    /// ADR 0006, CAP-25).
+    pub const scan = struct {
+        /// A `scan` request: the pattern and its options, `path_prefix`,
+        /// `name_glob`, context, the per-file cap, page size, cursor and budget,
+        /// and the effective roots and labels that bind the cursor. Borrowed slices.
+        pub const Request = internal.scan.Request;
+        /// What `run` answers: `.ok` with the page, or `.failed` with a
+        /// `source.Failure` (an invalid argument, or `capacity` for a line that
+        /// alone outlasts the budget).
+        pub const Outcome = internal.scan.Outcome;
+        /// A file an index holds for the caller: root, relative and record path,
+        /// and whether its root keeps source bytes (`indexSource`'s input).
+        pub const Candidate = internal.scan.Candidate;
+        /// Files in scope that could not be searched, by reason.
+        pub const NotScanned = internal.scan.NotScanned;
+        /// `page_size` when the request has none (20).
+        pub const default_page_size = internal.scan.default_page_size;
+        /// `max_hits_per_file` when the request has none (50).
+        pub const default_max_hits_per_file = internal.scan.default_max_hits_per_file;
+        /// `time_budget_ms` when the request has none (2,000).
+        pub const default_time_budget_ms = internal.scan.default_time_budget_ms;
+        /// The index source over a source section: the candidates sorted by
+        /// root then path and looked up in the section. Allocated from
+        /// `allocator` (an arena). Errors: `OutOfMemory`.
+        pub const indexSource = internal.scan.indexSource;
+        /// The folder source: a folder walked and read as `searchd index` would,
+        /// nothing written; root `r-legacy`. Allocated from `allocator` (an
+        /// arena). Errors: `OutOfMemory` and the walk's `std.Io` errors.
+        pub const folderSource = internal.scan.folderSource;
+        /// Run one page over a source. The answer and its hits come from
+        /// `allocator` (an arena); one file's bytes are held at a time, in an
+        /// arena of its own. A refused request is `.failed`, not an error.
+        /// Errors: `OutOfMemory`.
+        pub const run = internal.scan.run;
+        /// Whether a root-relative path is in the request's `path_prefix` and
+        /// `name_glob`.
+        pub const inScope = internal.scan.inScope;
+        /// The monotonic clock of an `std.Io`, as the budget's clock.
+        pub const IoClock = internal.scan.IoClock;
+        /// Write the whole result object (envelope and answer) to `json`, with
+        /// the roots the request could see. Allocates nothing itself. Errors:
+        /// `WriteFailed`.
+        pub const writeJson = internal.scan.writeJson;
+    };
+
     // ---------------------------------------------------------------- read a span
 
     /// Reads of a file's retained bytes: `read_span` and `outline` (`source.zig`).
@@ -549,9 +606,12 @@ pub const manifest_inplace_test = @import("manifest_inplace_test.zig");
 pub const manifest_read_test = @import("manifest_read_test.zig");
 pub const nfc = @import("nfc.zig");
 pub const nfc_timing_test = @import("nfc_timing_test.zig");
+pub const pattern = @import("pattern.zig");
 pub const postings = @import("postings.zig");
 pub const publication = @import("publication.zig");
 pub const query_one_shot_test = @import("query_one_shot_test.zig");
+pub const scan = @import("scan.zig");
+pub const scan_test = @import("scan_test.zig");
 pub const scope = @import("scope.zig");
 pub const scoring = @import("scoring.zig");
 pub const segment = @import("segment.zig");
@@ -607,9 +667,12 @@ comptime {
         _ = manifest_read_test;
         _ = nfc;
         _ = nfc_timing_test;
+        _ = pattern;
         _ = postings;
         _ = publication;
         _ = query_one_shot_test;
+        _ = scan;
+        _ = scan_test;
         _ = scope;
         _ = scoring;
         _ = segment;

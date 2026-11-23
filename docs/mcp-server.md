@@ -77,9 +77,10 @@ exits 2.
 
 ### Tools
 
-`tools/list` returns one page (a `cursor` is refused, `-32602`): the eight
+`tools/list` returns one page (a `cursor` is refused, `-32602`): the nine
 read tools in this order, `search_knowledge`, `read_chunk`, `list_sources`,
-`index_status`, `find`, `outline`, `read_span`, `list_files`, then
+`index_status`, `find`, `outline`, `read_span`, `list_files`, `scan` (S6-T24,
+[scan](scan.md); not in `--baseline`), then
 `apply_changes` with `--allow-write`. Each descriptor has `name`, `title`,
 `description`, `inputSchema` (the tool's
 `contracts/tools/<tool>.request.schema.json`, the same JSON value, built

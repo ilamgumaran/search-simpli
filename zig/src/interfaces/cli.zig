@@ -139,6 +139,32 @@ pub const usage_text =
         \\                       hits with root, path, lines, section and a
         \\                       snippet, per-file counts, a cursor for the
         \\                       next page (page size 1-100, default 20).
+        \\  scan <dir> "<pattern>" [--regex] [--case sensitive|insensitive|smart]
+        \\                       [--word] [--roots a,b] [--path-prefix P]
+        \\                       [--glob G] [--context N] [--max-per-file N]
+        \\                       [--page-size N] [--cursor C] [--time-ms N]
+        \\                       [--json]
+        \\  scan --folder <folder> "<pattern>" [the same flags]
+        \\                       [--max-file-bytes N]
+        \\                       every line holding the exact string (or,
+        \\                       with --regex, matching the pattern subset
+        \\                       of docs/scan.md), in root, path and line
+        \\                       order, printed path:line:text; not ranked
+        \\                       and not tokenized, so codes, amounts and
+        \\                       parts of words are found. --case smart
+        \\                       (default) ignores case unless the pattern
+        \\                       has an upper-case letter (one that case
+        \\                       folding changes); --word wants no letter,
+        \\                       digit or mark (any script; _ is not one) on
+        \\                       either side; --glob matches file names (*
+        \\                       and ?). Pages of --page-size lines (1-100,
+        \\                       default 20), at most --max-per-file lines
+        \\                       per file (default 50), each page within
+        \\                       --time-ms (1-30000, default 2000); the next
+        \\                       page's cursor, a stop for time and files not
+        \\                       searched are told on stderr. --folder scans
+        \\                       a folder with no index, walked and read by
+        \\                       index's rules; nothing is written.
         \\  outline <dir> <root_id> <path> [--json]
         \\                       a file's headings and front matter.
         \\  read-span <dir> <root_id> <path> <start> <end> [--context N]
@@ -165,8 +191,8 @@ pub const usage_text =
         \\                       index that has the channel is applied to as
         \\                       without the flag; an index without it is
         \\                       refused (exit 2, nothing written).
-        \\                       find, outline, read-span, list-files and
-        \\                       roots print text, or with --json the same
+        \\                       find, scan, outline, read-span, list-files
+        \\                       and roots print text, or with --json the same
         \\                       JSON the C ABI and `serve` return.
         \\  serve <dir> [--http 127.0.0.1:<port>] [--roots a,b]
         \\                       [--labels l1,l2] [--allow-write]
@@ -187,7 +213,7 @@ pub const usage_text =
         \\                       [--allow-write] [--allow-file-reads]
         \\                       serve the index as a Model Context Protocol
         \\                       server on stdin/stdout (docs/mcp-server.md):
-        \\                       the eight read tools and the indexed files as
+        \\                       the nine read tools and the indexed files as
         \\                       resources; --baseline lists only CAP-13's
         \\                       four tools and no resources; apply_changes
         \\                       only with --allow-write (inside --roots).
@@ -263,6 +289,26 @@ pub const FindArgs = struct {
     cursor: ?[]const u8 = null,
     json: bool = false,
 };
+/// S6-T24: `searchd scan <dir> "<pattern>"` and `scan --folder <folder> "<pattern>"`.
+pub const ScanArgs = struct {
+    path: []const u8,
+    pattern: []const u8,
+    /// `--folder`: `path` is a folder to walk, not an index.
+    folder: bool = false,
+    regex: bool = false,
+    case: ?[]const u8 = null,
+    word: bool = false,
+    roots: ?[]const u8 = null,
+    path_prefix: ?[]const u8 = null,
+    glob: ?[]const u8 = null,
+    context: ?usize = null,
+    max_per_file: ?usize = null,
+    page_size: ?usize = null,
+    cursor: ?[]const u8 = null,
+    time_ms: ?usize = null,
+    max_file_bytes: ?u64 = null,
+    json: bool = false,
+};
 pub const OutlineArgs = struct { path: []const u8, root_id: []const u8, file: []const u8, json: bool = false };
 pub const ReadSpanArgs = struct { path: []const u8, root_id: []const u8, file: []const u8, start: u32, end: u32, context: u32 = 0, json: bool = false };
 pub const ListFilesArgs = struct {
@@ -312,6 +358,7 @@ pub const Command = union(enum) {
     evidence: QueryArgs,
     search: SearchArgs,
     find: FindArgs,
+    scan: ScanArgs,
     outline: OutlineArgs,
     read_span: ReadSpanArgs,
     list_files: ListFilesArgs,
@@ -609,6 +656,7 @@ fn parseInner(p: *Parser) error{Usage}!Command {
     }
     if (std.mem.eql(u8, command, "search")) return parseSearch(p);
     if (std.mem.eql(u8, command, "find")) return parseFind(p);
+    if (std.mem.eql(u8, command, "scan")) return parseScan(p);
     if (std.mem.eql(u8, command, "outline")) {
         var args = OutlineArgs{
             .path = p.next() orelse return p.missingArgument("outline", "<dir>"),
@@ -726,6 +774,52 @@ fn parseFind(p: *Parser) error{Usage}!Command {
         } else return p.usage("unknown flag for", "find", flag, " (see searchd --help)");
     }
     return .{ .find = args };
+}
+
+/// S6-T24: `scan <dir> "<pattern>"` or `scan --folder <folder> "<pattern>"`.
+/// Ranges are the request's (`scan.zig`); a value out of range is a usage
+/// error here, as `find --page-size` is.
+fn parseScan(p: *Parser) error{Usage}!Command {
+    var first = p.next() orelse return p.missingArgument("scan", "<dir>");
+    const folder = std.mem.eql(u8, first, "--folder");
+    if (folder) first = p.next() orelse return p.missingArgument("scan --folder", "<folder>");
+    const pattern_text = p.next() orelse return p.missingArgument("scan", "\"<pattern>\"");
+    if (!std.unicode.utf8ValidateSlice(pattern_text))
+        return p.usage("invalid value for", "pattern", null, " (not valid UTF-8)");
+    var args = ScanArgs{ .path = first, .pattern = pattern_text, .folder = folder };
+    while (p.next()) |flag| {
+        if (std.mem.eql(u8, flag, "--json")) {
+            args.json = true;
+        } else if (std.mem.eql(u8, flag, "--regex")) {
+            args.regex = true;
+        } else if (std.mem.eql(u8, flag, "--word")) {
+            args.word = true;
+        } else if (std.mem.eql(u8, flag, "--case")) {
+            const value = try p.valueOf("--case");
+            if (!std.mem.eql(u8, value, "sensitive") and !std.mem.eql(u8, value, "insensitive") and !std.mem.eql(u8, value, "smart"))
+                return p.usage("invalid value for", "--case", value, " (expected sensitive, insensitive or smart)");
+            args.case = value;
+        } else if (std.mem.eql(u8, flag, "--roots")) {
+            args.roots = try p.list("--roots");
+        } else if (std.mem.eql(u8, flag, "--path-prefix")) {
+            args.path_prefix = try p.valueOf("--path-prefix");
+        } else if (std.mem.eql(u8, flag, "--glob")) {
+            args.glob = try p.valueOf("--glob");
+        } else if (std.mem.eql(u8, flag, "--context")) {
+            args.context = try p.ranged("--context", 0, 20);
+        } else if (std.mem.eql(u8, flag, "--max-per-file")) {
+            args.max_per_file = try p.ranged("--max-per-file", 1, 1000);
+        } else if (std.mem.eql(u8, flag, "--page-size")) {
+            args.page_size = try p.ranged("--page-size", 1, 100);
+        } else if (std.mem.eql(u8, flag, "--cursor")) {
+            args.cursor = try p.valueOf("--cursor");
+        } else if (std.mem.eql(u8, flag, "--time-ms")) {
+            args.time_ms = try p.ranged("--time-ms", 1, 30_000);
+        } else if (folder and std.mem.eql(u8, flag, "--max-file-bytes")) {
+            args.max_file_bytes = try p.byteCount("--max-file-bytes");
+        } else return p.usage("unknown flag for", "scan", flag, " (see searchd --help)");
+    }
+    return .{ .scan = args };
 }
 
 fn parseReadSpan(p: *Parser) error{Usage}!Command {
@@ -1252,6 +1346,86 @@ fn printFind(output: *std.Io.Writer, value: std.json.Value) !void {
     const pending = jsonInt(field(value, "pending_files"));
     if (pending > 0) try output.print("pending files: {d} (not indexed yet; the answer may be incomplete)\n", .{pending});
     if (field(value, "truncated") == .bool and field(value, "truncated").bool) try output.writeAll("truncated: a file in scope was not indexed in full\n");
+}
+
+/// S6-T24: `searchd scan`. The hits go to stdout as `path:line:text` (a
+/// root other than `r-legacy` as `root/path`), context lines as
+/// `path-line-text` with `--` between groups, as grep prints them; the next
+/// page's cursor, a stop for time and the files not searched go to stderr,
+/// so stdout holds only lines. `--json` prints the result object.
+pub fn runScan(io: std.Io, allocator: std.mem.Allocator, args: ScanArgs, output: *std.Io.Writer, errors: *std.Io.Writer) !u8 {
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var params = Params{ .arena = arena };
+    try params.string("pattern", args.pattern);
+    if (args.regex) try params.string("mode", "regex");
+    try params.string("case", args.case);
+    if (args.word) try params.map.put(arena, "whole_word", .{ .bool = true });
+    try params.list("roots", args.roots);
+    try params.string("path_prefix", args.path_prefix);
+    try params.string("name_glob", args.glob);
+    try params.integer("context_lines", args.context);
+    try params.integer("max_hits_per_file", args.max_per_file);
+    try params.integer("page_size", args.page_size);
+    try params.string("cursor", args.cursor);
+    try params.integer("time_budget_ms", args.time_ms);
+    const result = if (args.folder) blk: {
+        var root = std.Io.Dir.cwd().openDir(io, args.path, .{ .iterate = true }) catch |err| switch (err) {
+            error.FileNotFound => return scanFolderUsage(errors, args.path, "no such folder"),
+            error.NotDir => return scanFolderUsage(errors, args.path, "not a folder"),
+            else => return err,
+        };
+        defer root.close(io);
+        break :blk try ops.scanFolder(arena, io, root, params.map, args.max_file_bytes orelse apply_module.default_max_file_bytes);
+    } else try ops.scan(arena, try openService(arena, io, args.path), params.map, cli_caller);
+    switch (result) {
+        .failed => |failure| {
+            try errors.print("searchd: {s}: {s}\n", .{ failure.code.ssName(), oneLine(failure.message) });
+            return 1;
+        },
+        .ok => |text| {
+            if (args.json) {
+                try output.writeAll(text);
+                try output.writeByte('\n');
+                return 0;
+            }
+            try printScan(output, errors, try std.json.parseFromSliceLeaky(std.json.Value, arena, text, .{}));
+            return 0;
+        },
+    }
+}
+
+fn scanFolderUsage(errors: *std.Io.Writer, folder: []const u8, comptime why: []const u8) !u8 {
+    try errors.writeAll("searchd: invalid value for scan --folder <folder>: '");
+    for (folder) |byte| try errors.writeByte(if (byte < 0x20 or byte == 0x7f) '?' else byte);
+    try errors.writeAll("' (" ++ why ++ ")\n");
+    return usage_exit_status;
+}
+
+fn printScanLine(output: *std.Io.Writer, hit: std.json.Value, line: std.json.Value, separator: u8) !void {
+    const root_id = jsonText(field(hit, "root_id"));
+    if (!std.mem.eql(u8, root_id, "r-legacy")) try output.print("{s}/", .{root_id});
+    try output.print("{s}{c}{d}{c}{s}\n", .{ jsonText(field(hit, "path")), separator, jsonInt(field(line, "line")), separator, jsonText(field(line, "text")) });
+}
+
+fn printScan(output: *std.Io.Writer, errors: *std.Io.Writer, value: std.json.Value) !void {
+    const context = jsonInt(field(field(value, "request"), "context_lines")) > 0;
+    for (field(value, "hits").array.items, 0..) |hit, index| {
+        if (context and index > 0) try output.writeAll("--\n");
+        for (field(hit, "before").array.items) |line| try printScanLine(output, hit, line, '-');
+        try printScanLine(output, hit, hit, ':');
+        for (field(hit, "after").array.items) |line| try printScanLine(output, hit, line, '-');
+    }
+    if (field(value, "stopped") == .string and std.mem.eql(u8, jsonText(field(value, "stopped")), "time"))
+        try errors.writeAll("searchd: scan: the page ran out of --time-ms; the next page continues it\n");
+    if (field(value, "next_cursor") == .string) try errors.print("searchd: scan: next page: --cursor {s}\n", .{jsonText(field(value, "next_cursor"))});
+    const counts = field(value, "not_scanned");
+    const pending = jsonInt(field(value, "pending_files"));
+    const not_scanned = jsonInt(field(counts, "too_large")) + jsonInt(field(counts, "unreadable")) + jsonInt(field(counts, "budget_exhausted")) + jsonInt(field(counts, "not_retained"));
+    if (pending + not_scanned > 0) try errors.print("searchd: scan: {d} files not searched (pending={d} too_large={d} unreadable={d} budget_exhausted={d} not_retained={d})\n", .{
+        pending + not_scanned, pending, jsonInt(field(counts, "too_large")), jsonInt(field(counts, "unreadable")), jsonInt(field(counts, "budget_exhausted")), jsonInt(field(counts, "not_retained")),
+    });
 }
 
 pub fn runOutline(io: std.Io, allocator: std.mem.Allocator, args: OutlineArgs, output: *std.Io.Writer, errors: *std.Io.Writer) !u8 {

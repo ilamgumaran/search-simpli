@@ -1,6 +1,6 @@
 /// Typed Dart mirrors of the contract 2.0.0 folder-knowledge results
 /// (`zig/include/search_simpli.h`: `ss_find`, `ss_outline`, `ss_read_span`,
-/// `ss_list_files`, `ss_roots`, `ss_apply_changes`;
+/// `ss_list_files`, `ss_roots`, `ss_apply_changes`; `ss_scan` since 2.10.0;
 /// `docs/folder-knowledge-implementation.md` section 8).
 ///
 /// snake_case on the wire, camelCase in Dart. Every result also keeps the
@@ -443,4 +443,150 @@ class ApplyChangesOptions {
         if (maxTotalBytes != null) 'max_total_bytes': maxTotalBytes,
         if (keepGenerations != null) 'keep_generations': keepGenerations,
       };
+}
+
+/// `mode` of a `scan` request (contract 2.10.0).
+enum ScanMode {
+  /// The pattern's characters, as written.
+  literal('literal'),
+
+  /// The regex subset of `docs/scan.md`.
+  regex('regex');
+
+  const ScanMode(this.wire);
+  final String wire;
+
+  static ScanMode parse(String value) =>
+      ScanMode.values.firstWhere((m) => m.wire == value, orElse: () => throw FormatException('unknown scan mode "$value"'));
+}
+
+/// `case` of a `scan` request; `smart` is insensitive unless the pattern
+/// writes a code point that changes under the fold.
+enum ScanCase {
+  sensitive('sensitive'),
+  insensitive('insensitive'),
+  smart('smart');
+
+  const ScanCase(this.wire);
+  final String wire;
+
+  static ScanCase parse(String value) =>
+      ScanCase.values.firstWhere((c) => c.wire == value, orElse: () => throw FormatException('unknown scan case "$value"'));
+}
+
+/// Why a `scan` page ended early: `time` when `time_budget_ms` ran out (call
+/// again with the `nextCursor`), `none` otherwise.
+enum ScanStopped {
+  none('none'),
+  time('time');
+
+  const ScanStopped(this.wire);
+  final String wire;
+
+  static ScanStopped parse(String value) =>
+      ScanStopped.values.firstWhere((s) => s.wire == value, orElse: () => throw FormatException('unknown scan stop "$value"'));
+}
+
+/// A line around a `scan` hit (`before` and `after`).
+class ScanContextLine {
+  final int line;
+
+  /// The line without its terminator, at most 512 bytes (cut on a code point).
+  final String text;
+  final bool textTruncated;
+
+  const ScanContextLine({required this.line, required this.text, required this.textTruncated});
+
+  factory ScanContextLine.fromJson(Map<String, Object?> json) => ScanContextLine(
+      line: json['line']! as int, text: json['text']! as String, textTruncated: json['text_truncated']! as bool);
+}
+
+/// One `scan` hit: one line.
+class ScanHit {
+  final String rootId;
+  final String path;
+
+  /// 1-based, `readSpan`'s numbering.
+  final int line;
+
+  /// The line without its terminator, at most 512 bytes (cut on a code point).
+  final String text;
+  final bool textTruncated;
+
+  /// Every match starting within [text], in code points; empty when the
+  /// pattern matched only the empty string.
+  final List<CodepointRange> matchOffsets;
+  final List<ScanContextLine> before;
+  final List<ScanContextLine> after;
+
+  const ScanHit({
+    required this.rootId,
+    required this.path,
+    required this.line,
+    required this.text,
+    required this.textTruncated,
+    required this.matchOffsets,
+    required this.before,
+    required this.after,
+  });
+
+  static List<ScanContextLine> _lines(Object? value) =>
+      (value! as List<Object?>).map((e) => ScanContextLine.fromJson(e! as Map<String, Object?>)).toList(growable: false);
+
+  factory ScanHit.fromJson(Map<String, Object?> json) => ScanHit(
+        rootId: json['root_id']! as String,
+        path: json['path']! as String,
+        line: json['line']! as int,
+        text: json['text']! as String,
+        textTruncated: json['text_truncated']! as bool,
+        matchOffsets: (json['match_offsets']! as List<Object?>).map(CodepointRange.fromJson).toList(growable: false),
+        before: _lines(json['before']),
+        after: _lines(json['after']),
+      );
+}
+
+/// `ss_scan()`'s result (contract 2.10.0).
+class ScanResult extends FolderResult {
+  /// `index` (always, from this package).
+  final String source;
+
+  /// What `case` resolved to: `sensitive` or `insensitive`.
+  final ScanCase caseApplied;
+  final List<ScanHit> hits;
+
+  /// Counted over the files this page finished.
+  final int filesMatched;
+  final int filesScanned;
+
+  /// Files with more matching lines than `max_hits_per_file`.
+  final int filesCapped;
+  final int bytesScanned;
+
+  /// Files in scope announced but not indexed yet.
+  final int pendingFiles;
+
+  /// Files in scope not searched, by reason: `too_large`, `unreadable`,
+  /// `budget_exhausted`, `not_retained`.
+  final Map<String, int> notScanned;
+
+  /// A file in scope is pending or was not searched.
+  final bool truncated;
+  final ScanStopped stopped;
+  final String? nextCursor;
+
+  ScanResult._(super.json)
+      : source = json['source']! as String,
+        caseApplied = ScanCase.parse(json['case_applied']! as String),
+        hits = (json['hits']! as List<Object?>).map((e) => ScanHit.fromJson(e! as Map<String, Object?>)).toList(growable: false),
+        filesMatched = json['files_matched']! as int,
+        filesScanned = json['files_scanned']! as int,
+        filesCapped = json['files_capped']! as int,
+        bytesScanned = json['bytes_scanned']! as int,
+        pendingFiles = json['pending_files']! as int,
+        notScanned = (json['not_scanned']! as Map<String, Object?>).map((k, v) => MapEntry(k, v! as int)),
+        truncated = json['truncated']! as bool,
+        stopped = ScanStopped.parse(json['stopped']! as String),
+        nextCursor = json['next_cursor'] as String?;
+
+  factory ScanResult.fromJson(Map<String, Object?> json) => ScanResult._(json);
 }

@@ -25,7 +25,7 @@ class SearchSimpliBindings {
       : _lookup = lookup;
 
   /// The engine contract/build version (contracts/CONTRACTS_VERSION), e.g.
-  /// "2.9.0". The returned pointer is static storage owned by the library:
+  /// "2.10.0". The returned pointer is static storage owned by the library:
   /// never pass it to ss_free(). Cannot fail.
   ffi.Pointer<ffi.Char> ss_version() {
     return _ss_version();
@@ -427,7 +427,8 @@ class SearchSimpliBindings {
 
   /// Free a pointer previously returned by ss_status(), ss_query(),
   /// ss_evidence(), ss_index_folder() or a 2.0.0 function (ss_find,
-  /// ss_outline, ss_read_span, ss_list_files, ss_roots, ss_apply_changes). `ptr` may be NULL (no-op). Never call this on the result
+  /// ss_outline, ss_read_span, ss_list_files, ss_roots, ss_apply_changes,
+  /// and since 2.10.0 ss_scan). `ptr` may be NULL (no-op). Never call this on the result
   /// of ss_version() or ss_last_error() (both static storage, not caller-owned).
   void ss_free(
     ffi.Pointer<ffi.Char> ptr,
@@ -624,6 +625,54 @@ class SearchSimpliBindings {
           ffi.Pointer<ffi.Char> Function(
               ffi.Pointer<ss_handle>, ffi.Pointer<ffi.Char>)>>('ss_find');
   late final _ss_find = _ss_findPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(
+          ffi.Pointer<ss_handle>, ffi.Pointer<ffi.Char>)>();
+
+  /// Contract 2.10.0: lines holding a literal or matching a pattern, in
+  /// root_id, path, line order (not ranked, not tokenized). Request:
+  /// "pattern"      string, 1-1024 bytes, required; no line break
+  /// "mode"         "literal" (default) | "regex" (the subset of
+  /// docs/decisions/0006-pattern-search.md section 2)
+  /// "case"         "sensitive" | "insensitive" | "smart" (default:
+  /// insensitive unless the pattern holds a cased letter)
+  /// "whole_word"   bool (default false); \w is letters, digits and marks
+  /// of any script, without "_"
+  /// "roots", "principal_labels", "path_prefix" as ss_find
+  /// "name_glob"    1-255 bytes, no "/", * and ? over the file name
+  /// "context_lines" 0-20 (default 0); "max_hits_per_file" 1-1000 (50);
+  /// "page_size"    1-100 (20); "cursor"; "time_budget_ms" 1-30000 (2000)
+  /// Result, after the envelope ("source": "index" follows "request"):
+  /// "case_applied"; "hits" [{"root_id","path","line","text" (at most 512
+  /// bytes, no terminator),"text_truncated","match_offsets" (half-open
+  /// codepoint ranges into text),"before","after" [{"line","text",
+  /// "text_truncated"}]}]; "files_matched", "files_scanned", "files_capped",
+  /// "bytes_scanned" (for the files whose scan ended on this page);
+  /// "pending_files"; "not_scanned" {"too_large","unreadable",
+  /// "budget_exhausted","not_retained"}; "not_read" (null); "truncated" (the
+  /// corpus may be incomplete, as ss_find); "stopped" ("none" | "time", the
+  /// page ran out of time_budget_ms); "next_cursor"
+  /// ("<generation>:<request>:<file>:<line>:<listed>"). Warning
+  /// "pattern_matches_empty". Refusals: SS_ERR_INVALID_ARGUMENT for a field
+  /// out of range, a pattern outside the subset ("pattern not supported at
+  /// byte N: <reason>"), a stale, foreign or malformed cursor; SS_ERR_CAPACITY
+  /// when the source is absent or unreadable (as ss_outline) or a single line
+  /// alone outlasts time_budget_ms ("line N of <root>/<path> outlasts
+  /// time_budget_ms (B): ...").
+  ffi.Pointer<ffi.Char> ss_scan(
+    ffi.Pointer<ss_handle> handle,
+    ffi.Pointer<ffi.Char> request_json,
+  ) {
+    return _ss_scan(
+      handle,
+      request_json,
+    );
+  }
+
+  late final _ss_scanPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              ffi.Pointer<ss_handle>, ffi.Pointer<ffi.Char>)>>('ss_scan');
+  late final _ss_scan = _ss_scanPtr.asFunction<
       ffi.Pointer<ffi.Char> Function(
           ffi.Pointer<ss_handle>, ffi.Pointer<ffi.Char>)>();
 

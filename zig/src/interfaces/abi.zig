@@ -442,6 +442,14 @@ pub export fn ss_find(handle: ?*Handle, request_json: ?[*:0]const u8) callconv(.
     return runOperation("ss_find", h, request_json, ops.find);
 }
 
+/// `scan` (S6-T24, CAP-25): lines holding a literal or matching a pattern,
+/// read-only. See `search_simpli.h`.
+pub export fn ss_scan(handle: ?*Handle, request_json: ?[*:0]const u8) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const h = handle orelse return nullHandle("ss_scan");
+    return runOperation("ss_scan", h, request_json, ops.scan);
+}
+
 /// `outline` of one file. See `search_simpli.h`.
 pub export fn ss_outline(handle: ?*Handle, request_json: ?[*:0]const u8) callconv(.c) ?[*:0]u8 {
     clearLastError();
@@ -1153,7 +1161,7 @@ test "ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence
     try std.testing.expectEqualStrings("guides/hybrid.md", evidence_items[0].object.get("citation").?.object.get("path").?.string);
     try std.testing.expectEqual(false, evidence_items[1].object.get("found").?.bool);
 
-    try std.testing.expectEqualStrings("2.9.0", std.mem.span(ss_version()));
+    try std.testing.expectEqualStrings("2.10.0", std.mem.span(ss_version()));
 }
 
 test "ss_import_json publishes a queryable snapshot and reports negative codes on failure" {

@@ -213,7 +213,7 @@ class SkillDocumentTests(unittest.TestCase):
         for needle in ("exact_match", "null", "pending_files", "truncated", "never call", "apply_changes", "root/path › section · lines",
                        "[n]", "index_status", "find", "search_knowledge", "read_span", "read_chunk"):
             self.assertIn(needle.lower(), text.lower(), needle)
-        for tool in ("search_knowledge", "read_chunk", "list_sources", "index_status", "find", "outline", "read_span", "list_files", "apply_changes"):
+        for tool in ("search_knowledge", "read_chunk", "list_sources", "index_status", "find", "outline", "read_span", "list_files", "scan", "apply_changes"):
             self.assertIn(f"`{tool}`", text, tool)
 
     def test_skill_names_the_filename_field(self) -> None:

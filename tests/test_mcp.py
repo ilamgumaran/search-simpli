@@ -124,7 +124,7 @@ class McpServerTests(unittest.TestCase):
         self.assertEqual(client.request("initialize", {"capabilities": {}})["error"]["code"], -32602)
         self.assertEqual(client.request("resources/list")["error"]["code"], -32600)
         client.initialize()
-        self.assertEqual(len(client.list_tools()), 8)
+        self.assertEqual(len(client.list_tools()), 9)
         self.finish(client)
 
     # ------------------------------------------------------------ tools ---
@@ -219,6 +219,11 @@ class McpServerTests(unittest.TestCase):
             ("list_files", {"page_size": 1000}),
             ("list_files", {"root_id": "laptop", "page_size": 3}),
         ]
+        # S6-T24: scan over every phrase judgment's words, literal and as a pattern.
+        for case in self.judgments["phrase"]:
+            words = case["query"].strip('"')
+            requests.append(("scan", {"pattern": words, "case": "insensitive", "context_lines": 1}))
+            requests.append(("scan", {"pattern": r"\b" + words.split()[0] + r"\w*", "mode": "regex", "page_size": 3}))
         return requests
 
     def assert_parity(self, rpc: Rpc, client: McpClient, name: str, arguments: dict) -> None:
@@ -267,6 +272,7 @@ class McpServerTests(unittest.TestCase):
                 ("outline", {"root_id": "school", "path": "science-notes.md"}),
                 ("read_span", {"root_id": "school", "path": "science-notes.md", "start_line": 40, "end_line": 41}),
                 ("list_files", {}),
+                ("scan", {"pattern": "tide"}),
             ]
             self.assertEqual({name for name, _ in minimal}, set(READ_TOOLS))
             for name, arguments in minimal:
@@ -295,6 +301,11 @@ class McpServerTests(unittest.TestCase):
                 ("read_span", {"root_id": "school", "path": "notes.md", "start_line": 1}),
                 ("list_files", {"status": "done"}),
                 ("index_status", {"roots": "school"}),
+                ("scan", {"pattern": "tide", "bogus": 1}),
+                ("scan", {"pattern": "a(", "mode": "regex"}),
+                ("scan", {"pattern": "a\\n", "mode": "regex"}),
+                ("scan", {"pattern": "tide", "page_size": 101}),
+                ("scan", {"pattern": "tide", "cursor": "f0:0"}),
             ]
             for name, arguments in refused:
                 rpc_line = json.loads(rpc.raw(name, arguments))

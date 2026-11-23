@@ -121,6 +121,19 @@ void main() {
     expect(compared, 25);
     // ignore: avoid_print
     print('S3-T4 parity: $compared requests, CLI --json = RPC = Dart (canonical JSON)');
+    // S6-T24: scan over every phrase judgment's words.
+    var scanned = 0;
+    for (final raw in judgments['phrase']! as List<Object?>) {
+      final words = ((raw! as Map<String, Object?>)['query']! as String).replaceAll('"', '');
+      await same(
+        'scan $words',
+        await cli(['scan', dir.path, words, '--case', 'insensitive', '--context', '1', '--page-size', '100']),
+        await rpc.result('scan', {'pattern': words, 'case': 'insensitive', 'context_lines': 1, 'page_size': 100}),
+        engine.scan(words, caseMode: ScanCase.insensitive, contextLines: 1, pageSize: 100).json,
+      );
+      scanned++;
+    }
+    expect(scanned, 5);
   });
 
   // S3-T4 Verdict finding 1 (closed in S3-T6): one request per method that
@@ -138,5 +151,7 @@ void main() {
         engine.readSpan(rootId, path, 40, 42).json);
     await same('list_files (defaults)', await cli(['list-files', dir.path]), await rpc.result('list_files', {}), engine.listFiles().json);
     await same('roots (defaults)', await cli(['roots', dir.path]), await rpc.result('roots', {}), engine.roots().json);
+    await same('scan (defaults)', await cli(['scan', dir.path, 'tide']), await rpc.result('scan', {'pattern': 'tide'}),
+        engine.scan('tide').json);
   });
 }

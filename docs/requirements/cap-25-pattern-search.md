@@ -1,6 +1,6 @@
 # CAP-25 — Pattern search: `scan`, exact strings and a small pattern language, line by line
 
-Status: Accepted under the maintainer's direction of 22 and 23 Nov 2026; recorded for his review · designed in [ADR 0006](../decisions/0006-pattern-search.md), built by [S6-T24](../tasks/S6-T24.md) Part 2 (rulings after Part 1). Not Validated
+Status: Implemented on `task/S6-T24` (S6-T24 Part 2), awaiting timing, verification and merge · accepted under the maintainer's direction of 22 and 23 Nov 2026; recorded for his review · designed in [ADR 0006](../decisions/0006-pattern-search.md), built by [S6-T24](../tasks/S6-T24.md) Part 2 (rulings after Part 1); the user document is [scan](../scan.md). Not Validated
 
 **Numbering.** On `main` at `43a308d`, the highest ids are CAP-24, FR-36, NFR-18 and CFT-33. These come from the
 register tables and the specification's proposed appendix. No open branch adds a record under

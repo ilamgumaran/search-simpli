@@ -29,7 +29,8 @@ class SearchSimpliException implements Exception {
   String toString() => 'SearchSimpliException: $message';
 }
 
-/// The contract 2.0.0 symbols a library must export for this package.
+/// The contract 2.0.0 symbols a library must export for this package, and
+/// `ss_scan` (2.10.0).
 const List<String> requiredNewSymbols = [
   'ss_find',
   'ss_outline',
@@ -37,6 +38,7 @@ const List<String> requiredNewSymbols = [
   'ss_list_files',
   'ss_roots',
   'ss_apply_changes',
+  'ss_scan',
 ];
 
 /// Asserts the library's `ss_version()` is [expectedContractsVersion] and
@@ -342,6 +344,54 @@ class SearchSimpli {
         if (pathPrefix != null) 'path_prefix': pathPrefix,
         if (pageSize != null) 'page_size': pageSize,
         if (cursor != null) 'cursor': cursor,
+      }));
+
+  /// `ss_scan()` (contract 2.10.0): every line of the visible files that
+  /// holds [pattern] ([ScanMode.literal], the default) or matches it
+  /// ([ScanMode.regex], the subset of `docs/scan.md`), in root, path and
+  /// line order. Read-only. [caseMode] defaults to [ScanCase.smart];
+  /// [wholeWord] needs a non-word code point (or the line's edge) on each
+  /// side of a match, and `_` is not a word code point. [nameGlob] matches
+  /// the file name (`*`, `?`); [pathPrefix] is root-relative. [contextLines]
+  /// 0-20 (default 0), [maxHitsPerFile] 1-1000 (default 50), [pageSize]
+  /// 1-100 lines (default 20), [timeBudgetMs] 1-30000 (default 2000): a page
+  /// that runs out of time ends with `stopped` [ScanStopped.time] and a
+  /// `nextCursor` to pass back as [cursor].
+  ///
+  /// Throws [SearchSimpliException] on a refusal: a pattern outside the
+  /// subset ("pattern not supported at byte N: ...") or a field out of range
+  /// (`SS_ERR_INVALID_ARGUMENT`), a cursor from another generation ("stale
+  /// cursor") or request, a generation without source bytes, or one line
+  /// longer to search than [timeBudgetMs] (`SS_ERR_CAPACITY`).
+  ScanResult scan(
+    String pattern, {
+    ScanMode? mode,
+    ScanCase? caseMode,
+    bool? wholeWord,
+    List<String>? roots,
+    List<String>? principalLabels,
+    String? pathPrefix,
+    String? nameGlob,
+    int? contextLines,
+    int? maxHitsPerFile,
+    int? pageSize,
+    String? cursor,
+    int? timeBudgetMs,
+  }) =>
+      ScanResult.fromJson(_call(_bindings.ss_scan, {
+        'pattern': pattern,
+        if (mode != null) 'mode': mode.wire,
+        if (caseMode != null) 'case': caseMode.wire,
+        if (wholeWord != null) 'whole_word': wholeWord,
+        if (roots != null) 'roots': roots,
+        if (principalLabels != null) 'principal_labels': principalLabels,
+        if (pathPrefix != null) 'path_prefix': pathPrefix,
+        if (nameGlob != null) 'name_glob': nameGlob,
+        if (contextLines != null) 'context_lines': contextLines,
+        if (maxHitsPerFile != null) 'max_hits_per_file': maxHitsPerFile,
+        if (pageSize != null) 'page_size': pageSize,
+        if (cursor != null) 'cursor': cursor,
+        if (timeBudgetMs != null) 'time_budget_ms': timeBudgetMs,
       }));
 
   /// `ss_outline()`: a file's headings and front matter. Throws

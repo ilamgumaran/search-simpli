@@ -177,6 +177,13 @@
  * opens unchanged and takes the newly readable files at its next update,
  * without a rebuild. ss_apply_changes reads what the host names, as before
  * (docs/requirements/cap-24-which-files-are-text.md). */
+/* Contract 2.10.0 (S6-T24) adds ss_scan(): every line holding an exact
+ * string or matching a pattern (a regex subset), over the handle's index,
+ * read-only (docs/requirements/cap-25-pattern-search.md,
+ * docs/decisions/0006-pattern-search.md). Additive: no other function,
+ * request field, error code or index format version changes. A folder
+ * scan with nothing prepared is on the command line only (searchd scan
+ * --folder). */
 #ifndef SEARCH_SIMPLI_H
 #define SEARCH_SIMPLI_H
 
@@ -205,7 +212,7 @@ typedef struct ss_handle ss_handle;
 
 /*
  * The engine contract/build version (contracts/CONTRACTS_VERSION), e.g.
- * "2.9.0". The returned pointer is static storage owned by the library:
+ * "2.10.0". The returned pointer is static storage owned by the library:
  * never pass it to ss_free(). Cannot fail.
  */
 const char *ss_version(void);
@@ -511,7 +518,8 @@ int64_t ss_import_json(const char *dir_path, const char *bytes, size_t bytes_len
 /*
  * Free a pointer previously returned by ss_status(), ss_query(),
  * ss_evidence(), ss_index_folder() or a 2.0.0 function (ss_find,
- * ss_outline, ss_read_span, ss_list_files, ss_roots, ss_apply_changes). `ptr` may be NULL (no-op). Never call this on the result
+ * ss_outline, ss_read_span, ss_list_files, ss_roots, ss_apply_changes,
+ * and since 2.10.0 ss_scan). `ptr` may be NULL (no-op). Never call this on the result
  * of ss_version() or ss_last_error() (both static storage, not caller-owned).
  */
 void ss_free(char *ptr);
@@ -694,6 +702,40 @@ char *ss_index_folder(const char *dir_path, const char *folder_path, const char 
  * terms".
  */
 char *ss_find(ss_handle *handle, const char *request_json);
+
+/*
+ * Contract 2.10.0: lines holding a literal or matching a pattern, in
+ * root_id, path, line order (not ranked, not tokenized). Request:
+ *   "pattern"      string, 1-1024 bytes, required; no line break
+ *   "mode"         "literal" (default) | "regex" (the subset of
+ *                  docs/decisions/0006-pattern-search.md section 2)
+ *   "case"         "sensitive" | "insensitive" | "smart" (default:
+ *                  insensitive unless the pattern holds a cased letter)
+ *   "whole_word"   bool (default false); \w is letters, digits and marks
+ *                  of any script, without "_"
+ *   "roots", "principal_labels", "path_prefix" as ss_find
+ *   "name_glob"    1-255 bytes, no "/", * and ? over the file name
+ *   "context_lines" 0-20 (default 0); "max_hits_per_file" 1-1000 (50);
+ *   "page_size"    1-100 (20); "cursor"; "time_budget_ms" 1-30000 (2000)
+ * Result, after the envelope ("source": "index" follows "request"):
+ * "case_applied"; "hits" [{"root_id","path","line","text" (at most 512
+ * bytes, no terminator),"text_truncated","match_offsets" (half-open
+ * codepoint ranges into text),"before","after" [{"line","text",
+ * "text_truncated"}]}]; "files_matched", "files_scanned", "files_capped",
+ * "bytes_scanned" (for the files whose scan ended on this page);
+ * "pending_files"; "not_scanned" {"too_large","unreadable",
+ * "budget_exhausted","not_retained"}; "not_read" (null); "truncated" (the
+ * corpus may be incomplete, as ss_find); "stopped" ("none" | "time", the
+ * page ran out of time_budget_ms); "next_cursor"
+ * ("<generation>:<request>:<file>:<line>:<listed>"). Warning
+ * "pattern_matches_empty". Refusals: SS_ERR_INVALID_ARGUMENT for a field
+ * out of range, a pattern outside the subset ("pattern not supported at
+ * byte N: <reason>"), a stale, foreign or malformed cursor; SS_ERR_CAPACITY
+ * when the source is absent or unreadable (as ss_outline) or a single line
+ * alone outlasts time_budget_ms ("line N of <root>/<path> outlasts
+ * time_budget_ms (B): ...").
+ */
+char *ss_scan(ss_handle *handle, const char *request_json);
 
 /*
  * One file's structure. Request: "root_id", "path" (both required),

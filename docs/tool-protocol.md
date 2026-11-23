@@ -1,6 +1,6 @@
 # Local knowledge tool protocol
 
-Status: implemented over standard input/output by both the Python reference (`src/search_platform/tool_server.py`) and persisted Zig engine (`zig/src/interfaces/rpc.zig`, launched with `searchd serve`), and over MCP by `searchd mcp` (S3-T6, [MCP server](mcp-server.md)). Contract 2.0.0 (S3-T4) adds the folder-knowledge methods `find`, `outline`, `read_span`, `list_files`, `roots` and the write method `apply_changes` to the Zig server only; the Python reference keeps the four methods below. Every request shape is in `contracts/tool-request.schema.json` (version 2).
+Status: implemented over standard input/output by both the Python reference (`src/search_platform/tool_server.py`) and persisted Zig engine (`zig/src/interfaces/rpc.zig`, launched with `searchd serve`), and over MCP by `searchd mcp` (S3-T6, [MCP server](mcp-server.md)). Contract 2.0.0 (S3-T4) adds the folder-knowledge methods `find`, `outline`, `read_span`, `list_files`, `roots` and the write method `apply_changes` to the Zig server only, and contract 2.10.0 (S6-T24) adds `scan`; the Python reference keeps the four methods below. Every request shape is in `contracts/tool-request.schema.json` (version 2).
 
 ## Purpose
 
@@ -59,6 +59,14 @@ Parameters: `query` (required; a quoted query is a phrase, a trailing `*` a pref
 {"jsonrpc":"2.0","id":5,"method":"find","params":{"query":"\"count me in\"","roots":["school"],"page_size":5}}
 ```
 
+### `scan`
+
+Contract 2.10.0 (S6-T24), read-only; the rules are in [scan](scan.md). Parameters: `pattern` (required, 1–1,024 bytes), `mode` (`literal` default, `regex`), `case` (`smart` default, `sensitive`, `insensitive`), `whole_word`, `roots`, `path_prefix`, `name_glob`, `context_lines` (0–20), `max_hits_per_file` (1–1,000, default 50), `page_size` (1–100, default 20), `cursor`, `time_budget_ms` (1–30,000, default 2,000). Returns `source`, `case_applied`, `hits` (`root_id`, `path`, `line`, `text`, `text_truncated`, `match_offsets`, `before`, `after`), `files_matched`, `files_scanned`, `files_capped`, `bytes_scanned`, `pending_files`, `not_scanned`, `not_read` (null over an index), `truncated`, `stopped` (`none` or `time`), `next_cursor`. A pattern outside the subset is `-32602` "Invalid params: pattern not supported at byte <n>: <reason>"; one line that alone outlasts the budget is `-32005`.
+
+```json
+{"jsonrpc":"2.0","id":6,"method":"scan","params":{"pattern":"TS-\\d{4}","mode":"regex","roots":["school"]}}
+```
+
 ### `outline`
 
 Parameters: `root_id`, `path` (both required), `roots`. Returns `front_matter` (or null), `headings` (`level`, `text`, `line`, `end_line`), `lines`, `chunker`.
@@ -114,7 +122,7 @@ This is a capability boundary, not a complete authorization system. Multi-user d
 
 ## Adapter path
 
-The method semantics are transport-independent and have Python and Zig JSON-lines implementations and an MCP server: `searchd mcp` (S3-T6, [MCP server](mcp-server.md)) publishes the eight read methods as MCP tools (`--baseline`: CAP-13's four; `apply_changes` only with `--allow-write`) with the schemas of `contracts/tools/`, answers each through the same `ops.zig` functions (its `structuredContent` equals this server's `result` for the same params, checked for every fixture judgment), takes the scope from its command line only and refuses a caller's `principal_labels` or `query_vector`.
+The method semantics are transport-independent and have Python and Zig JSON-lines implementations and an MCP server: `searchd mcp` (S3-T6, [MCP server](mcp-server.md)) publishes the nine read methods (`scan` since S6-T24, [scan](scan.md)) as MCP tools (`--baseline`: CAP-13's four; `apply_changes` only with `--allow-write`) with the schemas of `contracts/tools/`, answers each through the same `ops.zig` functions (its `structuredContent` equals this server's `result` for the same params, checked for every fixture judgment), takes the scope from its command line only and refuses a caller's `principal_labels` or `query_vector`.
 
 For the raw Zig service, vector/hybrid calls contain the internal `query_vector`. The LLM-facing `zig_gateway.py` deliberately removes that concern from callers: it accepts the same text parameters as the Python tool, verifies the exact snapshot model at startup, constructs the vector, and forwards the internal request. Caller-supplied vectors are rejected at this trust boundary. See [Query-embedding gateway](query-embedding-gateway.md).
 

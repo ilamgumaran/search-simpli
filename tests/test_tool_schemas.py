@@ -29,7 +29,7 @@ from src.search_platform.schema_check import (  # noqa: E402
 from test_folder_surfaces import ROOT_IDS, Rpc, build_searchd, fixture_request  # noqa: E402
 
 TOOLS = ("search_knowledge", "read_chunk", "list_sources", "index_status", "find",
-         "outline", "read_span", "list_files", "apply_changes")
+         "outline", "read_span", "list_files", "scan", "apply_changes")
 TOOLS_DIR = REPO / "contracts" / "tools"
 NO_ZIG = os.environ.get("SEARCH_SIMPLI_NO_ZIG") == "1"
 
@@ -47,7 +47,7 @@ def objects(schema: object, path: str = "$"):
 
 
 class SchemaShapeTests(unittest.TestCase):
-    def test_eighteen_files_for_nine_tools(self) -> None:
+    def test_twenty_files_for_ten_tools(self) -> None:
         names = sorted(p.name for p in TOOLS_DIR.glob("*.schema.json"))
         self.assertEqual(names, sorted(f"{t}.{k}.schema.json" for t in TOOLS for k in ("request", "result")))
 
@@ -96,6 +96,11 @@ class SchemaShapeTests(unittest.TestCase):
             ("outline", {"root_id": "school", "path": "science-notes.md"}),
             ("read_span", {"root_id": "school", "path": "notes.md", "start_line": 31, "end_line": 34, "context_lines": 1}),
             ("list_files", {"status": "pending", "page_size": 1000}),
+            ("scan", {"pattern": "TS-\\d{4}", "mode": "regex", "case": "smart", "whole_word": True, "roots": ["school"],
+                      "path_prefix": "geo", "name_glob": "*.md", "context_lines": 2, "max_hits_per_file": 1000,
+                      "page_size": 100, "time_budget_ms": 30000}),
+            ("scan", {"pattern": "x", "cursor": "3:0123456789abcdef:4:17:9"}),
+            ("scan", {"pattern": "x", "cursor": "f0123456789abcdef:0123456789abcdef:0:0:0"}),
             ("apply_changes", {"expect_generation": 1, "roots": [{"root_id": "home", "kind": "host"}],
                                "changes": [{"op": "add", "root_id": "home", "path": "a.md", "content_base64": "IyBBCg=="}]}),
         ]
@@ -111,6 +116,11 @@ class SchemaShapeTests(unittest.TestCase):
             ("outline", {"root_id": "school"}), ("read_span", {"root_id": "a", "path": "b", "start_line": 0, "end_line": 1}),
             ("read_span", {"root_id": "a", "path": "b", "start_line": 1, "end_line": 2, "context_lines": 21}),
             ("list_files", {"page_size": 1001}), ("list_files", {"status": "gone"}),
+            ("scan", {}), ("scan", {"pattern": ""}), ("scan", {"pattern": "x", "mode": "glob"}),
+            ("scan", {"pattern": "x", "case": "upper"}), ("scan", {"pattern": "x", "context_lines": 21}),
+            ("scan", {"pattern": "x", "max_hits_per_file": 1001}), ("scan", {"pattern": "x", "page_size": 101}),
+            ("scan", {"pattern": "x", "time_budget_ms": 30001}), ("scan", {"pattern": "x", "cursor": "1:5"}),
+            ("scan", {"pattern": "x", "principal_labels": ["adults"]}), ("scan", {"pattern": "x", "whole_word": 1}),
             ("apply_changes", {}), ("apply_changes", {"changes": [{"op": "rename", "root_id": "a"}]}),
             ("apply_changes", {"changes": [], "principal_labels": ["x"]}),
         ]
@@ -329,11 +339,23 @@ class RecordedResponseTests(unittest.TestCase):
         finally:
             server.close()
 
+    def test_scan_index_cli_and_rpc(self) -> None:
+        """S6-T24: scan's answers, with hits, context, a cursor and a refusal-free empty page, fit the schema."""
+        for params in ({"pattern": "tide"}, {"pattern": "TIDE", "case": "insensitive", "context_lines": 1},
+                       {"pattern": "t[a-z]+e", "mode": "regex", "whole_word": True}, {"pattern": "newt-zzz"},
+                       {"pattern": "tide", "roots": ["school"], "name_glob": "*.md"}):
+            self.assert_valid("scan", self.rpc_ok("scan", params))
+        page = self.rpc_ok("scan", {"pattern": "e", "page_size": 1})
+        self.assertIsNotNone(page["next_cursor"])
+        self.assert_valid("scan", self.rpc_ok("scan", {"pattern": "e", "page_size": 1, "cursor": page["next_cursor"]}))
+        self.assert_valid("scan", self.cli("scan", str(self.index), "tide", "--context", "2"))
+
     def test_a_response_with_an_extra_field_fails_every_schema(self) -> None:
         self.test_search_knowledge_read_chunk_list_sources()
         self.test_index_status()
         self.test_find_every_mode_cli_and_rpc()
         self.test_outline_read_span_list_files_roots()
+        self.test_scan_index_cli_and_rpc()
         seen = {tool for tool, _, _ in self.recorded}
         self.assertEqual(seen, set(TOOLS) - {"apply_changes"})
         for tool, _, result in self.recorded:
@@ -356,6 +378,13 @@ class RecordedResponseTests(unittest.TestCase):
         planted = copy.deepcopy(find)
         planted["hits"][0]["start_line"] = "3"
         self.assertNotEqual(validate(planted, schema), [])
+        scanned = next(r for t, _, r in self.recorded if t == "scan" and r["hits"] and r["hits"][0]["before"] + r["hits"][0]["after"])
+        schema = load_tool_schema("scan", "result")
+        for target in (lambda r: r["hits"][0], lambda r: (r["hits"][0]["before"] + r["hits"][0]["after"])[0],
+                       lambda r: r["scope"], lambda r: r["not_scanned"], lambda r: r["request"]):
+            planted = copy.deepcopy(scanned)
+            target(planted)["surprise"] = 1
+            self.assertNotEqual(validate(planted, schema), [])
         # The apply report too.
         planted = copy.deepcopy(self.apply_report)
         planted["surprise"] = 1

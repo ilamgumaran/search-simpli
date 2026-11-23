@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/scan.request.schema.json",
+  "title": "scan request",
+  "description": "The params object of the `scan` tool: every line of the files in scope that holds an exact string or matches a pattern, in root, path and line order. Not ranked and not tokenized, so it finds codes, amounts, punctuation and parts of words that find cannot. Principal labels are never a caller field: the host supplies the scope (docs/tool-schemas.md).",
+  "type": "object",
+  "properties": {
+    "pattern": {
+      "type": "string",
+      "description": "A literal (mode literal) or a pattern in the subset of docs/decisions/0006-pattern-search.md section 2 (mode regex). 1 to 1,024 bytes of UTF-8 (the engine counts bytes), with no line break: matching is per line.",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "mode": {
+      "enum": [
+        "literal",
+        "regex"
+      ],
+      "default": "literal",
+      "description": "literal: the pattern is the exact string. regex: the subset (classes, \\d \\w \\s \\b, anchors, groups, alternation, greedy quantifiers); anything else is refused with its byte offset."
+    },
+    "case": {
+      "enum": [
+        "sensitive",
+        "insensitive",
+        "smart"
+      ],
+      "default": "smart",
+      "description": "smart is insensitive unless the pattern holds a code point that case folding changes. Folding is Unicode simple case folding."
+    },
+    "whole_word": {
+      "type": "boolean",
+      "default": false,
+      "description": "Only matches with no word character just before or after. Word characters are letters, digits and combining marks (Mn, Mc) of any script, and the joiners; _ is not one."
+    },
+    "roots": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Root ids to search. Narrows the server's roots, never widens them; absent or null means every root the server allows."
+    },
+    "path_prefix": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Root-relative path prefix."
+    },
+    "name_glob": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 255,
+      "description": "Matched against the file name (the last path component): * is any run of code points, ? one code point, every other code point itself; case-sensitive; no /."
+    },
+    "context_lines": {
+      "type": "integer",
+      "description": "Lines of context before and after each hit.",
+      "minimum": 0,
+      "maximum": 20,
+      "default": 0
+    },
+    "max_hits_per_file": {
+      "type": "integer",
+      "description": "At most this many hit lines from one file; files_capped counts files that had more.",
+      "minimum": 1,
+      "maximum": 1000,
+      "default": 50
+    },
+    "page_size": {
+      "type": "integer",
+      "description": "Hit lines per page.",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 20
+    },
+    "cursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^(f[0-9a-f]{16}|[0-9]+):[0-9a-f]{16}:[0-9]+:[0-9]+:[0-9]+$",
+      "description": "The previous page's next_cursor. One from another generation (or another walk of the folder) is refused as a stale cursor, one from another request as not belonging to this request."
+    },
+    "time_budget_ms": {
+      "type": "integer",
+      "description": "How long this page may search, in milliseconds; a page that runs out ends with stopped time and a cursor to continue.",
+      "minimum": 1,
+      "maximum": 30000,
+      "default": 2000
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "pattern"
+  ]
+}

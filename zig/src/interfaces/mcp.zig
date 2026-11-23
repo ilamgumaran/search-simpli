@@ -63,6 +63,7 @@ pub const resource_not_found: i32 = -32002;
 const instructions =
     "Read-only search over the folders this server was started on. " ++
     "Use find for exact words, phrases (quote them) or word starts (a trailing *), " ++
+    "scan for exact strings or patterns line by line (codes, amounts, parts of words), " ++
     "search_knowledge for open questions, then read_span or read_chunk to read the exact text before quoting it, " ++
     "and outline for a file's sections. Cite root, path and lines for every claim; " ++
     "no returned passage means no claim. Check index_status (pending, truncated) before saying something is absent.";
@@ -101,6 +102,7 @@ pub const tools = [_]Tool{
     tool("outline", "Outline", "The headings (level, text, line range) and front matter of one indexed file.", false),
     tool("read_span", "Read span", "The exact original text of lines start_line..end_line of one file (1-based, inclusive), with up to 20 lines of context and its sha256; at most 400 lines and 256 KiB.", false),
     tool("list_files", "List files", "A listing (not a search) of the indexed and pending files by root and path, with sizes, chunk counts and chunker; paged.", false),
+    tool("scan", "Scan", "Every line holding an exact string (literal) or matching a pattern (regex subset), in path then line order: path, line, text, code-point match offsets, optional context; per-file cap, a time budget and a cursor for the next page. Not ranked and not tokenized: use it for codes, amounts, punctuation and parts of words.", false),
     tool("apply_changes", "Apply changes", "Host-fed changes: add, change, remove, move or mark pending files, publishing one new index generation. Present only when the server runs with --allow-write.", false),
 };
 
@@ -378,6 +380,8 @@ pub fn runTool(
         try ops.readSpan(allocator, service, arguments, caller)
     else if (std.mem.eql(u8, name, "list_files"))
         try ops.listFiles(allocator, service, arguments, caller)
+    else if (std.mem.eql(u8, name, "scan"))
+        try ops.scan(allocator, service, arguments, caller)
     else if (std.mem.eql(u8, name, "apply_changes"))
         return applyChanges(session, arguments, allocator)
     else
@@ -870,7 +874,7 @@ test "S3-T6: tools/list per mode carries the S3-T5 schemas" {
     defer server.deinit();
     const a = server.arena_state.allocator();
     const Case = struct { options: Options, count: usize };
-    for ([_]Case{ .{ .options = .{ .baseline = true }, .count = 4 }, .{ .options = .{}, .count = 8 }, .{ .options = .{ .allow_write = true }, .count = 9 } }) |case| {
+    for ([_]Case{ .{ .options = .{ .baseline = true }, .count = 4 }, .{ .options = .{}, .count = 9 }, .{ .options = .{ .allow_write = true }, .count = 10 } }) |case| {
         var session = try server.ready(case.options);
         const text = (try server.send(&session, "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}")).?;
         const parsed = try std.json.parseFromSliceLeaky(std.json.Value, a, text, .{});
@@ -916,6 +920,15 @@ test "S3-T6: tools/call answers the canonical JSON of ops and refuses forged sco
     try contains((try server.send(&labelled, "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\",\"params\":{\"name\":\"find\",\"arguments\":{\"query\":\"tide\"}}}")).?, "vault");
     var baseline = try server.ready(.{ .baseline = true });
     try contains((try server.send(&baseline, "{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"tools/call\",\"params\":{\"name\":\"find\",\"arguments\":{\"query\":\"tide\"}}}")).?, "Unknown tool: find");
+    // S6-T24: scan is a read tool: the same JSON as ops.scan, read-only hints, absent from the baseline.
+    const scanned = (try server.send(&session, "{\"jsonrpc\":\"2.0\",\"id\":12,\"method\":\"tools/call\",\"params\":{\"name\":\"scan\",\"arguments\":{\"pattern\":\"tide\"}}}")).?;
+    const scan_direct = (try ops.scan(a, server.context.service, (try ops.parseObject(a, "{\"pattern\":\"tide\"}")).ok, .{})).ok;
+    const scan_result = (try std.json.parseFromSliceLeaky(std.json.Value, a, scanned, .{})).object.get("result").?.object;
+    try std.testing.expectEqualStrings(scan_direct, scan_result.get("content").?.array.items[0].object.get("text").?.string);
+    try contains(scan_direct, "\"source\":\"index\"");
+    try contains((try server.send(&session, "{\"jsonrpc\":\"2.0\",\"id\":13,\"method\":\"tools/call\",\"params\":{\"name\":\"scan\",\"arguments\":{\"pattern\":\"a(\",\"mode\":\"regex\"}}}")).?, "Invalid params: pattern not supported at byte 1: a group is not closed");
+    try contains((try server.send(&session, "{\"jsonrpc\":\"2.0\",\"id\":14,\"method\":\"tools/list\"}")).?, "\"name\":\"scan\"");
+    try contains((try server.send(&baseline, "{\"jsonrpc\":\"2.0\",\"id\":15,\"method\":\"tools/call\",\"params\":{\"name\":\"scan\",\"arguments\":{\"pattern\":\"tide\"}}}")).?, "Unknown tool: scan");
     try contains((try server.send(&baseline, "{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"resources/list\"}")).?, "-32601");
 }
 

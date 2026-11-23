@@ -7,6 +7,7 @@ Schema 2020-12 files in `contracts/tools/`:
 | --- | --- | --- |
 | `search_knowledge`, `read_chunk`, `list_sources`, `index_status` | `<tool>.request.schema.json` | `<tool>.result.schema.json` |
 | `find`, `outline`, `read_span`, `list_files` | `<tool>.request.schema.json` | `<tool>.result.schema.json` |
+| `scan` (S6-T24, contract 2.10.0; [scan](scan.md)) | `scan.request.schema.json` | `scan.result.schema.json` |
 | `apply_changes` (write; host only) | `apply_changes.request.schema.json` | `apply_changes.result.schema.json` |
 
 `roots` (the visible roots and their counts) has no tool file: it is the
@@ -111,7 +112,7 @@ tests use (`validate(instance, schema)` returns the list of errors;
 `check` raises `SchemaError`). It raises `UnsupportedKeyword` for any
 keyword it does not implement, so a schema can never pass silently.
 The tests validate recorded real responses from the family-folder fixture:
-`searchd serve` for every tool, the CLI's `--json` for `find`, `outline`,
+`searchd serve` for every tool, the CLI's `--json` for `find`, `scan`, `outline`,
 `read-span`, `list-files` and `apply`.
 
 The skill that goes with the tools is `skills/folder-knowledge/SKILL.md`.

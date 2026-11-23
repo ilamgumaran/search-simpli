@@ -1,0 +1,445 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/scan.result.schema.json",
+  "title": "scan result",
+  "description": "A page of lines holding a literal or matching a pattern, with counts, a time-budget stop and a cursor.",
+  "type": "object",
+  "properties": {
+    "request": {
+      "type": "object",
+      "description": "The request echoed with defaults filled in (roots is null when not given).",
+      "properties": {
+        "pattern": {
+          "type": "string",
+          "description": "The pattern.",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "mode": {
+          "enum": [
+            "literal",
+            "regex"
+          ],
+          "description": "Effective mode."
+        },
+        "case": {
+          "enum": [
+            "sensitive",
+            "insensitive",
+            "smart"
+          ],
+          "description": "The case requested (case_applied says what smart resolved to)."
+        },
+        "whole_word": {
+          "type": "boolean",
+          "description": "Whether whole_word applied."
+        },
+        "roots": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Root ids to search. Narrows the server's roots, never widens them; absent or null means every root the server allows."
+        },
+        "path_prefix": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Root-relative path prefix."
+        },
+        "name_glob": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 255,
+          "description": "Matched against the file name (the last path component): * is any run of code points, ? one code point, every other code point itself; case-sensitive; no /."
+        },
+        "context_lines": {
+          "type": "integer",
+          "description": "Lines of context before and after each hit.",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "max_hits_per_file": {
+          "type": "integer",
+          "description": "At most this many hit lines from one file; files_capped counts files that had more.",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "page_size": {
+          "type": "integer",
+          "description": "Hit lines per page.",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(f[0-9a-f]{16}|[0-9]+):[0-9a-f]{16}:[0-9]+:[0-9]+:[0-9]+$",
+          "description": "The previous page's next_cursor. One from another generation (or another walk of the folder) is refused as a stale cursor, one from another request as not belonging to this request."
+        },
+        "time_budget_ms": {
+          "type": "integer",
+          "description": "How long this page may search, in milliseconds; a page that runs out ends with stopped time and a cursor to continue.",
+          "minimum": 1,
+          "maximum": 30000
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "pattern",
+        "mode",
+        "case",
+        "whole_word",
+        "roots",
+        "path_prefix",
+        "name_glob",
+        "context_lines",
+        "max_hits_per_file",
+        "page_size",
+        "cursor",
+        "time_budget_ms"
+      ]
+    },
+    "source": {
+      "enum": [
+        "index",
+        "folder"
+      ],
+      "description": "What was scanned: an index, or a folder with nothing prepared (searchd scan --folder)."
+    },
+    "generation": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "The index generation this answer came from; null for a folder."
+    },
+    "scope": {
+      "$ref": "#/$defs/scope"
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Warnings about this answer: pattern_matches_empty when the pattern can match the empty string (a line can then match with no match_offsets).",
+      "items": {
+        "$ref": "#/$defs/warning"
+      }
+    },
+    "case_applied": {
+      "enum": [
+        "sensitive",
+        "insensitive"
+      ],
+      "description": "The case that applied (what smart resolved to)."
+    },
+    "hits": {
+      "type": "array",
+      "description": "This page's hit lines, by root_id, path (bytes) and line.",
+      "items": {
+        "$ref": "#/$defs/hit"
+      }
+    },
+    "files_matched": {
+      "type": "integer",
+      "description": "Files with a hit, among those whose scan ended on this page; summed over pages, the total.",
+      "minimum": 0
+    },
+    "files_scanned": {
+      "type": "integer",
+      "description": "Files searched to their end on this page; summed over pages, the total.",
+      "minimum": 0
+    },
+    "files_capped": {
+      "type": "integer",
+      "description": "Files with more hit lines than max_hits_per_file, among those whose scan ended on this page.",
+      "minimum": 0
+    },
+    "bytes_scanned": {
+      "type": "integer",
+      "description": "Bytes of the files counted in files_scanned.",
+      "minimum": 0
+    },
+    "pending_files": {
+      "type": "integer",
+      "description": "Files in scope still waiting for their bytes (an index; 0 for a folder); the corpus may be incomplete when above 0.",
+      "minimum": 0
+    },
+    "not_scanned": {
+      "type": "object",
+      "description": "Files in scope that could not be searched, by reason. An index: scope-wide, the same on every page. A folder: counted on the page that reached the file.",
+      "properties": {
+        "too_large": {
+          "type": "integer",
+          "description": "Over the size cap.",
+          "minimum": 0
+        },
+        "unreadable": {
+          "type": "integer",
+          "description": "Could not be read (or its retained bytes failed their check).",
+          "minimum": 0
+        },
+        "budget_exhausted": {
+          "type": "integer",
+          "description": "Not indexed in full because the indexing byte budget ran out.",
+          "minimum": 0
+        },
+        "not_retained": {
+          "type": "integer",
+          "description": "Indexed in a root that keeps no source bytes.",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "too_large",
+        "unreadable",
+        "budget_exhausted",
+        "not_retained"
+      ]
+    },
+    "not_read": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "A folder: the walk's files not read, counted by kind (only kinds with a count); null for an index. These do not set truncated.",
+      "properties": {
+        "archive": {
+          "type": "integer",
+          "description": "Files of kind archive.",
+          "minimum": 0
+        },
+        "audio": {
+          "type": "integer",
+          "description": "Files of kind audio.",
+          "minimum": 0
+        },
+        "bad_name": {
+          "type": "integer",
+          "description": "Files of kind bad_name.",
+          "minimum": 0
+        },
+        "binary": {
+          "type": "integer",
+          "description": "Files of kind binary.",
+          "minimum": 0
+        },
+        "database": {
+          "type": "integer",
+          "description": "Files of kind database.",
+          "minimum": 0
+        },
+        "document": {
+          "type": "integer",
+          "description": "Files of kind document.",
+          "minimum": 0
+        },
+        "font": {
+          "type": "integer",
+          "description": "Files of kind font.",
+          "minimum": 0
+        },
+        "image": {
+          "type": "integer",
+          "description": "Files of kind image.",
+          "minimum": 0
+        },
+        "program": {
+          "type": "integer",
+          "description": "Files of kind program.",
+          "minimum": 0
+        },
+        "video": {
+          "type": "integer",
+          "description": "Files of kind video.",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "truncated": {
+      "type": "boolean",
+      "description": "True when the corpus may be incomplete: pending_files above 0 or a not_scanned count above 0. It is not about paging."
+    },
+    "stopped": {
+      "enum": [
+        "none",
+        "time"
+      ],
+      "description": "time: the page ran out of time_budget_ms; next_cursor continues it and is never null."
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^(f[0-9a-f]{16}|[0-9]+):[0-9a-f]{16}:[0-9]+:[0-9]+:[0-9]+$",
+      "description": "Pass as cursor for the next page; null when the scan reached the end of the last file."
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "request",
+    "source",
+    "generation",
+    "scope",
+    "warnings",
+    "case_applied",
+    "hits",
+    "files_matched",
+    "files_scanned",
+    "files_capped",
+    "bytes_scanned",
+    "pending_files",
+    "not_scanned",
+    "not_read",
+    "truncated",
+    "stopped",
+    "next_cursor"
+  ],
+  "$defs": {
+    "scope": {
+      "type": "object",
+      "description": "The scope the request ran in.",
+      "properties": {
+        "roots": {
+          "type": "array",
+          "description": "The root ids the request could see, in the generation's order.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "labels_applied": {
+          "const": true,
+          "description": "Always true: the scope's labels (possibly none) filtered before any candidate. It does not say whether labels hid anything."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "roots",
+        "labels_applied"
+      ]
+    },
+    "warning": {
+      "type": "object",
+      "description": "One warning.",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Machine-readable code. scan: `pattern_matches_empty`."
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable detail."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "hit": {
+      "type": "object",
+      "description": "One line that matched.",
+      "properties": {
+        "root_id": {
+          "type": "string",
+          "description": "Root id."
+        },
+        "path": {
+          "type": "string",
+          "description": "Root-relative path."
+        },
+        "line": {
+          "type": "integer",
+          "description": "Line number (1-based; a leading BOM is not part of line 1), as read_span numbers lines.",
+          "minimum": 1
+        },
+        "text": {
+          "type": "string",
+          "description": "The line without its terminator, at most 512 bytes (cut at a code-point boundary)."
+        },
+        "text_truncated": {
+          "type": "boolean",
+          "description": "True when text is shorter than the line."
+        },
+        "match_offsets": {
+          "type": "array",
+          "description": "Match ranges [start, end) in code points into text: non-empty matches only, those starting within text, ends clipped to text.",
+          "items": {
+            "type": "array",
+            "description": "A range.",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "before": {
+          "type": "array",
+          "description": "Up to context_lines lines before the hit.",
+          "items": {
+            "$ref": "#/$defs/context_line"
+          }
+        },
+        "after": {
+          "type": "array",
+          "description": "Up to context_lines lines after the hit.",
+          "items": {
+            "$ref": "#/$defs/context_line"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "root_id",
+        "path",
+        "line",
+        "text",
+        "text_truncated",
+        "match_offsets",
+        "before",
+        "after"
+      ]
+    },
+    "context_line": {
+      "type": "object",
+      "description": "One line of context.",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "description": "Line number (1-based).",
+          "minimum": 1
+        },
+        "text": {
+          "type": "string",
+          "description": "The line without its terminator, at most 512 bytes (cut at a code-point boundary)."
+        },
+        "text_truncated": {
+          "type": "boolean",
+          "description": "True when text is shorter than the line."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "line",
+        "text",
+        "text_truncated"
+      ]
+    }
+  }
+}

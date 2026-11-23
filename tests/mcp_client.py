@@ -52,7 +52,7 @@ def resource_text_matches_size(text: str, size: int) -> bool:
 
 
 READ_TOOLS = ("search_knowledge", "read_chunk", "list_sources", "index_status",
-              "find", "outline", "read_span", "list_files")
+              "find", "outline", "read_span", "list_files", "scan")
 BASELINE_TOOLS = READ_TOOLS[:4]
 
 
@@ -236,7 +236,7 @@ def run_conformance(argv: list[str]) -> list[Check]:
 
         tools = client.list_tools()
         names = [tool["name"] for tool in tools]
-        check("tools/list lists the eight read tools, no write", tuple(names) == READ_TOOLS, names)
+        check("tools/list lists the nine read tools, no write", tuple(names) == READ_TOOLS, names)
         check("every tool has an object inputSchema and outputSchema",
               all(t["inputSchema"].get("type") == "object" and t["outputSchema"].get("type") == "object" for t in tools))
 
@@ -269,6 +269,7 @@ def run_conformance(argv: list[str]) -> list[Check]:
                 word = candidate
                 break
         found = call("find", {"query": word})
+        call("scan", {"pattern": word, "case": "insensitive", "page_size": 5})
         call("search_knowledge", {"query": word})
         if found and found["hits"]:
             call("read_chunk", {"chunk_id": found["hits"][0]["chunk_id"]})

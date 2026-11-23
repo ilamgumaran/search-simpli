@@ -41,6 +41,8 @@ const find_module = @import("core").api.find;
 const hybrid = @import("core").api.hybrid;
 const query_report = @import("report.zig");
 const scoring = @import("core").api.scoring;
+const pattern = @import("core").api.pattern;
+const scan_module = @import("core").api.scan;
 const scope = @import("core").api.scope;
 const title_field = @import("core").api.title_field;
 const service_module = @import("service.zig");
@@ -138,6 +140,15 @@ const Reader = struct {
     fn requiredInteger(reader: *Reader, name: []const u8) Error!u64 {
         if (reader.object.get(name) == null) return reader.fail("{s} is required", .{name});
         return (try reader.optionalInteger(name)) orelse reader.fail("{s} must be a non-negative integer", .{name});
+    }
+
+    fn optionalBool(reader: *Reader, name: []const u8) Error!?bool {
+        const value = reader.object.get(name) orelse return null;
+        return switch (value) {
+            .null => null,
+            .bool => |flag| flag,
+            else => reader.fail("{s} must be a boolean", .{name}),
+        };
     }
 
     fn stringList(reader: *Reader, name: []const u8, limit: usize) Error!?[]const []const u8 {
@@ -330,6 +341,98 @@ fn parseFind(reader: *Reader, caller: Caller) Error!ParsedFind {
         },
         .scope = request_scope,
         .named = try reader.stringList("roots", max_named_roots),
+    };
+}
+
+// ---------------------------------------------------------------- scan ---
+
+const scan_fields = [_][]const u8{ "pattern", "mode", "case", "whole_word", "roots", "path_prefix", "name_glob", "context_lines", "max_hits_per_file", "page_size", "cursor", "time_budget_ms", "principal_labels" };
+
+/// `scan` (S6-T24, ADR 0006 section 15) over the index: `{pattern, mode?,
+/// case?, whole_word?, roots?, path_prefix?, name_glob?, context_lines?,
+/// max_hits_per_file?, page_size?, cursor?, time_budget_ms?}`. Read-only.
+pub fn scan(allocator: std.mem.Allocator, service: service_module.Service, params: std.json.ObjectMap, caller: Caller) !Result {
+    var reader = newReader(allocator, params);
+    reader.only(&scan_fields) catch |err| switch (err) {
+        error.Invalid => return reader.failure(),
+        error.OutOfMemory => return error.OutOfMemory,
+    };
+    const parsed = parseScan(&reader) catch |err| switch (err) {
+        error.Invalid => return reader.failure(),
+        error.OutOfMemory => return error.OutOfMemory,
+    };
+    const request_scope = reader.scopeOf(caller) catch |err| switch (err) {
+        error.Invalid => return reader.failure(),
+        error.OutOfMemory => return error.OutOfMemory,
+    };
+    const scanned = try scopedOf(service).scan(allocator, parsed, request_scope);
+    return writeScan(allocator, scanned.outcome, scanned.roots);
+}
+
+/// `scan` over a folder with nothing prepared (CLI and tests only, ruling
+/// O-5): the walk and read rules of `searchd index`, root `r-legacy`,
+/// `max_file_bytes` per file; nothing is written. `principal_labels` is
+/// refused as unknown: a folder has no labels.
+pub fn scanFolder(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, params: std.json.ObjectMap, max_file_bytes: u64) !Result {
+    var reader = newReader(allocator, params);
+    reader.only(scan_fields[0 .. scan_fields.len - 1]) catch |err| switch (err) {
+        error.Invalid => return reader.failure(),
+        error.OutOfMemory => return error.OutOfMemory,
+    };
+    var parsed = parseScan(&reader) catch |err| switch (err) {
+        error.Invalid => return reader.failure(),
+        error.OutOfMemory => return error.OutOfMemory,
+    };
+    var include = true;
+    if (parsed.named_roots) |ids| {
+        for (ids) |id| if (id.len == 0) {
+            reader.message = "roots must not hold an empty id";
+            return reader.failure();
+        };
+        include = for (ids) |id| {
+            if (scope.isLegacy(id)) break true;
+        } else false;
+    }
+    const roots: []const []const u8 = if (include) &.{scope.legacy_root_id} else &.{};
+    parsed.scope_roots = roots;
+    const src = try scan_module.folderSource(allocator, io, dir, max_file_bytes, include);
+    var clock = scan_module.IoClock{ .io = io };
+    return writeScan(allocator, try scan_module.run(allocator, parsed, src, clock.clock()), roots);
+}
+
+fn writeScan(allocator: std.mem.Allocator, outcome: scan_module.Outcome, roots: []const []const u8) !Result {
+    const answer = switch (outcome) {
+        .ok => |answer| answer,
+        .failed => |failure| return .{ .failed = failure },
+    };
+    var out: std.Io.Writer.Allocating = .init(allocator);
+    var json = std.json.Stringify{ .writer = &out.writer };
+    try scan_module.writeJson(&json, answer, roots);
+    return .{ .ok = out.written() };
+}
+
+fn parseScan(reader: *Reader) Error!scan_module.Request {
+    const text = try reader.requiredString("pattern");
+    const mode_text = try reader.optionalString("mode");
+    const mode: pattern.Mode = if (mode_text) |name| pattern.Mode.parse(name) orelse
+        return reader.fail("mode must be literal or regex", .{}) else .literal;
+    const case_text = try reader.optionalString("case");
+    const case: pattern.Case = if (case_text) |name| pattern.Case.parse(name) orelse
+        return reader.fail("case must be sensitive, insensitive or smart", .{}) else .smart;
+    const named = try reader.stringList("roots", max_named_roots);
+    return .{
+        .pattern = text,
+        .mode = mode,
+        .case = case,
+        .whole_word = (try reader.optionalBool("whole_word")) orelse false,
+        .path_prefix = try reader.optionalString("path_prefix"),
+        .name_glob = try reader.optionalString("name_glob"),
+        .context_lines = (try reader.optionalInteger("context_lines")) orelse 0,
+        .max_hits_per_file = (try reader.optionalInteger("max_hits_per_file")) orelse scan_module.default_max_hits_per_file,
+        .page_size = (try reader.optionalInteger("page_size")) orelse scan_module.default_page_size,
+        .cursor = try reader.optionalString("cursor"),
+        .time_budget_ms = (try reader.optionalInteger("time_budget_ms")) orelse scan_module.default_time_budget_ms,
+        .named_roots = named,
     };
 }
 

@@ -20,7 +20,7 @@ The core is one Zig module, `core` (root `zig/src/core/core.zig`; see
   under its own name, `pub const Engine = internal.engine.Engine;`, so it is the same
   type or function and adds no code. Every namespace and name has a doc comment: what
   it does, who owns the memory it returns, and which errors come back.
-- **The rest, every core file by name** (`@import("core").engine`, 52 files). It is
+- **The rest, every core file by name** (`@import("core").engine`, 55 files). It is
   internal: the core's own files and tests reach each other by path inside `core/`,
   and the tests in `zig/src/tests/` reach a core file through the module.
 
@@ -70,16 +70,17 @@ A type's fields and methods come with the type: `api.engine.Engine` is the whole
 
 ## The names, by purpose
 
-86 names in 22 namespaces, as `python3 scripts/check_layers.py` counts them in its last
-line ("the public core API `api`: 86 names in 22 namespaces"): every core name operations
+101 names in 24 namespaces, as `python3 scripts/check_layers.py` counts them in its last
+line ("the public core API `api`: 101 names in 24 namespaces"): every core name operations
 and interfaces used at `10f3d40` (the measurement,
 [`docs/evidence/s6-t16/measure.txt`](evidence/s6-t16/measure.txt)), less
 `title_field.derive` and with `engine.queryOneShot` in its place (S6-T18), less
 `analyzer_v2.analyzer_id` and `manifest.decode` (S6-T19), less
 `generation_alloc.nextFreeGeneration` (S6-T20), with
 `generation_alloc.describeStaleGeneration` added (S6-T21: `main.zig` and `abi.zig`
-print the line of a caller's number refused as stale), and nothing else. Every one of
-the 86 is used by a declaration of `ops/` or `interfaces/` that is not a test
+print the line of a caller's number refused as stale), with S6-T24's 15 for `scan`
+(`pattern.Mode`, `pattern.Case` and 13 in `scan`), and nothing else. Every one of
+the 101 is used by a declaration of `ops/` or `interfaces/` that is not a test
 ([`docs/evidence/s6-t19/measure.txt`](evidence/s6-t19/measure.txt) and
 [`after.txt`](evidence/s6-t19/after.txt)). Their doc comments in `core.zig` say what each does, what it allocates and what it
 returns.
@@ -94,6 +95,8 @@ returns.
 | | `filename_field` | `Field`, `Hit`, `tokenize` | 3 |
 | | `scope` | `Request`, `Folder`, `View`, `visibleCollection`, `documentFrequency`, `holdsAll`, `recordPath`, `relativePath`, `rootOfPath`, `isLegacy`, `legacy_root_id` | 11 |
 | Find | `find` | `Request`, `Mode`, `Outcome`, `find`, `writeFields`, `default_page_size`, `max_page_size`, `stale_cursor_message` | 8 |
+| Scan (S6-T24) | `scan` | `Request`, `Outcome`, `Candidate`, `NotScanned`, `default_page_size`, `default_max_hits_per_file`, `default_time_budget_ms`, `indexSource`, `folderSource`, `run`, `inScope`, `IoClock`, `writeJson` | 13 |
+| | `pattern` | `Mode`, `Case` | 2 |
 | Read a span | `source` | `readSpan`, `SpanResult`, `outline`, `OutlineResult`, `Failure`, `Code`, `writeSpanFields`, `writeOutlineFields`, `max_context_lines`, `source_absent_message` | 10 |
 | Apply changes | `apply` | `applyChanges`, `Options`, `writeReportJson`, `default_max_file_bytes`, `default_max_total_bytes` | 5 |
 | Build an index | `indexer` | `indexFolder`, `indexFolderIncremental`, `buildFolderDetached`, `Caps`, `IncrementalReport`, `AnalyzerId` | 6 |
@@ -110,7 +113,7 @@ returns.
 | The formats' identities | `fold` | `policy_id` | 1 |
 | | `fuzzy` | `policy_id` | 1 |
 
-By purpose: open 9, search 26, find 8, read a span 10, apply 5, build an index 11, write a
+By purpose: open 9, search 26, find 8, scan 15, read a span 10, apply 5, build an index 11, write a
 generation by hand 11, benchmark 4, the formats' identities 2 (a third,
 `title_field.policy_id`, sits with its file under build an index). The `engine` namespace
 appears twice: `Engine` and `Evidence` open a generation, `queryOneShot` searches it.
