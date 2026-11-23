@@ -9,6 +9,12 @@ linked to the task that measured it.
 
 ## Update, 23 Nov 2026
 
+**S6-T23 is merged.** The verifier's Verdict was PASS with findings; rework 1
+kept `main`'s rule for the 19 extensions read before 2.9.0, so no indexed file
+is dropped; the timing runs passed 166 of 166 judged cells. `main` now carries
+contracts 2.9.0, the Dart binding 0.11.0 and CAP-24. The "In progress" section
+below describes it as it stood before the merge.
+
 The maintainer said go for one step of the specification: **H3, pattern search**
 ([S6-T24](../tasks/S6-T24.md)), after S6-T23 merges. The orchestrator settled
 H3's open questions in the task file so the build can start; each is reversible,
