@@ -1,0 +1,39 @@
+== timing-10k
+index: 0 indexed ~/workspace/repos/search-simpli-wt/S6-T23-scratch.noindex/c10k/timing-10k: analyzer=analyzer-v2 generation=1 files_indexed=10000 too_large=0 unreadable=0 budget_exhausted=0 documents=19959 terms=24057 postings=1023806 not_read=0
+files cmp-identical to Part 2's head index: 9 of 9 (INDEX-STATE.json, MANIFEST, WRITER.LOCK, documents-1.hybseg, filename-lexical-1.hyblex, filenames-1.hybseg, lexical-1.hyblex, source-1.hybsrc, state-1.hybstate)
+files other than MANIFEST that differ from main's index: []
+sizes 696 -> 773 (+77); the key with its comma is 77 B
+header bytes that differ lie in 156..167: True (9 bytes)
+payload length (offset 156): 528 -> 605
+manifest checksum (offset 160): d49a0a6e424c7625 -> e87995e6e73bee56
+payload before the meta's u32 length: identical: True
+meta length: 348 -> 425
+from the meta to the end (the meta, then the filename and state strings): the head's is main's with the key inserted before '"roots":': True
+searchd evidence, 45 calls (every query x content, filename, both): head on its index vs main on main's, and main's searchd on the head's index vs main's: 0 differ, 0 fail
+C ABI (bench.py answers): 55 answers, 0 differ; keys equal: True; status_json equal: True
+== prose-10k
+index: 0 indexed ~/workspace/repos/search-simpli-wt/S6-T23-scratch.noindex/c10k/prose-10k: analyzer=analyzer-v2 generation=1 files_indexed=10000 too_large=0 unreadable=0 budget_exhausted=0 documents=18766 terms=3115 postings=2238541 not_read=0
+files cmp-identical to Part 2's head index: 9 of 9 (INDEX-STATE.json, MANIFEST, WRITER.LOCK, documents-1.hybseg, filename-lexical-1.hyblex, filenames-1.hybseg, lexical-1.hyblex, source-1.hybsrc, state-1.hybstate)
+files other than MANIFEST that differ from main's index: []
+sizes 696 -> 773 (+77); the key with its comma is 77 B
+header bytes that differ lie in 156..167: True (8 bytes)
+payload length (offset 156): 528 -> 605
+manifest checksum (offset 160): f3de672cb34351b7 -> 55ded7f7f6baf880
+payload before the meta's u32 length: identical: True
+meta length: 348 -> 425
+from the meta to the end (the meta, then the filename and state strings): the head's is main's with the key inserted before '"roots":': True
+searchd evidence, 45 calls (every query x content, filename, both): head on its index vs main on main's, and main's searchd on the head's index vs main's: 0 differ, 0 fail
+C ABI (bench.py answers): 55 answers, 0 differ; keys equal: True; status_json equal: True
+== tamil-10k
+index: 0 indexed ~/workspace/repos/search-simpli-wt/S6-T23-scratch.noindex/c10k/tamil-10k: analyzer=analyzer-v2 generation=1 files_indexed=10000 too_large=0 unreadable=0 budget_exhausted=0 documents=19946 terms=21600 postings=1019062 not_read=0
+files cmp-identical to Part 2's head index: 9 of 9 (INDEX-STATE.json, MANIFEST, WRITER.LOCK, documents-1.hybseg, filename-lexical-1.hyblex, filenames-1.hybseg, lexical-1.hyblex, source-1.hybsrc, state-1.hybstate)
+files other than MANIFEST that differ from main's index: []
+sizes 696 -> 773 (+77); the key with its comma is 77 B
+header bytes that differ lie in 156..167: True (9 bytes)
+payload length (offset 156): 528 -> 605
+manifest checksum (offset 160): 8e36ec71a240dec9 -> 4671c792efd13743
+payload before the meta's u32 length: identical: True
+meta length: 348 -> 425
+from the meta to the end (the meta, then the filename and state strings): the head's is main's with the key inserted before '"roots":': True
+searchd evidence, 45 calls (every query x content, filename, both): head on its index vs main on main's, and main's searchd on the head's index vs main's: 0 differ, 0 fail
+C ABI (bench.py answers): 56 answers, 0 differ; keys equal: True; status_json equal: True

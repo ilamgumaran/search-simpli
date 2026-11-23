@@ -1,10 +1,13 @@
 # S6-T23 builder, Part 2: the timing runs the rule of 2026-11-17 requires (docs/process/ROLES.md; decision 0003,
 # section 7, read as S6-T20 and S6-T21 read it). Written, committed and pushed before the first timed run (23 Nov
-# 2026). Nothing below is chosen after seeing a timed number. Harness: S6-T14's (scripts/prototypes/s6t14/
+# 2026). Nothing below is chosen after seeing a timed number. Regenerated for rework 1 (23 Nov 2026, after the
+# Verdict): the head is the reworked library, and the two controls are re-matched to its compiled-code delta; no
+# timed run had been taken under the Part 2 orders. Harness: S6-T14's (scripts/prototypes/s6t14/
 # run_timing.sh, gate.sh, summarize.py) over scripts/prototypes/s6t9/bench.py bench, unchanged; this file is its
 # ORDERS.
 #
-# What changes on the measured paths. The walk (indexer.walkFolder, the sniff), apply's binary check, the manifest
+# What changes on the measured paths. The walk (indexer.walkFolder, the sniff), apply's binary check (rework 1:
+# for names outside the 19 extensions only), the manifest
 # writer's `readable` key, the CLI and ABI reports: the writer's path, never an open, a query or a find. On every
 # open: manifest.parseMeta's envelope gains one optional field (`readable`, read when present), and the head opens an
 # index whose MANIFEST meta is 77 bytes longer (its own index; main's library opens main's). The natives' compiled
@@ -22,19 +25,21 @@
 #           local and global caches: 1,007,096 B, sha256 ed938358e6758fc7... (= main's committed native), __text
 #           592,564 B
 #   main2 = 8ffc41c built again in another archive copy with its own caches: byte-identical to main
-#   head  = this branch's native/macos-arm64/libsearch_simpli.dylib as committed (tool/build_native.sh):
-#           1,007,864 B, sha256 63911cf8fc39f427..., __text 595,408 B (+2,844 B)
+#   head  = this branch's native/macos-arm64/libsearch_simpli.dylib as committed by rework 1 (tool/build_native.sh):
+#           1,007,784 B, sha256 1097a00eb5afa00f..., __text 595,472 B (+2,908 B)
+#           (Part 2's head, replaced: 1,007,864 B, sha256 63911cf8fc39f427..., __text 595,408 B, +2,844 B)
 #   Controls: main + one never-run function (scripts/prototypes/s6t20/make_control.py, unchanged), called under a
 #   branch never true at run time:
-#   cl = place l, 28 blocks + 3 steps: snapshot_open.loadEngine, after the MANIFEST read (every open, beside the
+#   cl = place l, 30 blocks + 0 steps: snapshot_open.loadEngine, after the MANIFEST read (every open, beside the
 #        meta parse)
-#        1,007,176 B, sha256 a70004fc3b276444..., __text 595,360 B (+2,796 B)
-#   ci = place i, 31 blocks + 0 steps: indexer.walkAndApply (the writer's path, as most of the change is; never on
+#        1,007,128 B, sha256 d4e61defe3f5a9c8..., __text 595,464 B (+2,900 B)
+#   ci = place i, 32 blocks + 0 steps: indexer.walkAndApply (the writer's path, as most of the change is; never on
 #        an open, a query or a find)
-#        1,007,288 B, sha256 f7af05827394d4d3..., __text 595,412 B (+2,848 B)
-#   The head's delta is +2,844 B; the controls bracket it (+2,796 and +2,848 B). Sized before any timed run by
-#   building l 31+0 (+3,016), i 31+0 (+2,848), l 29+3 (+2,900), l 29+0 (+2,760), l 28+3 (+2,796), l 29+2 (+2,900),
-#   l 29+1 (+2,896).
+#        1,007,336 B, sha256 3d874efec02d22d1..., __text 595,496 B (+2,932 B)
+#   The head's delta is +2,908 B; the controls bracket it (+2,900 and +2,932 B). Sized before any timed run by
+#   building, for Part 2, l 31+0 (+3,016), i 31+0 (+2,848), l 29+3 (+2,900), l 29+0 (+2,760), l 28+3 (+2,796),
+#   l 29+2 (+2,900), l 29+1 (+2,896); for rework 1, l 30+0 (+2,900), i 32+0 (+2,932), i 31+2 (+2,880).
+#   (Part 2's controls, replaced: cl = l 28+3, +2,796 B; ci = i 31+0, +2,848 B.)
 #
 # Control set (fixed now): main2, cl, ci.
 # Cells, per corpus (timing-10k, prose-10k, tamil-10k, 10,000 files each, from scripts/gen_timing_corpus.py,
@@ -54,6 +59,8 @@
 # the head's, the others copies of main's. Answers (bench.py answers, every query under the three fields and every
 # find; 55, 55 and 56): identical between main and every other build on the three corpora, every field but the
 # library and index paths (docs/evidence/s6-t23/part2/answers-and-old-indexes.txt; main2, cl and ci checked the same way).
+# Rework 1: the reworked head's three indexes are cmp-identical, file by file, to Part 2's head's; the reworked head,
+# cl and ci give main's answers on all three corpora (docs/evidence/s6-t23/rework1/tenk.txt, controls-answers.txt).
 #
 # Each run, from the worktree, only when the orchestrator says the machine is awake:
 #   bash scripts/prototypes/s6t14/run_timing.sh R scripts/prototypes/s6t23/part2/orders.txt \

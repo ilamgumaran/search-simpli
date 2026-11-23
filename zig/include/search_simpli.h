@@ -629,8 +629,11 @@ void ss_free(char *ptr);
  * "bad_name" (a path no record can hold: a carriage return, line feed or
  * NUL, not UTF-8, or over 4096 bytes), "image", "audio", "video",
  * "archive", "document", "font", "program", "database" (an extension on
- * the skip list, never opened), or "binary" (the first 8192 bytes hold a
- * NUL or more than 1 % control bytes). Only non-zero kinds appear, keys in
+ * the skip list, never opened), or "binary" (a name outside the 19
+ * extensions read before 2.9.0 whose first 8192 bytes hold a NUL or more
+ * than 1 % control bytes). A file of one of those 19 is not sniffed: it is
+ * read as before 2.9.0, when its bytes are valid UTF-8, a NUL or control
+ * bytes notwithstanding. Only non-zero kinds appear, keys in
  * byte order; {} when none. A file of a UTF-16/32 byte order mark or not
  * UTF-8 is "unreadable", as before. A file of the previous generation that
  * is now not read is "removed". Not-read files are not in the manifest's

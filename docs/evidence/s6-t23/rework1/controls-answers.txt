@@ -1,0 +1,18 @@
+answers: 55
+head timing-10k 55 answers, 0 differ from main; status equal (head: own index)
+answers: 55
+head prose-10k 55 answers, 0 differ from main; status equal (head: own index)
+answers: 56
+head tamil-10k 56 answers, 0 differ from main; status equal (head: own index)
+answers: 55
+cl timing-10k 55 answers, 0 differ from main; status equal True
+answers: 55
+cl prose-10k 55 answers, 0 differ from main; status equal True
+answers: 56
+cl tamil-10k 56 answers, 0 differ from main; status equal True
+answers: 55
+ci timing-10k 55 answers, 0 differ from main; status equal True
+answers: 55
+ci prose-10k 55 answers, 0 differ from main; status equal True
+answers: 56
+ci tamil-10k 56 answers, 0 differ from main; status equal True

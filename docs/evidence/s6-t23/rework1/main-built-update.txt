@@ -1,0 +1,7 @@
+folder: server.txt (28 lines), manpage.txt (backspace overstrike, BEL), bel.md (one BEL), notes.md (a stray NUL); server.log (the 28 lines and 512 NULs) and manpage (no extension), the same bytes under names outside the 19
+1. main --update (a fresh index): 0 added 4 documents 4
+   main's query marmot: exit 0, 4 passages from ['bel.md', 'manpage.txt', 'notes.md', 'server.txt']
+2. server.txt gains 512 NULs
+3. head --update: 0 {'added': 0, 'changed': 1, 'removed': 0, 'unchanged': 3, 'unreadable': 0, 'not_read': {'binary': 2}}
+   head's query marmot: exit 0, 5 passages from ['bel.md', 'manpage.txt', 'notes.md', 'server.txt']
+4. head --update again: 0 {'added': 0, 'changed': 0, 'removed': 0, 'unchanged': 4, 'not_read': {'binary': 2}}

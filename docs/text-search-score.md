@@ -314,6 +314,11 @@ envelope grows past 4,096 bytes. Each question, its cause and the plan step that
 envelope, H6 for ranking) are listed in [S6-T23's Report](tasks/S6-T23.md#report-part-2), from
 [`causes.tsv`](evidence/s6-t23/part2/causes.tsv). Ranking was not tuned in H2.
 
+**Rework 1 (23 Nov 2026).** After the verifier's finding 1 a file of the 19 extensions is read as before, not
+sniffed. The judged folder holds no such file with a NUL or control bytes, so the rerun's JSON equals the one above
+in every key but the engine's label and digest, and every total above stands
+([`after-h2-r1.json`](evidence/s6-t23/rework1/after-h2-r1.json)).
+
 ## What the engine cannot do today, kind by kind
 
 Stated from the first baseline and the per-question rows in `baseline-rework-2.json` (since H2 every file of the

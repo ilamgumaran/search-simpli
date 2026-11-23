@@ -1,0 +1,38 @@
+"""S6-T23 rework 1: the 10k byte-identity, rerun with the reworked head.
+python3 -I tenk.py   (paths are the scratch folder's; prints one block per corpus)"""
+import filecmp, json, os, subprocess, sys
+S = os.path.expanduser("~/workspace/repos/search-simpli-wt/S6-T23-scratch.noindex")
+REPO = os.path.expanduser("~/workspace/repos/search-simpli-wt/S6-T23")
+HEAD = f"{S}/prefix-head/bin/searchd"; MAIN = f"{S}/prefix-main/bin/searchd"
+LIB = f"{REPO}/bindings/dart/search_simpli/native/macos-arm64/libsearch_simpli.dylib"
+def run(*a): return subprocess.run([str(x) for x in a], capture_output=True)
+for c in ["timing-10k", "prose-10k", "tamil-10k"]:
+    print("==", c)
+    new, part2, main = f"{S}/r1/idx-{c}", f"{S}/i10k/head-{c}", f"{S}/i10k/main-{c}"
+    r = run(HEAD, "index", f"{S}/c10k/{c}", "--out", new, "--filename-index")
+    print("index:", r.returncode, r.stdout.decode().strip())
+    names = sorted(os.listdir(new))
+    same = [n for n in names if filecmp.cmp(f"{new}/{n}", f"{part2}/{n}", shallow=False)]
+    print(f"files cmp-identical to Part 2's head index: {len(same)} of {len(names)} ({', '.join(names)})")
+    other = [n for n in names if n != "MANIFEST" and not filecmp.cmp(f"{new}/{n}", f"{main}/{n}", shallow=False)]
+    print(f"files other than MANIFEST that differ from main's index: {other}")
+    print(run(sys.executable, "-I", f"{S}/m10k/manifest_diff.py", f"{main}/MANIFEST", f"{new}/MANIFEST").stdout.decode().strip())
+    q = json.load(open(f"{S}/a10k/q-{c}.json"))["queries"]
+    diff = fail = 0; calls = 0
+    for text in q:
+        for field in ["content", "filename", "both"]:
+            a = run(HEAD, "evidence", new, text, "--search-field", field)
+            b = run(MAIN, "evidence", main, text, "--search-field", field)
+            o = run(MAIN, "evidence", new, text, "--search-field", field)
+            calls += 1
+            diff += a.stdout != b.stdout; fail += a.returncode != 0 or o.returncode != 0
+            diff += o.stdout != b.stdout
+    print(f"searchd evidence, {calls} calls (every query x content, filename, both): head on its index vs main on main's, "
+          f"and main's searchd on the head's index vs main's: {diff} differ, {fail} fail")
+    out = f"{S}/r1/ans-head-{c}.json"
+    r = run(sys.executable, "-I", f"{REPO}/scripts/prototypes/s6t9/bench.py", "answers", LIB, new, f"{S}/a10k/q-{c}.json", out)
+    if r.returncode: print(r.stderr.decode()); continue
+    a, b = json.load(open(out)), json.load(open(f"{S}/a10k/ans-main-{c}.json"))
+    nd = sum(a["answers"].get(k) != v for k, v in b["answers"].items())
+    print(f"C ABI (bench.py answers): {len(b['answers'])} answers, {nd} differ; keys equal: {a['answers'].keys() == b['answers'].keys()}; "
+          f"status_json equal: {a['status_json'] == b['status_json']}")

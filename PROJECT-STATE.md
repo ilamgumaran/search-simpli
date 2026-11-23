@@ -21,10 +21,11 @@ or implementation tasks; current search behavior and native artifacts are unchan
 [decision 0005](docs/decisions/0005-which-files-are-text.md); [CAP-24](docs/requirements/cap-24-which-files-are-text.md)).
 A walk (`searchd index`, `--update`, `searchd search`, `ss_index_folder`, Dart `indexFolder`) reads a regular file
 when its bytes are text (`text-sniff-v1`), with any extension or none, not only the 19 extensions. A name with a
-carriage return or line feed (macOS's `Icon\r`) is counted under `bad_name` instead of failing the walk with
-`InvalidPath`. A skip list (image, audio, video, archive, document, font, program, database) is never opened. Any
-other file whose first 8,192 bytes hold a NUL or more than 1 % control bytes is `binary`; a binary file of a known
-extension is no longer indexed. UTF-16 and non-UTF-8 files stay `unreadable`. Reports gain `not_read`, counts by
+carriage return or line feed is counted under `bad_name`; before, such a name with one of the 19 extensions
+(`a\rb.md`) failed the walk with `InvalidPath`. A skip list (image, audio, video, archive, document, font, program,
+database) is never opened. A file of the 19 extensions is read as before, by valid UTF-8 alone (rework 1, after the
+verifier's finding: no file `main` indexed is dropped). Any other file whose first 8,192 bytes hold a NUL or more
+than 1 % control bytes is `binary`. Non-UTF-8 files, and UTF-16 or UTF-32 with a byte order mark, stay `unreadable`. Reports gain `not_read`, counts by
 kind without paths (` not_read=N` on the `index` line, the object under `--update` and from `ss_index_folder`,
 `not_read=` on `search`'s stderr line, Dart `IndexFolderReport.notRead`). A walk's generation writes
 `"readable":{"id":"text-sniff-v1",…}` in the manifest meta; readers ignore it. An older index opens unchanged and takes
@@ -33,9 +34,11 @@ files again). Contracts 2.9.0, Dart 0.11.0. The Python reference walks the same.
 `both` 100 → 109 / 109 → 127, `content` 110 → 120 / 118 → 137; over the 146 readable now, typed file@1 94 → 90 and
 `content` complete within 4,096 bytes 100 → 91 with the query words, from ranking and the ten-result cut (H5, H6;
 each question in the Report). The three 10k corpora: answers byte-identical, index folders differ only in `MANIFEST`.
-Tests: Zig 603/612 (9 skipped; was 597/606), Python 622 (was 617), Dart +100 (was +98). Natives: macOS 1,007,864 B
-(+768), Android 976,232 B (+8,184), iOS 1,005,360 B (+17,128); `searchd` 1,152,488 B (+768). Timing orders
-committed (`scripts/prototypes/s6t23/part2/orders.txt`); the runs wait for the orchestrator.
+Verified PASS with findings; rework 1 (23 Nov) fixed the medium one: a file of the 19 extensions is read as before,
+so an update drops nothing `main` indexed; the judged set and the 10k identity unchanged by it. Tests: Zig 604/613
+(9 skipped; was 597/606), Python 626 (was 617), Dart +100 (was +98). Natives: macOS 1,007,784 B (+688), Android
+976,312 B (+8,264), iOS 1,005,112 B (+16,880); `searchd` 1,152,488 B (+768). Timing orders committed and regenerated
+for rework 1 (`scripts/prototypes/s6t23/part2/orders.txt`); the runs wait for the orchestrator.
 
 ## A caller's own generation number must be above every trace (S6-T21, after S6-T20's Verdict, 2026-11-21; merged 22 Nov 2026; Verdict PASS with findings, reworked; timing: one different failing cell in each of two sets, accepted as noise by the maintainer)
 

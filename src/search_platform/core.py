@@ -232,9 +232,13 @@ def _cooccurrence_vector(tokens: Iterable[str], model: dict) -> list[float]:
 # S6-T23 (CAP-24 FR-34, docs/decisions/0005-which-files-are-text.md): the walk
 # reads a file when its bytes are text (`text-sniff-v1`), the same rule as the
 # engine's walk (zig/src/core/indexer.zig `walkFolder`, `sniff`, `skipKind`).
-# DEFAULT_EXTENSIONS are the names the engine reads before sniffing; the
-# reference sniffs every file's head, which gives the same verdict.
+# A name of DEFAULT_EXTENSIONS is never sniffed: it is read, as before 2.9.0,
+# when its bytes are valid UTF-8 (a NUL or control bytes do not exclude it;
+# S6-T23 rework 1, the Verdict's finding 1). Every other name is sniffed on its
+# head. A candidate over MAX_FILE_BYTES is `too_large` and not read, as the
+# engine's default `max_file_bytes` makes it (rework 1, finding 3).
 READABLE_RULE_ID = "text-sniff-v1"
+MAX_FILE_BYTES = 10 * 1024 * 1024
 SNIFF_HEAD_BYTES = 8192
 CONTROL_SHARE_PERCENT = 1
 MAX_PATH_BYTES = 4096
@@ -316,9 +320,12 @@ def _not_read_kind(path: Path, relative: str) -> str | None:
     """Why the walk does not read `path`, or None when it reads it."""
     if not _valid_record_path(relative):
         return "bad_name"
-    kind = _SKIP.get(_lower_extension(path.name))
+    extension = _lower_extension(path.name)
+    kind = _SKIP.get(extension)
     if kind:
         return kind
+    if extension in DEFAULT_EXTENSIONS:
+        return None  # a known name: valid UTF-8 decides, once read
     try:
         size = path.stat().st_size
         with path.open("rb") as handle:
@@ -813,6 +820,14 @@ def build_index(
     for path in _iter_text_files(root):
         relative_path = path.relative_to(root).as_posix()
         seen_paths.add(relative_path)
+        try:
+            too_large = path.stat().st_size > MAX_FILE_BYTES
+        except OSError:
+            too_large = False  # the read below reports it
+        if too_large:
+            # The engine's `too_large`: not read, previous chunks dropped.
+            skipped.append({"path": relative_path, "reason": "too_large"})
+            continue
         try:
             content_bytes = path.read_bytes()
             text = content_bytes.decode("utf-8")

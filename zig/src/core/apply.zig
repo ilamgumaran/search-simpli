@@ -123,9 +123,10 @@ pub const Options = struct {
     fresh: bool = false,
     generation: ?u64 = null,
     /// S6-T23 (CAP-24 FR-34, FR-36): the batch is a walk under
-    /// `text-sniff-v1`: a `walk` change whose bytes sniff binary is not
-    /// indexed (`Report.walk_binary`), and the manifest meta records the
-    /// rule (`readable`). Host batches leave it false: the host chooses.
+    /// `text-sniff-v1`: a `walk` change outside the 19 known names whose
+    /// bytes sniff binary is not indexed (`Report.walk_binary`), and the
+    /// manifest meta records the rule (`readable`). A known name is read by
+    /// valid UTF-8 alone. Host batches leave it false: the host chooses.
     readable: bool = false,
     /// Test hook (ruling 4, crash recovery): fail after the manifest is
     /// published and before `INDEX-STATE.json` is written.
@@ -156,8 +157,9 @@ pub const Report = struct {
     too_large_paths: []const PathRef = &.{},
     unreadable_paths: []const PathRef = &.{},
     budget_exhausted_paths: []const PathRef = &.{},
-    /// S6-T23: `walk` changes whose bytes the sniff found binary on reading
-    /// them (`Options.readable`); not indexed, a previous version removed.
+    /// S6-T23: `walk` changes outside the known names whose bytes the sniff
+    /// found binary on reading them (`Options.readable`); not indexed, a
+    /// previous version removed.
     walk_binary: usize = 0,
     rejected: []const Rejected = &.{},
     conflicts: []const Conflict = &.{},
@@ -1116,10 +1118,15 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: ?std.Io.Dir, parse
                             markCarried(&work, record);
                             continue;
                         };
-                        // S6-T23: a walked file of a known name is sniffed on
-                        // the bytes just read (no second open); binary bytes
-                        // are not read, and a previous version leaves the index.
+                        // S6-T23: a walked file outside the 19 known names
+                        // (`indexer.default_extensions`) is sniffed again on
+                        // the bytes just read, so a file that turned binary
+                        // after the walk's head read is not indexed; its
+                        // previous version leaves the index. A known name is
+                        // never sniffed: valid UTF-8 decides, as before 2.9.0
+                        // (rework 1, the Verdict's finding 1).
                         if (options.readable and change.content == .walk and
+                            !indexer.hasAllowedExtension(std.fs.path.basename(change.path)) and
                             indexer.sniff(got[0..@min(got.len, indexer.sniff_head_bytes)], got.len) == .binary)
                         {
                             budget_spent += got.len;

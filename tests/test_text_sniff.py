@@ -65,8 +65,26 @@ KINDS = {
     ".config/settings.ini": b"orchard = hidden\n",
     "node_modules/pkg/readme": b"orchard in node_modules\n",
 }
-READ = ["README", "data.csv", "notes/a.md"]
-NOT_READ = {"bad_name": 2, "binary": 2, "document": 1, "image": 1}
+READ = ["README", "data.csv", "known.txt", "notes/a.md"]
+NOT_READ = {"bad_name": 2, "binary": 1, "document": 1, "image": 1}
+
+# Rework 1 (the Verdict's finding 1): the same text, with a stray NUL or more than 1 % control
+# bytes, under a known name (read, as before 2.9.0) and under another name (binary). The Zig
+# test "S6-T23 rework 1: ..." in zig/src/core/indexer.zig uses the same bytes.
+REWORK1 = {
+    "server.txt": b"marmot seen at dawn\x00\x00\x00\x00 after a crash the log was padded\n",
+    "notes.md": b"# Marmot\n\nthe marmot\x00 burrow by the wall\n",
+    "manpage.txt": b"M\x08MA\x08AR\x08RM\x08MO\x08OT\x08T(1)\n\n     marmot - whistle\x07 at the burrow\n",
+    "session.md": b"\x1b]0;marmot\x07$ ls\nburrow\x08\x08\x08\x08\x08\x08tunnel\n",
+}
+REWORK1.update({
+    "server.log": REWORK1["server.txt"],
+    "notes": REWORK1["notes.md"],
+    "manpage": REWORK1["manpage.txt"],
+    "session.cast": REWORK1["session.md"],
+})
+REWORK1_READ = ["manpage.txt", "notes.md", "server.txt", "session.md"]
+BIG = 11 * 1024 * 1024
 
 
 def write_bytes(folder: Path, files: dict) -> None:
@@ -97,6 +115,27 @@ class ReferenceWalkTests(unittest.TestCase):
             got = [p.relative_to(folder).as_posix() for p in core._iter_text_files(folder)]
             self.assertEqual(got, READ)
             self.assertEqual(core.not_read_counts(folder), NOT_READ)
+
+    def test_a_known_name_is_read_by_utf8_alone(self) -> None:
+        for data in REWORK1.values():
+            self.assertEqual(core._sniff(data, len(data)), "binary")
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            write_bytes(folder, REWORK1)
+            got = [p.relative_to(folder).as_posix() for p in core._iter_text_files(folder)]
+            self.assertEqual(got, REWORK1_READ)
+            self.assertEqual(core.not_read_counts(folder), {"binary": 4})
+            index = core.build_index(folder)
+            self.assertEqual(sorted(f["path"] for f in index["source_files"]), REWORK1_READ)
+
+    def test_a_known_name_over_the_cap_is_too_large(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            write_bytes(folder, {"big.txt": b"\x00" + b"a" * BIG, "big": b"\x00" + b"a" * BIG, "a.md": b"alpha\n"})
+            self.assertEqual(core.not_read_counts(folder), {"binary": 1})
+            index = core.build_index(folder)
+            self.assertEqual(index["stats"]["skipped"], [{"path": "big.txt", "reason": "too_large"}])
+            self.assertEqual([f["path"] for f in index["source_files"]], ["a.md"])
 
 
 class EngineTests(unittest.TestCase):
@@ -139,21 +178,50 @@ class EngineTests(unittest.TestCase):
         index = self.work / "index"
         full = self.run_searchd("index", folder, "--out", index)
         self.assertEqual(full.returncode, 0, full.stderr)
-        self.assertTrue(full.stdout.decode().rstrip("\n").endswith(" not_read=6"), full.stdout)
+        self.assertTrue(full.stdout.decode().rstrip("\n").endswith(" not_read=5"), full.stdout)
         update = self.run_searchd("index", folder, "--out", index, "--update")
         self.assertEqual(update.returncode, 0, update.stderr)
         report = json.loads(update.stdout)
         self.assertEqual(report["not_read"], NOT_READ)
-        self.assertEqual(report["unchanged"], 3)
+        self.assertEqual(report["unchanged"], 4)
         self.assertEqual(self.indexed_paths(index), READ)
         found = self.run_searchd("search", folder, "orchard", "--json")
         self.assertEqual(found.returncode, 0, found.stderr)
         self.assertEqual(found.stderr,
-                         b"searchd: search: 6 files not searched (too_large=0 unreadable=0 budget_exhausted=0 not_read=6)\n")
+                         b"searchd: search: 5 files not searched (too_large=0 unreadable=0 budget_exhausted=0 not_read=5)\n")
         paths = {hit["path"] for hit in json.loads(found.stdout)["results"]}
-        # Every file holds "orchard" but README is the only one read: not the picture, the
-        # PDF, the binary files, the name with a carriage return, the dot-files.
-        self.assertEqual(paths, {"README"})
+        # Every file but data.csv and notes/a.md holds "orchard"; README and known.txt (a known
+        # name, read by valid UTF-8 despite its NUL) are the ones read: not the picture, the
+        # PDF, `blob`, the name with a carriage return, the dot-files.
+        self.assertEqual(paths, {"README", "known.txt"})
+
+    def test_a_known_name_with_a_nul_or_control_bytes_stays_searchable_across_an_update(self) -> None:
+        folder = self.work / "rework1"
+        write_bytes(folder, REWORK1)
+        index = self.work / "rework1-index"
+        full = self.run_searchd("index", folder, "--out", index)
+        self.assertEqual(full.returncode, 0, full.stderr)
+        self.assertIn(b" files_indexed=4 ", full.stdout)
+        self.assertTrue(full.stdout.decode().rstrip("\n").endswith(" not_read=4"), full.stdout)
+        update = self.run_searchd("index", folder, "--out", index, "--update")
+        report = json.loads(update.stdout)
+        self.assertEqual((report["unchanged"], report["removed"], report["not_read"]), (4, 0, {"binary": 4}))
+        self.assertEqual(self.indexed_paths(index), REWORK1_READ)
+        found = self.run_searchd("query", index, "marmot", "--json")
+        self.assertEqual(found.returncode, 0, found.stderr)
+        self.assertEqual({hit["path"] for hit in json.loads(found.stdout)["results"]}, set(REWORK1_READ))
+
+    def test_a_known_name_over_the_cap_is_too_large_as_in_the_reference(self) -> None:
+        folder = self.work / "big"
+        write_bytes(folder, {"big.txt": b"\x00" + b"a" * BIG, "big": b"\x00" + b"a" * BIG, "a.md": b"alpha\n"})
+        done = self.run_searchd("index", folder, "--out", self.work / "big-index", "--update")
+        self.assertEqual(done.returncode, 0, done.stderr)
+        report = json.loads(done.stdout)
+        self.assertEqual(report["too_large_paths"], ["big.txt"])
+        self.assertEqual(report["not_read"], core.not_read_counts(folder))
+        reference = core.build_index(folder)
+        self.assertEqual([s["path"] for s in reference["stats"]["skipped"] if s["reason"] == "too_large"],
+                         report["too_large_paths"])
 
     def test_the_reference_walk_is_the_engines_on_the_fixtures(self) -> None:
         index = self.work / "fixtures-index"

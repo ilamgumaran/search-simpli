@@ -87,7 +87,11 @@ Identifiers and filenames follow v1's rules; the three filenames must differ.
   lacks it was published before 2.9.0 (or by `apply_changes`); its next walk
   reads the newly readable files without a rebuild. No flag bit, magic or
   minor version changes for it, so this document stays at minor 2.6 and
-  rollback stays two-way: a 2.8.0 library opens a 2.9.0 index. Shown by
+  rollback stays two-way: a 2.8.0 library opens a 2.9.0 index and answers
+  from it. Its own next update walks by its old rule, so the files outside
+  the 19 extensions that 2.9.0 read leave the index, counted only as
+  `removed`; a 2.9.0 update adds them again
+  ([incremental-indexing.md](incremental-indexing.md#which-files-are-read-contract-290-s6-t23)). Shown by
   `manifest.zig`'s test "S6-T23: a walk's meta records the readable rule
   after the chunkers; a reader ignores what it does not know" and by
   `compat_s6t9_test.zig`, whose committed v2.6 reference differs from a

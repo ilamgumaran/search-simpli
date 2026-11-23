@@ -36,10 +36,11 @@ pub const AnalyzerId = enum {
 };
 
 /// `search_platform.core.DEFAULT_EXTENSIONS`. Since S6-T23 (CAP-24) these
-/// are the names the walk reads without looking into them first: a file of
-/// one of these names is read whole, and the sniff runs on its bytes in
-/// memory (`apply.zig`). Every other name that is not on the skip list is
-/// sniffed before it is read (`walkFolder`).
+/// are the names the walk reads by the rule it had before 2.9.0: a file of
+/// one of these names is read whole and indexed when its bytes are valid
+/// UTF-8; a NUL or control bytes do not exclude it (rework 1, the Verdict's
+/// finding 1: no file `main` indexed is dropped). Every other name that is
+/// not on the skip list is sniffed before it is read (`walkFolder`).
 pub const default_extensions = [_][]const u8{
     ".c", ".cpp", ".css", ".go", ".h", ".html", ".java", ".js", ".json",
     ".md", ".py", ".rs", ".rst", ".toml", ".ts", ".txt", ".yaml", ".yml", ".zig",
@@ -50,10 +51,11 @@ pub const default_extensions = [_][]const u8{
 // A walked file is read when its bytes are text. The rule, in order, for a
 // regular file the walk keeps (no component starting with `.`, none of the
 // ignored directories): a path that is not a valid record path is
-// `bad_name`; a skip-listed extension is not opened (its kind); otherwise
-// the first `sniff_head_bytes` bytes decide (`sniff`); a text file is then
-// read whole as before (`too_large`, `unreadable`). Mirrored by
-// `search_platform.core` (`_sniff`, `_not_read_kind`).
+// `bad_name`; a skip-listed extension is not opened (its kind); a name of
+// `default_extensions` is a candidate without a sniff; otherwise the first
+// `sniff_head_bytes` bytes decide (`sniff`); a candidate is then read whole
+// as before (`too_large`, `unreadable`). Mirrored by `search_platform.core`
+// (`_sniff`, `_not_read_kind`).
 
 /// The rule's identity, written into every walk-built manifest's meta
 /// (`readable`, FR-36).
@@ -218,7 +220,7 @@ pub const IndexReport = struct {
     postings: usize,
 };
 
-fn hasAllowedExtension(name: []const u8) bool {
+pub fn hasAllowedExtension(name: []const u8) bool {
     var buffer: [16]u8 = undefined;
     const lowered = lowerExtension(name, &buffer) orelse return false;
     for (default_extensions) |candidate| {
@@ -257,8 +259,9 @@ pub const Walk = struct {
 /// Walk `root` under `text-sniff-v1` (S6-T23): every regular file not under
 /// an ignored directory or a dot-component is a candidate when its path is
 /// a valid record path, its extension is not on the skip list, and either
-/// its name is one of `default_extensions` (sniffed once read, in
-/// `apply.zig`) or its first bytes sniff as not binary. The paths are
+/// its name is one of `default_extensions` (never sniffed: read, as before
+/// 2.9.0, when its bytes are valid UTF-8; rework 1 after the Verdict's
+/// finding 1) or its first bytes sniff as not binary. The paths are
 /// sorted. Shared by `indexFolder`, `indexFolderIncremental` and
 /// `buildFolderDetached`, so all three see the same file set.
 pub fn walkFolder(allocator: std.mem.Allocator, io: std.Io, root: std.Io.Dir) !Walk {
@@ -471,8 +474,9 @@ fn reportOf(allocator: std.mem.Allocator, outcome: apply.Outcome, walk_not_read:
         .ok => |r| r,
         .failed => return error.ApplyRefused,
     };
-    // The walk's counts, and the files of a known name whose bytes the read
-    // found binary (`apply.Report.walk_binary`).
+    // The walk's counts, and the files outside the known names whose bytes
+    // turned binary between the walk's head read and the whole read
+    // (`apply.Report.walk_binary`).
     var not_read = walk_not_read;
     not_read.counts[@intFromEnum(NotReadKind.binary)] += report.walk_binary;
     return .{
@@ -766,7 +770,7 @@ test "S6-T23: the walk reads text of any name, skips listed kinds and binary hea
     try writeKindsFolder(tmp.dir);
 
     const walk = try walkFolder(arena, io, tmp.dir);
-    // `known.txt` is a known name: a candidate, sniffed once read.
+    // `known.txt` is a known name: a candidate, never sniffed (rework 1).
     try std.testing.expectEqual(@as(usize, 4), walk.paths.len);
     for ([_][]const u8{ "README", "data.csv", "known.txt", "notes/a.md" }, walk.paths) |want, got| try std.testing.expectEqualStrings(want, got);
     try std.testing.expectEqual(@as(usize, 2), walk.not_read.count(.bad_name));
@@ -792,18 +796,20 @@ test "S6-T23: a folder holding names with a carriage return indexes and searches
     defer out_dir.close(io);
 
     const report = try indexFolder(arena, io, root, out_dir, .v2, null, chunker.default_max_chars, chunker.default_overlap_lines, .{});
-    try std.testing.expectEqual(@as(usize, 3), report.added);
+    // README, data.csv, notes/a.md and `known.txt`: a known name is read by
+    // valid UTF-8 alone, its NUL notwithstanding (rework 1).
+    try std.testing.expectEqual(@as(usize, 4), report.added);
     try std.testing.expectEqual(@as(usize, 0), report.unreadable);
-    // `blob` by its head, `known.txt` by its bytes once read.
-    try std.testing.expectEqual(@as(usize, 2), report.not_read.count(.binary));
+    // `blob` by its head.
+    try std.testing.expectEqual(@as(usize, 1), report.not_read.count(.binary));
     try std.testing.expectEqual(@as(usize, 2), report.not_read.count(.bad_name));
-    try std.testing.expectEqual(@as(usize, 6), report.not_read.total());
+    try std.testing.expectEqual(@as(usize, 5), report.not_read.total());
     var json_out: std.Io.Writer.Allocating = .init(arena);
     var json = std.json.Stringify{ .writer = &json_out.writer };
     try report.not_read.writeJson(&json);
-    try std.testing.expectEqualStrings("{\"bad_name\":2,\"binary\":2,\"document\":1,\"image\":1}", json_out.written());
+    try std.testing.expectEqualStrings("{\"bad_name\":2,\"binary\":1,\"document\":1,\"image\":1}", json_out.written());
     const opened = try snapshot_open.open(arena, io, out_dir);
-    try std.testing.expectEqual(@as(usize, 3), opened.documents.len);
+    try std.testing.expectEqual(@as(usize, 4), opened.documents.len);
     // The generation names the rule; not-read files are not `skipped`.
     const manifest_bytes = try out_dir.readFileAlloc(io, "MANIFEST", arena, .unlimited);
     try std.testing.expect(std.mem.indexOf(u8, manifest_bytes, "\"readable\":{\"id\":\"text-sniff-v1\"") != null);
@@ -811,7 +817,7 @@ test "S6-T23: a folder holding names with a carriage return indexes and searches
 
     // Direct search builds the same generation and the same report.
     const detached = try buildFolderDetached(arena, io, root, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = true });
-    try std.testing.expectEqual(@as(usize, 3), detached.report.added);
+    try std.testing.expectEqual(@as(usize, 4), detached.report.added);
     try std.testing.expectEqual(report.not_read.counts, detached.report.not_read.counts);
 }
 
@@ -848,12 +854,72 @@ test "S6-T23: an index built before the rule takes the newly readable files at i
     const report = try indexFolderIncremental(arena, io, root, out_dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
     try std.testing.expectEqual(@as(u64, 2), report.generation);
     try std.testing.expectEqual(@as(usize, 2), report.added); // README, data.csv
-    try std.testing.expectEqual(@as(usize, 1), report.unchanged); // notes/a.md
-    try std.testing.expectEqual(@as(usize, 1), report.removed); // known.txt: binary now
-    try std.testing.expectEqual(@as(usize, 2), report.not_read.count(.binary));
-    try std.testing.expectEqual(@as(usize, 3), (try snapshot_open.open(arena, io, out_dir)).documents.len);
+    // notes/a.md and known.txt: a file the old engine indexed stays (rework 1).
+    try std.testing.expectEqual(@as(usize, 2), report.unchanged);
+    try std.testing.expectEqual(@as(usize, 0), report.removed);
+    try std.testing.expectEqual(@as(usize, 1), report.not_read.count(.binary)); // blob
+    try std.testing.expectEqual(@as(usize, 4), (try snapshot_open.open(arena, io, out_dir)).documents.len);
     const new_manifest = try out_dir.readFileAlloc(io, "MANIFEST", arena, .unlimited);
     try std.testing.expect(std.mem.indexOf(u8, new_manifest, "\"readable\":{\"id\":\"text-sniff-v1\"") != null);
+}
+
+/// Rework 1 (the Verdict's finding 1): text with a stray NUL or more than
+/// 1 % control bytes (backspace overstrike, BEL), under a known name and,
+/// byte for byte, under names outside the 19.
+const rework1_files = [_]struct { []const u8, []const u8 }{
+    .{ "server.txt", "marmot seen at dawn\x00\x00\x00\x00 after a crash the log was padded\n" },
+    .{ "notes.md", "# Marmot\n\nthe marmot\x00 burrow by the wall\n" },
+    .{ "manpage.txt", "M\x08MA\x08AR\x08RM\x08MO\x08OT\x08T(1)\n\n     marmot - whistle\x07 at the burrow\n" },
+    .{ "session.md", "\x1b]0;marmot\x07$ ls\nburrow\x08\x08\x08\x08\x08\x08tunnel\n" },
+    .{ "server.log", "marmot seen at dawn\x00\x00\x00\x00 after a crash the log was padded\n" },
+    .{ "notes", "# Marmot\n\nthe marmot\x00 burrow by the wall\n" },
+    .{ "manpage", "M\x08MA\x08AR\x08RM\x08MO\x08OT\x08T(1)\n\n     marmot - whistle\x07 at the burrow\n" },
+    .{ "session.cast", "\x1b]0;marmot\x07$ ls\nburrow\x08\x08\x08\x08\x08\x08tunnel\n" },
+};
+const rework1_known = [_][]const u8{ "manpage.txt", "notes.md", "server.txt", "session.md" };
+
+test "S6-T23 rework 1: a known name with a stray NUL or control bytes stays indexed across an update of an older index; the same bytes under another name are binary" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    try tmp.dir.createDir(io, "root", .default_dir);
+    var root = try tmp.dir.openDir(io, "root", .{ .iterate = true });
+    defer root.close(io);
+    for (rework1_files) |file| try root.writeFile(io, .{ .sub_path = file[0], .data = file[1] });
+    // Each sniffs binary on its own bytes: the rule would drop it by content.
+    for (rework1_files) |file| try std.testing.expectEqual(Verdict.binary, sniff(file[1], file[1].len));
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out_dir = try tmp.dir.openDir(io, "out", .{ .iterate = true });
+    defer out_dir.close(io);
+
+    // The generation an engine before 2.9.0 published: the four known names
+    // (all valid UTF-8), no `readable` key.
+    var changes: [rework1_known.len]apply.Change = undefined;
+    for (rework1_known, &changes) |path, *change| change.* = .{ .op = .change, .root_id = legacy_root_id, .path = path, .content = .{ .walk = .{ .dir = root, .sub_path = path } } };
+    const roots = [1]apply.RootDecl{.{ .root_id = legacy_root_id, .label = "folder", .kind = "local", .retain_source = true }};
+    var old_options = walkOptions(.v2, chunker.default_max_chars, chunker.default_overlap_lines, .{}, true, null);
+    old_options.readable = false;
+    _ = try reportOf(arena, try apply.applyBatch(arena, io, out_dir, .{ .roots = &roots, .changes = &changes }, old_options), .{});
+    try std.testing.expectEqual(@as(usize, 4), (try snapshot_open.open(arena, io, out_dir)).documents.len);
+
+    // The update keeps all four; the four other names are counted binary.
+    const update = try indexFolderIncremental(arena, io, root, out_dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    try std.testing.expectEqual(@as(usize, 4), update.unchanged);
+    try std.testing.expectEqual(@as(usize, 0), update.removed);
+    try std.testing.expectEqual(@as(usize, 0), update.added);
+    try std.testing.expectEqual(@as(usize, 0), update.unreadable);
+    try std.testing.expectEqual(@as(usize, 4), update.not_read.count(.binary));
+    try std.testing.expectEqual(@as(usize, 4), update.not_read.total());
+    const opened = try snapshot_open.open(arena, io, out_dir);
+    try std.testing.expectEqual(@as(usize, 4), opened.documents.len);
+
+    // A fresh walk reads the same four (search reads what index reads).
+    const detached = try buildFolderDetached(arena, io, root, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    try std.testing.expectEqual(@as(usize, 4), detached.report.added);
+    try std.testing.expectEqual(@as(usize, 4), detached.report.not_read.count(.binary));
 }
 
 test "isIgnoredPath skips dotfiles and ignored directories" {

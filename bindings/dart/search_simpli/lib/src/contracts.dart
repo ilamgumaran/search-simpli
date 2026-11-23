@@ -996,8 +996,10 @@ class IndexFolderReport {
   /// the files the walk did not read, counted by kind, without paths:
   /// `bad_name` (a name no record can hold, such as one with a carriage
   /// return), a skip-listed kind (`image`, `audio`, `video`, `archive`,
-  /// `document`, `font`, `program`, `database`), or `binary` (the first
-  /// 8,192 bytes hold a NUL or more than 1 % control bytes). Only kinds with
+  /// `document`, `font`, `program`, `database`), or `binary` (a name outside
+  /// the 19 extensions read before 2.9.0 whose first 8,192 bytes hold a NUL
+  /// or more than 1 % control bytes; a file of those 19 is read as before,
+  /// by valid UTF-8 alone). Only kinds with
   /// a non-zero count; empty when none, and when the library is older than
   /// 2.9.0 (no `not_read` field). Dot-files and ignored folders are not
   /// walked and not counted.

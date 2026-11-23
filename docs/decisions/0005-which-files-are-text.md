@@ -20,6 +20,16 @@ query) and from 110 / 118 to 120 / 137 (`content`); it also makes some readable-
 by envelope size ([section 7](#7-the-judged-set-before-and-after)). It is a contract change (2.9.0, additive: a
 policy, one report field, one manifest meta key), so the note stops here for the orchestrator.
 
+**Amended before release (S6-T23 rework 1, 23 Nov 2026), because of the verifier's finding.** The Verdict on Part 2
+(finding 1, medium) showed that the rule as first written dropped text files `main` indexes. Examples: a `.txt` log
+padded with NULs after a crash, a saved `man` page (backspace overstrike, 4.65 % control bytes), a note with one BEL.
+An update then removed them from an existing index and reported only a count. The orchestrator ruled it a regression.
+`text-sniff-v1` is therefore defined, before any release, as follows. A file whose name has one of the 19 extensions
+the engine read before 2.9.0 is read by the rule `main` has: valid UTF-8 decides, and a NUL or control bytes do not
+exclude it. The content sniff (NUL, control share) applies only to files outside those 19. So no file indexed by
+`main` is dropped by an update. Section 2 below states the rule with this amendment; the rest of the note is the
+Part 1 text.
+
 ## 1. Where the 19 extensions are decided, where the list is used, and what happens to other files
 
 **The one decision point in the engine** (read): `zig/src/core/indexer.zig`
@@ -86,23 +96,27 @@ ignored directories, as today):
    `document` (pdf doc docx xls xlsx ppt pptx odt ods odp pages numbers key rtf epub), `font` (ttf otf woff woff2),
    `program` (exe dll so dylib o a class pyc wasm bin), `database` (sqlite sqlite3 db). The list is
    `textsniff.py`'s `DENY_KINDS`.
-3. **The sniff**, on the first 8,192 bytes (the whole file when smaller; 8,000 is git's figure, a page is 4,096):
+3. **A name with one of the 19 extensions** (`.c .cpp .css .go .h .html .java .js .json .md .py .rs .rst .toml .ts
+   .txt .yaml .yml .zig`, lowercased last suffix) is not sniffed: it goes straight to 5 and is read by the rule
+   `main` has, valid UTF-8 deciding (amended before release; the verifier's finding 1, above).
+4. **The sniff**, for every other name, on the first 8,192 bytes (the whole file when smaller; 8,000 is git's figure,
+   a page is 4,096):
    - an empty file is text;
    - a UTF-16 or UTF-32 byte order mark (`FF FE`, `FE FF`, `00 00 FE FF`) is text in another encoding: not read,
-     counted as `unreadable` (see 4);
+     counted as `unreadable` (see 5);
    - a NUL byte is `binary`;
    - more than 1 % control bytes (0x01–0x08, 0x0E–0x1A, 0x1C–0x1F, 0x7F; TAB, LF, VT, FF, CR and ESC are allowed,
      ESC for coloured logs) is `binary`;
    - after an optional UTF-8 byte order mark, the head must be valid UTF-8; a sequence cut by the 8,192nd byte is
      allowed when the file is longer. Invalid is not-UTF-8 text: counted as `unreadable`;
    - otherwise text.
-4. **A text file is then read whole by today's code**, unchanged: over `max_file_bytes` (10 MiB) it is `too_large`,
+5. **A text file is then read whole by today's code**, unchanged: over `max_file_bytes` (10 MiB) it is `too_large`,
    invalid UTF-8 anywhere is `unreadable` (`apply.zig:1086`, `1110`). Both keep their paths in the report and the
    manifest's `skipped` list as today.
 
-**How it is placed** (argued): for a name today's list already reads, the bytes are read whole as today and only
-the NUL and control checks are new, on the head of a buffer already in memory (the whole-file UTF-8 check at
-`apply.zig:1110` covers the third). For any other name the walk reads the head first (one open), then the whole file
+**How it is placed** (argued): for a name today's list already reads, the bytes are read whole as today, with no
+new check (as amended; Part 1 proposed the NUL and control checks on the head of the buffer in memory, and the
+whole-file UTF-8 check at `apply.zig:1110` stays the one test). For any other name the walk reads the head first (one open), then the whole file
 if it is text; or, below a small size (say 64 KiB), the whole file at once, so most small files are opened once.
 
 **Its cost** (measured, [`sniff-bench-*.txt`](../evidence/s6-t23/part1/), `sniff_bench.zig`, ReleaseSmall, warm
@@ -219,9 +233,11 @@ the typed questions most table and where-is-it questions still miss (7 of 10 and
   an index of the judged folder under today's rule, updated from the renamed copy, reports `added 24, unchanged 246,
   removed 0`, 454 documents, the fresh index's count. Read: `--update` walks and hashes every candidate
   (`indexer.zig:398`, [incremental-indexing](../incremental-indexing.md) line 31), so a new candidate is `added`.
-  A file of a known extension that the sniff now calls binary leaves the walk and is `removed` at that update
-  (`complete_root`, `indexer.zig:238`); the repository's fixtures hold none (shown: `textsniff.py survey` on every
-  `fixtures/` folder reads every file today and calls each text).
+  As Part 1 wrote it, a file of a known extension that the sniff called binary would leave the walk and be `removed`
+  at that update (`complete_root`, `indexer.zig:238`); the repository's fixtures hold none (shown: `textsniff.py
+  survey` on every `fixtures/` folder reads every file today and calls each text). The verifier showed such files
+  exist outside the fixtures (finding 1), and the amendment above removes the case: a known extension is not sniffed,
+  so an update keeps every file `main` indexed.
 - **The identity: a manifest meta key** (recommendation): `"readable":{"id":"text-sniff-v1","head_bytes":8192,
   "control_share_max":0.01}`, written by every walk-built generation, beside `chunkers`
   ([manifest v2](../manifest-format-v2.md)). Absent means the 19-extension list (call it `ext19-v1`). Read: older

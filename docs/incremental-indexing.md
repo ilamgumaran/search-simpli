@@ -180,7 +180,7 @@ a full rebuild has neither to keep. The table:
 | Stat/read/UTF-8 failure this run | `unreadable` | kept | kept |
 | Over `max_file_bytes` | `too_large` | **dropped** | **dropped** |
 | No longer present in the walk | `removed` | dropped | dropped |
-| Now not read (binary, skip-listed, a bad name; since 2.9.0) | `removed`, and its kind under `not_read` | dropped | dropped |
+| Now not read (a name outside the 19 extensions whose bytes turned binary; since 2.9.0) | `removed`, and its kind under `not_read` | dropped | dropped |
 | New or hash changed | `added` / `changed` | re-chunked | replaced |
 
 Every one of `too_large`/`unreadable` now comes with a path array
@@ -200,20 +200,25 @@ bytes are text, with any extension or none (`README`, `TODO`, `.csv`, `.log`,
    `.zig-cache`, `__pycache__`, `node_modules` or `zig-out`, is not walked and
    not counted (unchanged).
 2. A path no record can hold (a carriage return, line feed or NUL in it, not
-   UTF-8, over 4,096 bytes) is `bad_name`. Before 2.9.0 such a name (macOS's
-   `Icon\r`) failed the whole walk with `InvalidPath`; now it is skipped and
-   counted.
+   UTF-8, over 4,096 bytes) is `bad_name`. Before 2.9.0 such a name with one
+   of the 19 extensions (`a\rb.md`) failed the whole walk with `InvalidPath`;
+   any other such name (macOS's `Icon\r`) was never a candidate. Now it is
+   skipped and counted.
 3. An extension on the skip list is not opened, and is counted by kind:
    `image` (`.png`, `.svg`, …), `audio`, `video`, `archive`, `document`
    (`.pdf`, `.docx`, `.rtf`, …), `font`, `program`, `database`.
-4. Otherwise the first 8,192 bytes decide. An empty file is text. A NUL, or
-   more than 1 % control bytes (tab, line feed, carriage return, form feed
-   and escape are not control bytes here), is `binary`. A UTF-16 or UTF-32
-   byte order mark, or bytes that are not UTF-8, make the file `unreadable`,
-   as before. A file of one of the 19 extensions is judged on the bytes the
-   run reads anyway; any other name pays one read of its head in the walk.
+4. A name with one of the 19 extensions is read by the rule it had before
+   2.9.0: indexed when its bytes are valid UTF-8, `unreadable` otherwise. A NUL
+   or control bytes do not exclude it, so no file an older engine indexed is
+   dropped by an update (S6-T23 rework 1, after the verifier's finding).
+5. Any other name: the first 8,192 bytes decide, one read of its head in the
+   walk. An empty file is text. A NUL, or more than 1 % control bytes, is
+   `binary`. Tab, line feed, vertical tab, form feed, carriage return and
+   escape are not control bytes here; backspace and BEL are. A UTF-16 or UTF-32
+   byte order mark, or bytes that are not UTF-8, make the file `unreadable`;
+   UTF-16 without a byte order mark holds NULs and is `binary`.
 
-`not_read` counts the files of steps 2 to 4 by kind, without paths, in the
+`not_read` counts the files of steps 2, 3 and 5 by kind, without paths, in the
 report of a full run and of `--update` (`{}` when none). They are not in the
 manifest's skipped list, never make a scope `truncated`, and a file that was
 indexed and is now not read is `removed`.
@@ -226,9 +231,19 @@ generation published by a 2.9.0 walk names the rule in its manifest meta
 (`"readable":{"id":"text-sniff-v1",…}`; [manifest-format-v2.md](manifest-format-v2.md)),
 so an old index is the one without the key. A pre-2.9.0 reader ignores the
 key and opens a 2.9.0 index unchanged. `ss_apply_changes` reads what the host
-names, as before, and does not write the key. Shown by `indexer.zig`'s test
+names, as before, and does not write the key. Shown by `indexer.zig`'s tests
 "S6-T23: an index built before the rule takes the newly readable files at its
-next update" and `compat_s6t9_test.zig`.
+next update" and "S6-T23 rework 1: a known name with a stray NUL or control
+bytes stays indexed across an update of an older index", and by
+`compat_s6t9_test.zig`.
+
+**Going back to an engine before 2.9.0.** It opens a 2.9.0 index and answers
+from it unchanged. But its own next update (`--update`, `"update": true`)
+walks by its old rule: every file outside the 19 extensions that 2.9.0 read
+(`README`, `.csv`, `.log`, …) leaves the index, counted only as `removed`, with
+no other reason given. The files come back at the next update by a 2.9.0
+engine. Shown on the judged folder: 24 of 270 files removed, then added again
+(`docs/evidence/s6-t23/part2/answers-and-old-indexes.txt`).
 
 ### Deletion, including the last file
 
