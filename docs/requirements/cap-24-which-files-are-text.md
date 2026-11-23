@@ -1,6 +1,6 @@
 # CAP-24 — Which files are text: a walk reads a file when its bytes are text
 
-Status: Accepted under the maintainer's direction of 22 Nov 2026 (text first; plan step H2); recorded for his review · designed in [ADR 0005](../decisions/0005-which-files-are-text.md), built by [S6-T23](../tasks/S6-T23.md) Part 2 (rulings after Part 1). Not Validated
+Status: Implemented on `task/S6-T23` (S6-T23 Part 2), awaiting verification and merge · accepted under the maintainer's direction of 22 Nov 2026 (text first; plan step H2); recorded for his review · designed in [ADR 0005](../decisions/0005-which-files-are-text.md), built by [S6-T23](../tasks/S6-T23.md) Part 2 (rulings after Part 1; Report (Part 2)). Not Validated
 
 The number: on `main` at `8ffc41c` the highest capability is CAP-23, the
 highest functional requirement FR-33, the highest non-functional requirement

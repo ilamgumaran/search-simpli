@@ -1,0 +1,60 @@
+spell-10	direct/both/typed	readable_now=True	within lost 3145->5980	new_above=[]	new_in_ten=1	old_files_reordered_or_replaced=False
+name-06	direct/both/typed	readable_now=True	file 5->9	new_above=[]	new_in_ten=0	old_files_reordered_or_replaced=True
+name-09	direct/both/typed	readable_now=True	complete lost; file 8->None	new_above=['home/money/bank-notes.tsv']	new_in_ten=1	old_files_reordered_or_replaced=True
+about-01	direct/both/typed	readable_now=True	file 1->2	new_above=['toolshare/README']	new_in_ten=1	old_files_reordered_or_replaced=False
+about-05	direct/both/typed	readable_now=True	file 1->2	new_above=['toolshare/README']	new_in_ten=1	old_files_reordered_or_replaced=True
+about-07	direct/both/typed	readable_now=True	file 2->4	new_above=['toolshare/README']	new_in_ten=1	old_files_reordered_or_replaced=True
+about-08	direct/both/typed	readable_now=True	file 1->2	new_above=['toolshare/README']	new_in_ten=2	old_files_reordered_or_replaced=False
+about-09	direct/both/typed	readable_now=False	file 5->6	new_above=['toolshare/README']	new_in_ten=1	old_files_reordered_or_replaced=True
+about-10	direct/both/typed	readable_now=True	file 1->2	new_above=['toolshare/README']	new_in_ten=1	old_files_reordered_or_replaced=False
+content-01	direct/both/typed	readable_now=True	complete lost; file 10->None	new_above=['toolshare/README']	new_in_ten=1	old_files_reordered_or_replaced=True
+content-05	direct/both/typed	readable_now=True	file 4->9	new_above=['toolshare/Makefile']	new_in_ten=2	old_files_reordered_or_replaced=True
+content-08	direct/both/typed	readable_now=True	file 1->2	new_above=[]	new_in_ten=1	old_files_reordered_or_replaced=True
+content-09	direct/both/typed	readable_now=True	file 2->3	new_above=['toolshare/README']	new_in_ten=1	old_files_reordered_or_replaced=True
+syn-02	direct/both/typed	readable_now=True	file 10->None	new_above=[]	new_in_ten=0	old_files_reordered_or_replaced=True
+syn-09	direct/both/typed	readable_now=True	file 3->4	new_above=['toolshare/README']	new_in_ten=1	old_files_reordered_or_replaced=True
+cur-04	direct/both/typed	readable_now=True	file 10->None	new_above=['home/contacts.tsv', 'toolshare/README']	new_in_ten=2	old_files_reordered_or_replaced=True
+cur-09	direct/both/typed	readable_now=True	file 7->8	new_above=[]	new_in_ten=0	old_files_reordered_or_replaced=True
+where-05	direct/both/typed	readable_now=True	file 2->3	new_above=['toolshare/README']	new_in_ten=2	old_files_reordered_or_replaced=True
+spell-10	direct/both/query	readable_now=True	within lost 3145->5980	new_above=[]	new_in_ten=1	old_files_reordered_or_replaced=False
+number-12	direct/both/query	readable_now=True	file 8->9	new_above=['toolshare/logs/server-2026-11.log']	new_in_ten=1	old_files_reordered_or_replaced=False
+span-11	direct/both/query	readable_now=True	file 2->3	new_above=['toolshare/data/loans-2026.csv']	new_in_ten=1	old_files_reordered_or_replaced=False
+about-08	direct/both/query	readable_now=True	complete lost; within lost 4047->5035; passage 1->3	new_above=[]	new_in_ten=1	old_files_reordered_or_replaced=False
+about-09	direct/both/query	readable_now=False	file 3->4	new_above=['toolshare/README']	new_in_ten=2	old_files_reordered_or_replaced=False
+content-06	direct/both/query	readable_now=True	within lost 3313->35568	new_above=[]	new_in_ten=8	old_files_reordered_or_replaced=False
+content-08	direct/both/query	readable_now=True	within lost 3536->30577	new_above=[]	new_in_ten=8	old_files_reordered_or_replaced=False
+syn-09	direct/both/query	readable_now=True	file 8->9	new_above=['home/contacts.tsv', 'toolshare/README']	new_in_ten=2	old_files_reordered_or_replaced=True
+spell-01	direct/content/typed	readable_now=True	within lost 2972->4589	new_above=[]	new_in_ten=2	old_files_reordered_or_replaced=False
+number-03	direct/content/typed	readable_now=True	within lost 3779->4472	new_above=[]	new_in_ten=1	old_files_reordered_or_replaced=True
+span-06	direct/content/typed	readable_now=True	within lost 4074->4742	new_above=[]	new_in_ten=0	old_files_reordered_or_replaced=True
+name-01	direct/content/typed	readable_now=True	passage 6->7	new_above=[]	new_in_ten=0	old_files_reordered_or_replaced=True
+name-06	direct/content/typed	readable_now=True	file 5->9	new_above=[]	new_in_ten=0	old_files_reordered_or_replaced=True
+name-09	direct/content/typed	readable_now=True	complete lost; within lost 3318->3387; file 8->None	new_above=['home/money/bank-notes.tsv']	new_in_ten=1	old_files_reordered_or_replaced=True
+about-01	direct/content/typed	readable_now=True	file 1->2	new_above=['toolshare/README']	new_in_ten=1	old_files_reordered_or_replaced=False
+about-05	direct/content/typed	readable_now=True	file 1->2	new_above=['toolshare/README']	new_in_ten=1	old_files_reordered_or_replaced=True
+about-07	direct/content/typed	readable_now=True	file 2->4	new_above=['toolshare/README']	new_in_ten=1	old_files_reordered_or_replaced=True
+about-08	direct/content/typed	readable_now=True	file 1->2	new_above=['toolshare/README']	new_in_ten=2	old_files_reordered_or_replaced=False
+about-09	direct/content/typed	readable_now=False	file 5->6	new_above=['toolshare/README']	new_in_ten=1	old_files_reordered_or_replaced=False
+about-10	direct/content/typed	readable_now=True	file 1->2	new_above=['toolshare/README']	new_in_ten=1	old_files_reordered_or_replaced=False
+content-05	direct/content/typed	readable_now=True	file 4->9	new_above=['toolshare/Makefile']	new_in_ten=2	old_files_reordered_or_replaced=True
+content-08	direct/content/typed	readable_now=True	file 1->2	new_above=[]	new_in_ten=1	old_files_reordered_or_replaced=True
+content-09	direct/content/typed	readable_now=True	file 2->3	new_above=['toolshare/README']	new_in_ten=1	old_files_reordered_or_replaced=True
+syn-02	direct/content/typed	readable_now=True	file 10->None	new_above=[]	new_in_ten=0	old_files_reordered_or_replaced=True
+syn-09	direct/content/typed	readable_now=True	within lost 3825->4325; file 3->4	new_above=['toolshare/README']	new_in_ten=1	old_files_reordered_or_replaced=True
+cur-04	direct/content/typed	readable_now=True	stale first	new_above=['home/contacts.tsv', 'toolshare/README']	new_in_ten=2	old_files_reordered_or_replaced=True
+cur-09	direct/content/typed	readable_now=True	file 7->8	new_above=[]	new_in_ten=0	old_files_reordered_or_replaced=True
+where-05	direct/content/typed	readable_now=True	file 2->3	new_above=['toolshare/README']	new_in_ten=2	old_files_reordered_or_replaced=True
+word-01	direct/content/query	readable_now=True	within lost 2973->4590	new_above=[]	new_in_ten=2	old_files_reordered_or_replaced=False
+word-11	direct/content/query	readable_now=True	within lost 1856->12974	new_above=[]	new_in_ten=6	old_files_reordered_or_replaced=False
+number-02	direct/content/query	readable_now=True	within lost 3368->4576	new_above=[]	new_in_ten=1	old_files_reordered_or_replaced=False
+number-12	direct/content/query	readable_now=True	file 8->9	new_above=['toolshare/logs/server-2026-11.log']	new_in_ten=1	old_files_reordered_or_replaced=False
+span-11	direct/content/query	readable_now=True	within lost 3392->4594; file 2->3	new_above=['toolshare/data/loans-2026.csv']	new_in_ten=1	old_files_reordered_or_replaced=False
+pair-05	direct/content/query	readable_now=True	within lost 1811->11156	new_above=[]	new_in_ten=6	old_files_reordered_or_replaced=False
+about-05	direct/content/query	readable_now=True	within lost 3917->5613	new_above=[]	new_in_ten=2	old_files_reordered_or_replaced=False
+about-08	direct/content/query	readable_now=True	passage 1->2	new_above=[]	new_in_ten=1	old_files_reordered_or_replaced=False
+about-09	direct/content/query	readable_now=False	file 3->4	new_above=['toolshare/README']	new_in_ten=2	old_files_reordered_or_replaced=False
+content-05	direct/content/query	readable_now=True	within lost 1851->12888	new_above=[]	new_in_ten=7	old_files_reordered_or_replaced=False
+content-06	direct/content/query	readable_now=True	within lost 979->15365	new_above=[]	new_in_ten=8	old_files_reordered_or_replaced=False
+content-08	direct/content/query	readable_now=True	within lost 1094->13613	new_above=[]	new_in_ten=7	old_files_reordered_or_replaced=False
+syn-09	direct/content/query	readable_now=True	file 8->9	new_above=['home/contacts.tsv', 'toolshare/README']	new_in_ten=2	old_files_reordered_or_replaced=True
+where-08	direct/content/query	readable_now=True	within lost 3780->4210	new_above=[]	new_in_ten=1	old_files_reordered_or_replaced=True

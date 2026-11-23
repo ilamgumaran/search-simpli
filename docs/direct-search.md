@@ -16,9 +16,11 @@ searchd search <folder> "<query>" [--top-k N] [--json] [--evidence]
 ```
 
 One command answers a query over a folder. There is no index directory: the
-folder is walked and read by `index`'s rules (the same 19 extensions, the same
-ignored directories and dotfiles, analyzer v2, the default chunker, the same
-byte caps), the index is built in memory, the query is answered, and the
+folder is walked and read by `index`'s rules (since contract 2.9.0 every file
+whose bytes are text, `text-sniff-v1`, see
+[incremental-indexing.md](incremental-indexing.md#which-files-are-read-contract-290-s6-t23);
+the same ignored directories and dotfiles, analyzer v2, the default chunker,
+the same byte caps), the index is built in memory, the query is answered, and the
 process exits. Nothing is written anywhere: not in the folder, not beside it,
 not in the working directory, not in the temporary directory.
 
@@ -39,9 +41,11 @@ generation 1, as a fresh `index` is, even the `index.generation` field in the
   same.
 - The file-name channel is always built, as `--filename-index` builds it, so
   `--search-field filename` and `both` work on any folder.
-- Files left out by the caps or because they cannot be read are counted on one
-  stderr line, `searchd: search: N files not searched (too_large=… unreadable=…
-  budget_exhausted=…)`, only when there are any; stdout is unaffected.
+- Files left out by the caps, because they cannot be read, or (since 2.9.0)
+  because they are not text are counted on one stderr line,
+  `searchd: search: N files not searched (too_large=… unreadable=…
+  budget_exhausted=… not_read=…)`, only when there are any; stdout is
+  unaffected. `not_read` is the total of `index`'s `not_read` kinds.
 - A missing folder, a path that is not a folder, an empty (or whitespace-only)
   query, an unknown flag or a bad value is a usage error: exit 2, one stderr
   line, nothing on stdout. Any other failure (for example a folder you may not

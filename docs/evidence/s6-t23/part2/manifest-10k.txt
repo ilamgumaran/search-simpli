@@ -1,0 +1,25 @@
+== timing-10k
+sizes 696 -> 773 (+77); the key with its comma is 77 B
+header bytes that differ lie in 156..167: True (9 bytes)
+payload length (offset 156): 528 -> 605
+manifest checksum (offset 160): d49a0a6e424c7625 -> e87995e6e73bee56
+payload before the meta's u32 length: identical: True
+meta length: 348 -> 425
+from the meta to the end (the meta, then the filename and state strings): the head's is main's with the key inserted before '"roots":': True
+== prose-10k
+sizes 696 -> 773 (+77); the key with its comma is 77 B
+header bytes that differ lie in 156..167: True (8 bytes)
+payload length (offset 156): 528 -> 605
+manifest checksum (offset 160): f3de672cb34351b7 -> 55ded7f7f6baf880
+payload before the meta's u32 length: identical: True
+meta length: 348 -> 425
+from the meta to the end (the meta, then the filename and state strings): the head's is main's with the key inserted before '"roots":': True
+== tamil-10k
+sizes 696 -> 773 (+77); the key with its comma is 77 B
+header bytes that differ lie in 156..167: True (9 bytes)
+payload length (offset 156): 528 -> 605
+manifest checksum (offset 160): 8e36ec71a240dec9 -> 4671c792efd13743
+payload before the meta's u32 length: identical: True
+meta length: 348 -> 425
+from the meta to the end (the meta, then the filename and state strings): the head's is main's with the key inserted before '"roots":': True
+Every other file of the three index folders (documents-1.hybseg, filename-lexical-1.hyblex, filenames-1.hybseg, INDEX-STATE.json, lexical-1.hyblex, source-1.hybsrc, state-1.hybstate, WRITER.LOCK): cmp-identical between main's searchd (8ffc41c) and the head's, ReleaseSmall, searchd index CORPUS --out DIR --filename-index. Corpora: scripts/gen_timing_corpus.py, gen_prose_corpus.py, gen_tamil_timing_corpus.py, 10000 files each, default arguments.

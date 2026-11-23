@@ -47,7 +47,10 @@ const ruling3 = [_]Kind{
     .{ .path = "d-bom.md", .bytes = "\xEF\xBB\xBF# Bom heading\n\nbody text under it\n" },
     .{ .path = "e-empty.txt", .bytes = "" },
     .{ .path = "f-blank.txt", .bytes = "   \n\n \t \n" },
-    .{ .path = "g-controls.txt", .bytes = "one\x0Btwo\x0Cthree\xC2\x85four\xE2\x80\xA8five\xE2\x80\xA9six\nnext line\nlast\x1Cfile sep\n" },
+    // S6-T23: one file separator (0x1C) in a file under 100 bytes is more
+    // than 1 % control bytes, which `text-sniff-v1` calls binary; the last
+    // line keeps the file a text file with the same kinds of line ends.
+    .{ .path = "g-controls.txt", .bytes = "one\x0Btwo\x0Cthree\xC2\x85four\xE2\x80\xA8five\xE2\x80\xA9six\nnext line\nlast\x1Cfile sep\nand a last line, so that one control byte is under one per cent of the file\n" },
     .{ .path = "h-blank-lines.md", .bytes = "# H\n\n\n\nafter three blank lines\n\n\n## H2\n\n\ntext\n" },
     // A short chunk, then a long one (where an overlap of the bytes emitted
     // so far plus one is still shorter than the chunk).

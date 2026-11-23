@@ -157,8 +157,9 @@ class DirectSearchTests(unittest.TestCase):
                                    "--max-file-bytes", "1000")
             self.assertEqual(got.returncode, 0, got.stderr)
             self.assertEqual(got.stdout, self.expected(index, "lantern", field, ("--evidence",), ()))
+            # S6-T23: the picture (a skip-listed kind) is counted as not read.
             self.assertEqual(got.stderr,
-                             b"searchd: search: 1 files not searched (too_large=1 unreadable=0 budget_exhausted=0)\n")
+                             b"searchd: search: 2 files not searched (too_large=1 unreadable=0 budget_exhausted=0 not_read=1)\n")
         # The flag changes the answer: `filename` is not `content`.
         names = self.run_searchd("search", folder, "lantern", "--search-field", "filename", "--json")
         bodies = self.run_searchd("search", folder, "lantern", "--search-field", "content", "--json")

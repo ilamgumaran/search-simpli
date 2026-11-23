@@ -109,7 +109,7 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-21 | [Host-supplied vectors for a `searchd`-built index](cap-21-host-supplied-vectors.md) | UC-001, UC-007, UC-002 | FR-27, FR-28, FR-29, FR-30, NFR-16 | Proposed (S6-T6: [task](../tasks/S6-T6.md); pending maintainer approval; blocked on a J2 semantic slice, CFT-24) |
 | CAP-22 | [Query warnings under every search field](cap-22-field-warnings.md) | UC-006, UC-007, UC-002 | FR-31 | Implemented (S6-T5: [task](../tasks/S6-T5.md); merged on the maintainer's decision of 17 Nov 2026; approved by the orchestrator under the maintainer's instruction of 16 Nov 2026; not Validated) |
 | CAP-23 | [The command line keeps two generations by default](cap-23-cli-generation-retention.md) | UC-001, UC-006, UC-002 | FR-32, FR-33, NFR-17 | Proposed (S6-T11, 03-next D2-5; pending maintainer approval and answers to its open questions Q1–Q6) |
-| CAP-24 | [Which files are text: a walk reads a file when its bytes are text](cap-24-which-files-are-text.md) | UC-001, UC-007, UC-006, UC-002 | FR-34, FR-35, FR-36, NFR-18 | Proposed (S6-T23: [task](../tasks/S6-T23.md); accepted under the maintainer's direction of 22 Nov 2026, text first, plan step H2; recorded for his review; build in progress) |
+| CAP-24 | [Which files are text: a walk reads a file when its bytes are text](cap-24-which-files-are-text.md) | UC-001, UC-007, UC-006, UC-002 | FR-34, FR-35, FR-36, NFR-18 | Implemented (S6-T23 Part 2: [task](../tasks/S6-T23.md), on `task/S6-T23`, awaiting verification and merge; accepted under the maintainer's direction of 22 Nov 2026, text first, plan step H2; recorded for his review; not Validated) |
 
 New capabilities append here as `CAP-17`, `CAP-18`, … via the process, each with
 a filled spec (see the three above as worked examples).
@@ -139,7 +139,7 @@ index adds status and traceability. No requirement exists *only* here.
 
 | ID | Requirement (short) | Capability | Status / evidence |
 |---|---|---|---|
-| FR-01 | Source discovery (extensions, skips, UTF-8, SHA-256, root-relative path) | CAP-01 | Implemented |
+| FR-01 | Source discovery (since S6-T23 every file whose bytes are text, FR-34; skips, UTF-8, SHA-256, root-relative path) | CAP-01 | Implemented |
 | FR-02 | Chunking & deterministic identity (path, lines, tokens, labels, chunker id) | CAP-01 | Implemented |
 | FR-03 | Lexical retrieval (case-insensitive tokenization, corpus BM25) | CAP-02 | Implemented |
 | FR-04 | Semantic retrieval (none/hash/cooccurrence/neural; model metadata) | CAP-03 | Implemented (diagnostic) |
@@ -173,9 +173,9 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-31 | `ss_query` warnings under `both` and `filename`: `content`'s, less a word a visible file name holds; hidden reported as absent | CAP-22 | Implemented (S6-T5: [task](../tasks/S6-T5.md), merged on the maintainer's decision of 17 Nov 2026) |
 | FR-32 | `searchd index` and `searchd apply` keep two generations unless `--keep-generations N` or `--keep-generations all` says otherwise; C ABI and Dart defaults unchanged | CAP-23 | Proposed (S6-T11) |
 | FR-33 | A command-line publish says what retention removed (fields while retention is in effect; one stderr line when files were deleted) | CAP-23 | Proposed (S6-T11) |
-| FR-34 | The walk reads a file when its bytes are text (`text-sniff-v1`: name check, skip list of non-text kinds, 8,192-byte sniff); changes FR-01; the Python reference walks the same | CAP-24 | Proposed (S6-T23) |
-| FR-35 | A walk's report counts not-read files by kind, without paths (`not_read`), on every interface; not in the manifest's `skipped` | CAP-24 | Proposed (S6-T23) |
-| FR-36 | A walk-built generation records `readable` (`text-sniff-v1`) in the manifest meta; older readers ignore it; an older index takes the newly readable files at its next update | CAP-24 | Proposed (S6-T23) |
+| FR-34 | The walk reads a file when its bytes are text (`text-sniff-v1`: name check, skip list of non-text kinds, 8,192-byte sniff); changes FR-01; the Python reference walks the same | CAP-24 | Implemented (S6-T23 Part 2 on `task/S6-T23`; awaiting verification and merge) |
+| FR-35 | A walk's report counts not-read files by kind, without paths (`not_read`), on every interface; not in the manifest's `skipped` | CAP-24 | Implemented (S6-T23 Part 2 on `task/S6-T23`; awaiting verification and merge) |
+| FR-36 | A walk-built generation records `readable` (`text-sniff-v1`) in the manifest meta; older readers ignore it; an older index takes the newly readable files at its next update | CAP-24 | Implemented (S6-T23 Part 2 on `task/S6-T23`; awaiting verification and merge) |
 
 ## Non-functional requirements (NFR)
 
@@ -204,7 +204,7 @@ until promoted.
 | NFR-15 | Direct search creates no file or directory anywhere; its cost against the index path is measured, not assumed | CAP-20 | Implemented and verified (S6-T2: [task](../tasks/S6-T2.md)) |
 | NFR-16 | Vectors in their own versioned section, loaded only by vector queries; lexical answers and memory unchanged; vector costs measured before promotion | CAP-21 | Proposed (S6-T6) |
 | NFR-17 | With the command line's defaults at most two complete generations after a publish; deletion confined to the engine's own superseded section files in the index directory | CAP-23 | Proposed (S6-T11) |
-| NFR-18 | The sniff costs no extra open for a known-text name and one read of at most 8,192 bytes for any other; the 10k corpora's answers byte-identical and index folders differing only in `MANIFEST` | CAP-24 | Proposed (S6-T23) |
+| NFR-18 | The sniff costs no extra open for a known-text name and one read of at most 8,192 bytes for any other; the 10k corpora's answers byte-identical and index folders differing only in `MANIFEST` | CAP-24 | Implemented (S6-T23 Part 2 on `task/S6-T23`; awaiting verification and merge) |
 
 ## Contracts (CON)
 

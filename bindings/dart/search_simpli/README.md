@@ -77,7 +77,7 @@ wrote — see the [root README](../../../README.md) and
 
 - `SearchSimpli.open(String snapshotDir, {DynamicLibrary? library})` — opens
   a snapshot. Asserts the native library's `ss_version()` equals this
-  package's `CONTRACTS_VERSION` (`2.8.0`) and that it exports every 2.0.0
+  package's `CONTRACTS_VERSION` (`2.9.0`) and that it exports every 2.0.0
   function before touching `snapshotDir` at
   all; throws `ContractsVersionMismatchException` on a mismatch (an older
   library) and
@@ -144,7 +144,11 @@ wrote — see the [root README](../../../README.md) and
   incremental update (content-hash reuse, tombstoned deletions) instead of a
   full rebuild — see [docs/incremental-indexing.md](../../../docs/incremental-indexing.md).
   An empty folder, or a folder whose last indexable file was just deleted,
-  publishes an empty generation instead of throwing.
+  publishes an empty generation instead of throwing. Since contract 2.9.0 a
+  file is read when its bytes are text, with any extension or none, and
+  `IndexFolderReport.notRead` counts the files not read by kind (`bad_name`,
+  `binary`, `image`, `document`, ...), without paths; see
+  [incremental indexing](../../../docs/incremental-indexing.md#which-files-are-read-contract-290-s6-t23).
 
 Every `ss_*` failure surfaces as `SearchSimpliException` with the
 human-readable `ss_last_error()` message; since 2.0.0 its `code` getter gives

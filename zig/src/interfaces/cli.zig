@@ -84,10 +84,11 @@ pub const usage_text =
         \\                       tombstoned, and a JSON report (added/
         \\                       changed/removed/unchanged/budget_exhausted/
         \\                       too_large/unreadable/too_large_paths/
-        \\                       unreadable_paths/documents/terms/postings)
-        \\                       is printed. An empty folder, or a folder
-        \\                       whose last file was just deleted, publishes
-        \\                       an empty generation instead of failing.
+        \\                       unreadable_paths/not_read/documents/terms/
+        \\                       postings) is printed. An empty folder, or
+        \\                       a folder whose last file was just deleted,
+        \\                       publishes an empty generation instead of
+        \\                       failing.
         \\                       --max-file-bytes/--max-total-bytes cap,
         \\                       respectively, one file's size (files over
         \\                       the cap are excluded, named in
@@ -97,9 +98,12 @@ pub const usage_text =
         \\                       512 MiB); both apply on a full rebuild and
         \\                       on --update alike (S1-T5). Without --update
         \\                       the summary line prints files_indexed/
-        \\                       too_large/unreadable/budget_exhausted; only
-        \\                       --update also prints the full JSON report
-        \\                       above.
+        \\                       too_large/unreadable/budget_exhausted/
+        \\                       not_read; only --update also prints the
+        \\                       full JSON report above. A file is read when
+        \\                       its bytes are text, any name (2.9.0,
+        \\                       text-sniff-v1); not_read counts the rest by
+        \\                       kind (bad_name, binary, image, document, ...).
         \\  query <dir> "<text>" [--json] [--top-k N]
         \\                       BM25 lexical query against a published
         \\                       snapshot; human-readable by default, or a
@@ -830,6 +834,8 @@ pub fn runIndex(
         try json.beginArray();
         for (report.unreadable_paths) |path| try json.write(path);
         try json.endArray();
+        try json.objectField("not_read");
+        try report.not_read.writeJson(&json);
         try json.objectField("documents");
         try json.write(report.documents);
         try json.objectField("terms");
@@ -874,6 +880,9 @@ pub fn runIndex(
         "indexed {s}: analyzer={s} generation={d} files_indexed={d} too_large={d} unreadable={d} budget_exhausted={d} documents={d} terms={d} postings={d}",
         .{ folder_path, report.analyzer_id, report.generation, report.added, report.too_large, report.unreadable, report.budget_exhausted, report.documents, report.terms, report.postings },
     );
+    // S6-T23 (FR-35): files the walk did not read (a bad name, a skip-listed
+    // kind, binary bytes); `--update` lists them by kind.
+    try output.print(" not_read={d}", .{report.not_read.total()});
     if (options.caps.keep_generations != null) {
         try output.print(" pruned_files={d} prune_failures={d}", .{ report.pruned_files, report.prune_failures });
     }
@@ -1081,9 +1090,12 @@ pub fn runSearchFolder(io: std.Io, allocator: std.mem.Allocator, args: SearchArg
         try answerQuery(arena, searched.engine, args.text, args.options, output);
     }
     const report = searched.report;
-    if (report.too_large + report.unreadable + report.budget_exhausted > 0) {
-        try errors.print("searchd: search: {d} files not searched (too_large={d} unreadable={d} budget_exhausted={d})\n", .{
-            report.too_large + report.unreadable + report.budget_exhausted, report.too_large, report.unreadable, report.budget_exhausted,
+    // S6-T23 (FR-35): `not_read` counts the files the walk did not read (a
+    // bad name, a skip-listed kind, binary bytes), by total.
+    const not_read = report.not_read.total();
+    if (report.too_large + report.unreadable + report.budget_exhausted + not_read > 0) {
+        try errors.print("searchd: search: {d} files not searched (too_large={d} unreadable={d} budget_exhausted={d} not_read={d})\n", .{
+            report.too_large + report.unreadable + report.budget_exhausted + not_read, report.too_large, report.unreadable, report.budget_exhausted, not_read,
         });
     }
     return 0;

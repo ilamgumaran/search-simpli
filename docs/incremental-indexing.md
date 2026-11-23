@@ -18,7 +18,7 @@ searchd index ./my-notes --out .search/native-index --update
 # {"generation":2,"analyzer_id":"analyzer-v2","added":0,"changed":1,
 #  "removed":0,"unchanged":11,"budget_exhausted":0,"too_large":0,
 #  "unreadable":0,"too_large_paths":[],"unreadable_paths":[],
-#  "documents":12,"terms":233,"postings":410}
+#  "not_read":{"image":2},"documents":12,"terms":233,"postings":410}
 ```
 
 The same operation is exposed through the C ABI as
@@ -28,8 +28,8 @@ The same operation is exposed through the C ABI as
 
 ### What "incremental" reuses
 
-Every candidate file (same walk/extension/ignore rules as a full rebuild,
-`indexer.collectCandidatePaths`) is still **read and SHA-256 hashed on every
+Every candidate file (the same walk, text rule and ignore rules as a full
+rebuild, `indexer.walkFolder`; see "Which files are read" below) is still **read and SHA-256 hashed on every
 run** — a hash requires the bytes — but only a file whose hash changed since
 the last published generation is re-chunked and re-tokenized. An unchanged
 file's chunks are carried as the previous generation's documents (S3-T2:
@@ -180,11 +180,55 @@ a full rebuild has neither to keep. The table:
 | Stat/read/UTF-8 failure this run | `unreadable` | kept | kept |
 | Over `max_file_bytes` | `too_large` | **dropped** | **dropped** |
 | No longer present in the walk | `removed` | dropped | dropped |
+| Now not read (binary, skip-listed, a bad name; since 2.9.0) | `removed`, and its kind under `not_read` | dropped | dropped |
 | New or hash changed | `added` / `changed` | re-chunked | replaced |
 
 Every one of `too_large`/`unreadable` now comes with a path array
 (`too_large_paths`/`unreadable_paths`) rather than a bare count — S1-T4
 criterion 3.
+
+### Which files are read (contract 2.9.0, S6-T23)
+
+Before 2.9.0 the walk read a file only when its extension was one of 19
+(`.md`, `.txt`, `.py`, …). Since 2.9.0 (`text-sniff-v1`,
+[decision 0005](decisions/0005-which-files-are-text.md),
+[CAP-24](requirements/cap-24-which-files-are-text.md)) it reads a file when its
+bytes are text, with any extension or none (`README`, `TODO`, `.csv`, `.log`,
+`.yaml`, `.ini`, …). In walk order, for each regular file:
+
+1. A path with a component starting with `.`, or naming `.git`, `.search`,
+   `.zig-cache`, `__pycache__`, `node_modules` or `zig-out`, is not walked and
+   not counted (unchanged).
+2. A path no record can hold (a carriage return, line feed or NUL in it, not
+   UTF-8, over 4,096 bytes) is `bad_name`. Before 2.9.0 such a name (macOS's
+   `Icon\r`) failed the whole walk with `InvalidPath`; now it is skipped and
+   counted.
+3. An extension on the skip list is not opened, and is counted by kind:
+   `image` (`.png`, `.svg`, …), `audio`, `video`, `archive`, `document`
+   (`.pdf`, `.docx`, `.rtf`, …), `font`, `program`, `database`.
+4. Otherwise the first 8,192 bytes decide. An empty file is text. A NUL, or
+   more than 1 % control bytes (tab, line feed, carriage return, form feed
+   and escape are not control bytes here), is `binary`. A UTF-16 or UTF-32
+   byte order mark, or bytes that are not UTF-8, make the file `unreadable`,
+   as before. A file of one of the 19 extensions is judged on the bytes the
+   run reads anyway; any other name pays one read of its head in the walk.
+
+`not_read` counts the files of steps 2 to 4 by kind, without paths, in the
+report of a full run and of `--update` (`{}` when none). They are not in the
+manifest's skipped list, never make a scope `truncated`, and a file that was
+indexed and is now not read is `removed`.
+
+**An index built before 2.9.0.** It opens and answers as before; a 2.9.0
+reader needs nothing new in it. Its next `--update` reads the newly readable
+files and adds them (counted under `added`), without a rebuild; files read
+before keep their chunks when their bytes are unchanged (`unchanged`). A
+generation published by a 2.9.0 walk names the rule in its manifest meta
+(`"readable":{"id":"text-sniff-v1",…}`; [manifest-format-v2.md](manifest-format-v2.md)),
+so an old index is the one without the key. A pre-2.9.0 reader ignores the
+key and opens a 2.9.0 index unchanged. `ss_apply_changes` reads what the host
+names, as before, and does not write the key. Shown by `indexer.zig`'s test
+"S6-T23: an index built before the rule takes the newly readable files at its
+next update" and `compat_s6t9_test.zig`.
 
 ### Deletion, including the last file
 

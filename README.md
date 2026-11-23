@@ -42,7 +42,20 @@ python3 search.py query .search/index.json "how does hybrid search combine resul
 
 On an Apple-silicon Mac the `ReleaseSmall` build took 10.6 s with an empty Zig cache
 (S6-T1, 16 Nov 2026). Point `index` at your own folder to search it; `--update` re-reads
-only changed files, and `--filename-index` adds search by file name. For a one-off question,
+only changed files, and `--filename-index` adds search by file name.
+
+**What is read.** Every file whose bytes are text, with any extension or none: notes,
+Markdown, source, data files (`.csv`, `.tsv`, `.json`, `.yaml`), logs, `README` and `TODO`
+(since contract 2.9.0; before, only 19 extensions). Not read, and counted by kind under
+`not_read`: pictures, sound, video, archives, PDF and office documents, fonts, programs and
+databases (by extension, never opened), files whose first 8 KiB hold a NUL or more than 1 %
+control bytes, and names no record can hold (one with a carriage return). Dot-files and
+`.git`, `node_modules`, `__pycache__`, `.zig-cache`, `zig-out` and `.search` are not walked.
+UTF-16 files and files that are not UTF-8 are reported as `unreadable`. The rule is
+[decision 0005](docs/decisions/0005-which-files-are-text.md); the details are in
+[incremental indexing](docs/incremental-indexing.md#which-files-are-read-contract-290-s6-t23).
+
+For a one-off question,
 `searchd search <folder> "<query>"` answers over the folder with no index at all
 ([direct search](docs/direct-search.md)).
 

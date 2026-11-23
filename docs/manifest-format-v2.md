@@ -69,6 +69,7 @@ Identifiers and filenames follow v1's rules; the three filenames must differ.
 {"manifest_meta":2,
  "chunkers":[{"id":"line-window-v1","params":{"max_chars":1600,"overlap_lines":3}},
              {"id":"md-section-v1","params":{"max_chars":1600,"overlap_lines":3,"front_matter":"yaml-v1"}}],
+ "readable":{"id":"text-sniff-v1","head_bytes":8192,"control_share_max":0.01},
  "roots":[{"root_id":"r-legacy","label":"folder","kind":"local","required_labels":[],"retain_source":true,"origin":"folder"}],
  "source_section_version":1}
 ```
@@ -76,6 +77,21 @@ Identifiers and filenames follow v1's rules; the three filenames must differ.
 - `chunkers`: `line-window-v1` is always entry 0; `md-section-v1` is entry 1
   when any chunk of the generation was made by it. A document record's
   `chunker_index` ([segment v4](segment-format-v4.md)) indexes this array.
+- `readable` (contract 2.9.0, S6-T23; only in a generation a folder walk
+  publishes: `searchd index`, `--update`, `ss_index_folder`): the rule that
+  chose which files were read, `text-sniff-v1` with its parameters
+  ([decision 0005](decisions/0005-which-files-are-text.md)). `apply_changes`
+  and `import-json` do not write it. It is informational: `parseMeta` reads
+  `readable.id` when present and ignores the rest, and a reader before 2.9.0
+  ignores the whole key (unknown keys are ignored). A directory whose manifest
+  lacks it was published before 2.9.0 (or by `apply_changes`); its next walk
+  reads the newly readable files without a rebuild. No flag bit, magic or
+  minor version changes for it, so this document stays at minor 2.6 and
+  rollback stays two-way: a 2.8.0 library opens a 2.9.0 index. Shown by
+  `manifest.zig`'s test "S6-T23: a walk's meta records the readable rule
+  after the chunkers; a reader ignores what it does not know" and by
+  `compat_s6t9_test.zig`, whose committed v2.6 reference differs from a
+  fresh index only by this key in `MANIFEST`.
 - `roots`: S3-T1 writes the one root `r-legacy` for a folder index; S3-T3 adds
   host, iCloud and local roots through `apply_changes`. Each root:
   `root_id`, `label`, `kind`, `required_labels` (they add to every document's

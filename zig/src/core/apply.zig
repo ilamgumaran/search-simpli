@@ -122,6 +122,11 @@ pub const Options = struct {
     /// Ignore the current generation and state (a full rebuild).
     fresh: bool = false,
     generation: ?u64 = null,
+    /// S6-T23 (CAP-24 FR-34, FR-36): the batch is a walk under
+    /// `text-sniff-v1`: a `walk` change whose bytes sniff binary is not
+    /// indexed (`Report.walk_binary`), and the manifest meta records the
+    /// rule (`readable`). Host batches leave it false: the host chooses.
+    readable: bool = false,
     /// Test hook (ruling 4, crash recovery): fail after the manifest is
     /// published and before `INDEX-STATE.json` is written.
     fail_after_publish: bool = false,
@@ -151,6 +156,9 @@ pub const Report = struct {
     too_large_paths: []const PathRef = &.{},
     unreadable_paths: []const PathRef = &.{},
     budget_exhausted_paths: []const PathRef = &.{},
+    /// S6-T23: `walk` changes whose bytes the sniff found binary on reading
+    /// them (`Options.readable`); not indexed, a previous version removed.
+    walk_binary: usize = 0,
     rejected: []const Rejected = &.{},
     conflicts: []const Conflict = &.{},
     ambiguous_moves: []const AmbiguousMove = &.{},
@@ -964,6 +972,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: ?std.Io.Dir, parse
     var bytes_read: u64 = 0;
     var budget_spent: u64 = 0;
     var over_budget = false;
+    var walk_binary: usize = 0;
 
     for (batch.changes, 0..) |change, change_index| {
         if (change.op == .remove_root) {
@@ -1107,6 +1116,17 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: ?std.Io.Dir, parse
                             markCarried(&work, record);
                             continue;
                         };
+                        // S6-T23: a walked file of a known name is sniffed on
+                        // the bytes just read (no second open); binary bytes
+                        // are not read, and a previous version leaves the index.
+                        if (options.readable and change.content == .walk and
+                            indexer.sniff(got[0..@min(got.len, indexer.sniff_head_bytes)], got.len) == .binary)
+                        {
+                            budget_spent += got.len;
+                            walk_binary += 1;
+                            if (work.files.fetchRemove(record)) |_| try work.gone.put(allocator, record, .removed);
+                            continue;
+                        }
                         if (!std.unicode.utf8ValidateSlice(got)) {
                             try unreadable.append(allocator, .{ .root_id = change.root_id, .path = change.path });
                             try work.skip(change, record, "unreadable");
@@ -1251,6 +1271,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: ?std.Io.Dir, parse
     report.too_large_paths = try too_large.toOwnedSlice(allocator);
     report.unreadable_paths = try unreadable.toOwnedSlice(allocator);
     report.budget_exhausted_paths = try exhausted.toOwnedSlice(allocator);
+    report.walk_binary = walk_binary;
     report.rejected = try rejected.toOwnedSlice(allocator);
     report.conflicts = try conflicts.toOwnedSlice(allocator);
     report.ambiguous_moves = try ambiguous.toOwnedSlice(allocator);
@@ -3009,6 +3030,7 @@ fn buildGeneration(
         unchunked.items,
         skipped_list,
         if (source_encoded != null) source_v2.version else 0,
+        options.readable,
     );
     // The exact mutation state is immutable generation data, not a mutable
     // post-publication cache: it preserves own labels, mtimes and hashes even

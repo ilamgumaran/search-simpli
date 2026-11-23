@@ -229,13 +229,125 @@ def _cooccurrence_vector(tokens: Iterable[str], model: dict) -> list[float]:
     return _normalize_vector(values)
 
 
-def _iter_text_files(root: Path) -> Iterator[Path]:
+# S6-T23 (CAP-24 FR-34, docs/decisions/0005-which-files-are-text.md): the walk
+# reads a file when its bytes are text (`text-sniff-v1`), the same rule as the
+# engine's walk (zig/src/core/indexer.zig `walkFolder`, `sniff`, `skipKind`).
+# DEFAULT_EXTENSIONS are the names the engine reads before sniffing; the
+# reference sniffs every file's head, which gives the same verdict.
+READABLE_RULE_ID = "text-sniff-v1"
+SNIFF_HEAD_BYTES = 8192
+CONTROL_SHARE_PERCENT = 1
+MAX_PATH_BYTES = 4096
+# C0 controls except TAB, LF, VT, FF, CR and ESC, and DEL.
+_CONTROL_BYTES = frozenset([*range(0x01, 0x09), *range(0x0E, 0x1B), *range(0x1C, 0x20), 0x7F])
+SKIP_KINDS = {
+    "image": "png jpg jpeg gif bmp tif tiff webp heic heif ico icns psd svg avif raw cr2 nef dng",
+    "audio": "mp3 m4a aac wav flac ogg opus aif aiff mid midi",
+    "video": "mp4 m4v mov avi mkv webm wmv mpg mpeg",
+    "archive": "zip gz tgz bz2 xz zst 7z rar tar dmg iso pkg jar",
+    "document": "pdf doc docx xls xlsx ppt pptx odt ods odp pages numbers key rtf epub",
+    "font": "ttf otf woff woff2",
+    "program": "exe dll so dylib o a class pyc wasm bin",
+    "database": "sqlite sqlite3 db",
+}
+_SKIP = {"." + ext: kind for kind, exts in SKIP_KINDS.items() for ext in exts.split()}
+
+
+def _lower_extension(name: str) -> str:
+    """The last extension from the last `.`, ASCII-lowercased (as the engine reads it)."""
+    dot = name.rfind(".")
+    if dot < 0:
+        return ""
+    return "".join(chr(ord(c) + 32) if "A" <= c <= "Z" else c for c in name[dot:])
+
+
+def _head_is_utf8(head: bytes, cut: bool) -> bool:
+    """Valid UTF-8; when `cut`, a final sequence the head's end cut is allowed, judged by its lead byte."""
+    try:
+        head.decode("utf-8")
+        return True
+    except UnicodeDecodeError:
+        if not cut:
+            return False
+    start, continuation = len(head), 0
+    while start > 0 and continuation < 3 and head[start - 1] & 0xC0 == 0x80:
+        start -= 1
+        continuation += 1
+    if start == 0:
+        return False
+    lead = head[start - 1]
+    length = 2 if 0xC2 <= lead <= 0xDF else 3 if 0xE0 <= lead <= 0xEF else 4 if 0xF0 <= lead <= 0xF4 else 0
+    if length == 0 or len(head) - (start - 1) >= length:
+        return False
+    try:
+        head[: start - 1].decode("utf-8")
+        return True
+    except UnicodeDecodeError:
+        return False
+
+
+def _sniff(head: bytes, size: int) -> str:
+    """`text`, `other_encoding` (a UTF-16/32 mark), `binary` or `not_utf8` for the first bytes of a file."""
+    if not head:
+        return "text"
+    if head.startswith((b"\xff\xfe", b"\xfe\xff", b"\x00\x00\xfe\xff")):
+        return "other_encoding"
+    if b"\x00" in head:
+        return "binary"
+    if sum(1 for byte in head if byte in _CONTROL_BYTES) * 100 > len(head) * CONTROL_SHARE_PERCENT:
+        return "binary"
+    if not _head_is_utf8(head, size > len(head)):
+        return "not_utf8"
+    return "text"
+
+
+def _valid_record_path(relative: str) -> bool:
+    """A root-relative path a record can hold (the engine's `apply.validRelativePath`)."""
+    try:
+        encoded = relative.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    if not encoded or len(encoded) > MAX_PATH_BYTES or any(c in relative for c in "\x00\r\n"):
+        return False
+    return all(part not in ("", ".", "..") for part in relative.split("/"))
+
+
+def _not_read_kind(path: Path, relative: str) -> str | None:
+    """Why the walk does not read `path`, or None when it reads it."""
+    if not _valid_record_path(relative):
+        return "bad_name"
+    kind = _SKIP.get(_lower_extension(path.name))
+    if kind:
+        return kind
+    try:
+        size = path.stat().st_size
+        with path.open("rb") as handle:
+            head = handle.read(SNIFF_HEAD_BYTES)
+    except OSError:
+        return None  # the whole read reports it
+    return "binary" if _sniff(head, size) == "binary" else None
+
+
+def _walk(root: Path) -> Iterator[tuple[Path, str | None]]:
     for path in sorted(root.rglob("*")):
-        if not path.is_file() or path.suffix.casefold() not in DEFAULT_EXTENSIONS:
+        if not path.is_file():
             continue
+        relative = path.relative_to(root).as_posix()
         if any(part in IGNORED_DIRECTORIES or part.startswith(".") for part in path.relative_to(root).parts):
             continue
-        yield path
+        yield path, _not_read_kind(path, relative)
+
+
+def _iter_text_files(root: Path) -> Iterator[Path]:
+    for path, kind in _walk(root):
+        if kind is None:
+            yield path
+
+
+def not_read_counts(root: Path) -> dict[str, int]:
+    """The walk's `not_read` report for `root`: kinds with a non-zero count, keys sorted."""
+    counts = Counter(kind for _, kind in _walk(root) if kind is not None)
+    return dict(sorted(counts.items()))
 
 
 def _line_chunks(
