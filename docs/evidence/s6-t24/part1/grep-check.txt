@@ -1,0 +1,22 @@
+# re1 \d+\.\d\d on the judged folder: scan_bench lines (path:line) against grep -rnE '[0-9]+\.[0-9][0-9]'
+prototype 13 lines, grep 13 lines, diff: none
+home/money/electricity-bill-sept.txt:1
+home/money/home-insurance-renewal.md:3
+home/money/house-costs-2026.csv:2
+home/money/house-costs-2026.csv:3
+home/money/house-costs-2026.csv:4
+home/money/house-costs-2026.csv:5
+home/money/house-costs-2026.csv:6
+home/money/house-costs-2026.csv:7
+school/calendar-autumn.md:15
+toolshare/docs/treasurer.md:7
+toolshare/docs/treasurer.md:8
+toolshare/docs/treasurer.md:9
+toolshare/pyproject.toml:4
+# counts against grep on the 10k corpora and the judged folder (ASCII patterns, so grep's classes agree)
+prose-10k grep -ri orchard: 746 lines, 688 files (prototype ilit: 746 lines, 688 files)
+timing-10k grep -rE '[A-Za-z0-9]+ing\b': 5000 lines, 2500 files
+prose-10k grep -rE '[A-Za-z0-9]+ing\b': 61434 lines, 9751 files
+judged grep -rE '[A-Za-z0-9]+ing\b': 287 lines, 135 files
+# line terminators in the judged folder (python scan of every file's bytes)
+CRLF files 1; CR alone, VT, FF, FS/GS/RS, NEL, LS, PS, BOM: none

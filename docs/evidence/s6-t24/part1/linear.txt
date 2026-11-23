@@ -1,0 +1,14 @@
+program 12 instructions
+n    16384 best_ms     0.732 ratio_to_half 0.00 matched false
+n    32768 best_ms     1.365 ratio_to_half 1.86 matched false
+n    65536 best_ms     2.617 ratio_to_half 1.92 matched false
+n   131072 best_ms     4.959 ratio_to_half 1.90 matched false
+n   262144 best_ms     8.839 ratio_to_half 1.78 matched false
+n   524288 best_ms    16.556 ratio_to_half 1.87 matched false
+n  1048576 best_ms    33.082 ratio_to_half 2.00 matched false
+every match of a*b|a
+n     1024 best_ms     6.279 ratio_to_half 0.00 matches 1024
+n     2048 best_ms    25.199 ratio_to_half 4.01 matches 2048
+n     4096 best_ms    95.803 ratio_to_half 3.80 matches 4096
+n     8192 best_ms   380.682 ratio_to_half 3.97 matches 8192
+n    16384 best_ms  1520.746 ratio_to_half 3.99 matches 16384

@@ -1,0 +1,5 @@
+pairs 1386
+non-ASCII folding into ASCII U+017F->s, U+212A->k
+largest orbit 4, orbits of that size 3
+pairs changing UTF-8 length 33
+Tamil code points with a fold 0
