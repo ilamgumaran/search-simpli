@@ -243,6 +243,11 @@ content only; 9 and 36 complete within 4,096 bytes with file names and content,
 [testing](../testing/scenarios-engine-2026-11-22.md) (81 pass, 25 surprise,
 7 fail).
 
+**Paused for review, 22 Nov 2026.** H3 to H6 are specified in detail, with
+questions for reviewers, in the [implementation specification](2026-11-22-text-search-implementation-spec.md);
+[the review of 22 Nov](../reviews/2026-11-22-state-and-next.md) says where things
+stand. Nothing in it is built until the review is done.
+
 Other formats (PDF, images through text recognition, word-processor documents)
 are the host application's work today and stay after H1 to H5.
 
