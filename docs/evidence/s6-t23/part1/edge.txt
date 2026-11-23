@@ -1,0 +1,62 @@
+## survey (textsniff.py), every file today's walk keeps
+
+'Icon\r'                                 today=not read  sniff=bad_name       bytes=0
+'bin/tool'                               today=not read  sniff=binary         bytes=4096
+'data/big-table.csv'                     today=not read  sniff=text           bytes=26214
+'data/controls'                          today=not read  sniff=binary         bytes=3040
+'data/latin1-note.txt'                   today=read      sniff=not_utf8       bytes=40
+'data/nul-early.dat'                     today=not read  sniff=binary         bytes=1287
+'data/nul-late.txt'                      today=read      sniff=text           bytes=10014
+'data/one-bad-byte.txt'                  today=read      sniff=text_bad_tail  bytes=20001
+'data/utf16-export.tsv'                  today=not read  sniff=utf16          bytes=60
+'logs/huge.log'                          today=not read  sniff=text           bytes=13928890
+'media/archive-copy'                     today=not read  sniff=binary         bytes=196
+'media/archive.zip'                      today=not read  sniff=archive        bytes=196
+'media/data-copy'                        today=not read  sniff=binary         bytes=8192
+'media/data.sqlite'                      today=not read  sniff=database       bytes=8192
+'media/photo-copy'                       today=not read  sniff=binary         bytes=4058
+'media/photo.jpg'                        today=not read  sniff=image          bytes=4058
+'media/scan-copy'                        today=not read  sniff=binary         bytes=213
+'media/scan.pdf'                         today=not read  sniff=document       bytes=213
+'notes/Makefile'                         today=not read  sniff=text           bytes=19
+'notes/README'                           today=not read  sniff=text           bytes=52
+'notes/agenda.org'                       today=not read  sniff=text           bytes=33
+'notes/ansi.log'                         today=not read  sniff=text           bytes=1480
+'notes/bom.txt'                          today=read      sniff=text           bytes=54
+'notes/calendar.ics'                     today=not read  sniff=text           bytes=99
+'notes/card.vcf'                         today=not read  sniff=text           bytes=56
+'notes/empty.note'                       today=not read  sniff=text           bytes=0
+'notes/film.srt'                         today=not read  sniff=text           bytes=52
+'notes/letter.eml'                       today=not read  sniff=text           bytes=72
+'notes/old-note.markdown'                today=not read  sniff=text           bytes=48
+'notes/plain.text'                       today=not read  sniff=text           bytes=57
+'notes/settings.ini'                     today=not read  sniff=text           bytes=38
+'web/app.min.js'                         today=read      sniff=text           bytes=294806
+'web/logo.svg'                           today=not read  sniff=image          bytes=91
+'web/package-lock.json'                  today=read      sniff=text           bytes=301235
+
+totals: {'not read / archive': 1, 'not read / bad_name': 1, 'not read / binary': 7, 'not read / database': 1, 'not read / document': 1, 'not read / image': 2, 'not read / text': 14, 'not read / utf16': 1, 'read / not_utf8': 1, 'read / text': 4, 'read / text_bad_tail': 1}
+
+renamed copy: 14 renamed, order kept True, refused [], clashes []
+
+## searchd index, today's rule (the real folder) and the rule (the renamed copy)
+
+today: exit 0: analyzer=analyzer-v2 generation=1 files_indexed=4 too_large=0 unreadable=2 budget_exhausted=0 documents=217 terms=18058 postings=23022 
+today --update: unreadable_paths ['data/latin1-note.txt', 'data/one-bad-byte.txt'] too_large_paths []
+rule: exit 0: analyzer=analyzer-v2 generation=1 files_indexed=17 too_large=1 unreadable=2 budget_exhausted=0 documents=246 terms=18169 postings=25346 
+rule --update: unreadable_paths ['data/latin1-note.txt', 'data/one-bad-byte.txt'] too_large_paths ['logs/huge.txt']
+
+## passages from the rule's index (renamed paths)
+
+tilecutter300: [{'path': 'data/big-table.txt', 'start_line': 270, 'end_line': 305, 'content_bytes': 1574, 'first_line': '269,apple-269,S29,umber,russet,2026-12-18', 'has_nul': False}]
+minifiedword: [{'path': 'web/app.min.js', 'start_line': 1, 'end_line': 1, 'content_bytes': 294805, 'first_line': 'var a=f0=function(x){return x*0};f1=function(x){return x*1};', 'has_nul': False}]
+nullateword: [{'path': 'data/nul-late.txt', 'start_line': 127, 'end_line': 151, 'content_bytes': 1569, 'first_line': 'Kestrel orchard apple juniper copper orchard yarrow kestrel ', 'has_nul': True}]
+markdownkind: [{'path': 'notes/old-note.md', 'start_line': 1, 'end_line': 3, 'content_bytes': 47, 'first_line': '# Old note', 'has_nul': False}]
+hiddenword: []
+ignoredword: []
+
+## a carriage return in a name
+
+index with 'a\r.md' present: exit 1, stderr 'error: InvalidPath'
+search with 'a\r.md' present: exit 1, stderr 'error: InvalidPath'
+search with 'Icon\r' (no extension, not a candidate today) present: exit 0, stderr ''

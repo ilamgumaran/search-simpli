@@ -1,0 +1,3 @@
+timing-10k 10000 {'read / text': 10000} [('.md', 'read', 'text', 10000)]
+prose-10k 10000 {'read / text': 10000} [('.md', 'read', 'text', 10000)]
+tamil-10k 10000 {'read / text': 10000} [('.md', 'read', 'text', 10000)]

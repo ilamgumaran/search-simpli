@@ -1,0 +1,1721 @@
+{
+ "files": 270,
+ "totals": {
+  "not read / text": 24,
+  "read / text": 246
+ },
+ "by_extension": [
+  {
+   "extension": "(none)",
+   "today": "not read",
+   "sniff": "text",
+   "files": 4
+  },
+  {
+   "extension": ".css",
+   "today": "read",
+   "sniff": "text",
+   "files": 1
+  },
+  {
+   "extension": ".csv",
+   "today": "not read",
+   "sniff": "text",
+   "files": 4
+  },
+  {
+   "extension": ".html",
+   "today": "read",
+   "sniff": "text",
+   "files": 2
+  },
+  {
+   "extension": ".js",
+   "today": "read",
+   "sniff": "text",
+   "files": 1
+  },
+  {
+   "extension": ".json",
+   "today": "read",
+   "sniff": "text",
+   "files": 2
+  },
+  {
+   "extension": ".log",
+   "today": "not read",
+   "sniff": "text",
+   "files": 12
+  },
+  {
+   "extension": ".md",
+   "today": "read",
+   "sniff": "text",
+   "files": 162
+  },
+  {
+   "extension": ".py",
+   "today": "read",
+   "sniff": "text",
+   "files": 3
+  },
+  {
+   "extension": ".sh",
+   "today": "not read",
+   "sniff": "text",
+   "files": 1
+  },
+  {
+   "extension": ".toml",
+   "today": "read",
+   "sniff": "text",
+   "files": 1
+  },
+  {
+   "extension": ".tsv",
+   "today": "not read",
+   "sniff": "text",
+   "files": 2
+  },
+  {
+   "extension": ".txt",
+   "today": "read",
+   "sniff": "text",
+   "files": 72
+  },
+  {
+   "extension": ".xml",
+   "today": "not read",
+   "sniff": "text",
+   "files": 1
+  },
+  {
+   "extension": ".yaml",
+   "today": "read",
+   "sniff": "text",
+   "files": 2
+  }
+ ],
+ "paths": [
+  {
+   "path": "archive/boiler-2025.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 279
+  },
+  {
+   "path": "archive/committee-2025.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 219
+  },
+  {
+   "path": "archive/house-notes-2024.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 610
+  },
+  {
+   "path": "archive/lending-rules-2024.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 166
+  },
+  {
+   "path": "archive/pickle-2024.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 94
+  },
+  {
+   "path": "archive/shopping-2026-w01-copy.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 94
+  },
+  {
+   "path": "archive/sourdough-copy.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 335
+  },
+  {
+   "path": "home/TODO",
+   "today": false,
+   "sniff": "text",
+   "bytes": 55
+  },
+  {
+   "path": "home/car/car-notes.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 255
+  },
+  {
+   "path": "home/car/tyres-receipt.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 65
+  },
+  {
+   "path": "home/contacts.tsv",
+   "today": false,
+   "sniff": "text",
+   "bytes": 161
+  },
+  {
+   "path": "home/garden/beekeeping-notes.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 163
+  },
+  {
+   "path": "home/garden/garden-diary-2025.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 28338
+  },
+  {
+   "path": "home/garden/garden-plan-2026.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 241
+  },
+  {
+   "path": "home/health/dentist.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 93
+  },
+  {
+   "path": "home/health/health-notes.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 199
+  },
+  {
+   "path": "home/house/bathroom.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 219
+  },
+  {
+   "path": "home/house/bedroom-furniture.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 173
+  },
+  {
+   "path": "home/house/boiler.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 532
+  },
+  {
+   "path": "home/house/damp-bedroom.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 396
+  },
+  {
+   "path": "home/house/house-notes.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 586
+  },
+  {
+   "path": "home/house/jobs-autumn.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 336
+  },
+  {
+   "path": "home/house/pests.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 156
+  },
+  {
+   "path": "home/house/smart-plugs.json",
+   "today": true,
+   "sniff": "text",
+   "bytes": 202
+  },
+  {
+   "path": "home/house/smoke-alarms.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 188
+  },
+  {
+   "path": "home/house/wifi-router.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 95
+  },
+  {
+   "path": "home/lists/bee-supplies.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 72
+  },
+  {
+   "path": "home/lists/camping-packing.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 83
+  },
+  {
+   "path": "home/lists/christmas-presents.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 95
+  },
+  {
+   "path": "home/lists/cornwall-packing.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 94
+  },
+  {
+   "path": "home/lists/garage-clearout.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 72
+  },
+  {
+   "path": "home/lists/pickle-shopping.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 65
+  },
+  {
+   "path": "home/lists/shopping-2026-w01.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 93
+  },
+  {
+   "path": "home/lists/shopping-2026-w03.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 78
+  },
+  {
+   "path": "home/lists/shopping-2026-w05.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 102
+  },
+  {
+   "path": "home/lists/shopping-2026-w07.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 83
+  },
+  {
+   "path": "home/lists/shopping-2026-w09.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 124
+  },
+  {
+   "path": "home/lists/shopping-2026-w11.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 73
+  },
+  {
+   "path": "home/lists/shopping-2026-w13.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 70
+  },
+  {
+   "path": "home/lists/shopping-2026-w15.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 63
+  },
+  {
+   "path": "home/lists/shopping-2026-w17.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 70
+  },
+  {
+   "path": "home/lists/shopping-2026-w19.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 56
+  },
+  {
+   "path": "home/lists/shopping-2026-w21.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 86
+  },
+  {
+   "path": "home/lists/shopping-2026-w23.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 95
+  },
+  {
+   "path": "home/lists/shopping-2026-w25.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 108
+  },
+  {
+   "path": "home/lists/shopping-2026-w27.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 83
+  },
+  {
+   "path": "home/lists/shopping-2026-w29.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 84
+  },
+  {
+   "path": "home/lists/shopping-2026-w31.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 58
+  },
+  {
+   "path": "home/lists/shopping-2026-w33.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 94
+  },
+  {
+   "path": "home/lists/shopping-2026-w35.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 71
+  },
+  {
+   "path": "home/lists/shopping-2026-w37.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 76
+  },
+  {
+   "path": "home/lists/shopping-2026-w39.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 43
+  },
+  {
+   "path": "home/lists/shopping-2026-w41.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 88
+  },
+  {
+   "path": "home/lists/shopping-2026-w43.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 62
+  },
+  {
+   "path": "home/lists/shopping-2026-w45.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 72
+  },
+  {
+   "path": "home/lists/useful-numbers.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 185
+  },
+  {
+   "path": "home/money/bank-notes.tsv",
+   "today": false,
+   "sniff": "text",
+   "bytes": 211
+  },
+  {
+   "path": "home/money/budget-2026.csv",
+   "today": false,
+   "sniff": "text",
+   "bytes": 307
+  },
+  {
+   "path": "home/money/electricity-bill-sept.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 65
+  },
+  {
+   "path": "home/money/home-insurance-renewal.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 116
+  },
+  {
+   "path": "home/money/house-costs-2026.csv",
+   "today": false,
+   "sniff": "text",
+   "bytes": 289
+  },
+  {
+   "path": "home/money/orders.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 260
+  },
+  {
+   "path": "home/money/receipts-note.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 272
+  },
+  {
+   "path": "home/notes/baking-log.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 126
+  },
+  {
+   "path": "home/notes/kitchen-care.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 189
+  },
+  {
+   "path": "home/notes/laundry.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 180
+  },
+  {
+   "path": "home/notes/music.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 155
+  },
+  {
+   "path": "home/notes/winter-crafts.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 183
+  },
+  {
+   "path": "home/otto-birthday-party-2026.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 97
+  },
+  {
+   "path": "home/pets/pickle-walks.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 181
+  },
+  {
+   "path": "home/pets/pickle.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 250
+  },
+  {
+   "path": "home/recipes/apple-cake.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 176
+  },
+  {
+   "path": "home/recipes/banana-bread.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 181
+  },
+  {
+   "path": "home/recipes/carrot-salad.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 210
+  },
+  {
+   "path": "home/recipes/chickpea-stew.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 199
+  },
+  {
+   "path": "home/recipes/egg-fried-rice.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 194
+  },
+  {
+   "path": "home/recipes/fish-pie.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 188
+  },
+  {
+   "path": "home/recipes/flapjacks.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 223
+  },
+  {
+   "path": "home/recipes/flatbread.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 209
+  },
+  {
+   "path": "home/recipes/leek-and-potato-soup.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 202
+  },
+  {
+   "path": "home/recipes/lentil-dal.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 364
+  },
+  {
+   "path": "home/recipes/macaroni-cheese.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 192
+  },
+  {
+   "path": "home/recipes/pancakes.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 185
+  },
+  {
+   "path": "home/recipes/rhubarb-crumble.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 197
+  },
+  {
+   "path": "home/recipes/scones.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 162
+  },
+  {
+   "path": "home/recipes/shepherds-pie.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 207
+  },
+  {
+   "path": "home/recipes/sourdough.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 335
+  },
+  {
+   "path": "home/recipes/spice-mix.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 158
+  },
+  {
+   "path": "home/recipes/tomato-soup.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 185
+  },
+  {
+   "path": "home/recipes/vegetable-curry.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 218
+  },
+  {
+   "path": "home/schedules/meal-plan-week-38.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 190
+  },
+  {
+   "path": "home/schedules/otto-week.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 385
+  },
+  {
+   "path": "home/trips/cornwall-2026-draft.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 235
+  },
+  {
+   "path": "home/trips/cornwall-2026.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 514
+  },
+  {
+   "path": "home/trips/directions-to-gull-cottage.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 285
+  },
+  {
+   "path": "inbox/NOTES",
+   "today": false,
+   "sniff": "text",
+   "bytes": 101
+  },
+  {
+   "path": "inbox/boiler-service-2026-03-14.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 70
+  },
+  {
+   "path": "inbox/note-01.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 35
+  },
+  {
+   "path": "inbox/note-02.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 31
+  },
+  {
+   "path": "inbox/note-03.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 36
+  },
+  {
+   "path": "inbox/note-04.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 47
+  },
+  {
+   "path": "inbox/note-05.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 33
+  },
+  {
+   "path": "inbox/note-06.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 27
+  },
+  {
+   "path": "inbox/note-07.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 26
+  },
+  {
+   "path": "inbox/note-08.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 46
+  },
+  {
+   "path": "inbox/note-09.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 48
+  },
+  {
+   "path": "inbox/note-10.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 34
+  },
+  {
+   "path": "inbox/note-11.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 37
+  },
+  {
+   "path": "inbox/note-12.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 39
+  },
+  {
+   "path": "inbox/passport-renewal-checklist.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 75
+  },
+  {
+   "path": "journal/2026-01-03.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 185
+  },
+  {
+   "path": "journal/2026-01-07.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 164
+  },
+  {
+   "path": "journal/2026-01-11.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 104
+  },
+  {
+   "path": "journal/2026-01-16.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 250
+  },
+  {
+   "path": "journal/2026-01-19.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 144
+  },
+  {
+   "path": "journal/2026-01-22.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 208
+  },
+  {
+   "path": "journal/2026-01-26.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 142
+  },
+  {
+   "path": "journal/2026-01-31.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 117
+  },
+  {
+   "path": "journal/2026-02-04.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 208
+  },
+  {
+   "path": "journal/2026-02-08.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 160
+  },
+  {
+   "path": "journal/2026-02-12.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 232
+  },
+  {
+   "path": "journal/2026-02-16.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 195
+  },
+  {
+   "path": "journal/2026-02-21.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 227
+  },
+  {
+   "path": "journal/2026-02-25.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 262
+  },
+  {
+   "path": "journal/2026-03-01.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 243
+  },
+  {
+   "path": "journal/2026-03-06.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 144
+  },
+  {
+   "path": "journal/2026-03-11.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 170
+  },
+  {
+   "path": "journal/2026-03-14.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 110
+  },
+  {
+   "path": "journal/2026-03-18.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 160
+  },
+  {
+   "path": "journal/2026-03-23.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 109
+  },
+  {
+   "path": "journal/2026-03-27.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 146
+  },
+  {
+   "path": "journal/2026-03-31.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 138
+  },
+  {
+   "path": "journal/2026-04-03.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 188
+  },
+  {
+   "path": "journal/2026-04-08.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 175
+  },
+  {
+   "path": "journal/2026-04-13.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 184
+  },
+  {
+   "path": "journal/2026-04-17.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 163
+  },
+  {
+   "path": "journal/2026-04-21.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 168
+  },
+  {
+   "path": "journal/2026-04-24.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 195
+  },
+  {
+   "path": "journal/2026-04-27.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 242
+  },
+  {
+   "path": "journal/2026-05-01.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 142
+  },
+  {
+   "path": "journal/2026-05-04.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 198
+  },
+  {
+   "path": "journal/2026-05-09.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 260
+  },
+  {
+   "path": "journal/2026-05-14.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 160
+  },
+  {
+   "path": "journal/2026-05-19.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 193
+  },
+  {
+   "path": "journal/2026-05-22.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 215
+  },
+  {
+   "path": "journal/2026-05-26.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 202
+  },
+  {
+   "path": "journal/2026-05-30.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 166
+  },
+  {
+   "path": "journal/2026-06-03.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 164
+  },
+  {
+   "path": "journal/2026-06-06.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 225
+  },
+  {
+   "path": "journal/2026-06-11.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 183
+  },
+  {
+   "path": "journal/2026-06-15.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 108
+  },
+  {
+   "path": "journal/2026-06-18.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 225
+  },
+  {
+   "path": "journal/2026-06-22.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 218
+  },
+  {
+   "path": "journal/2026-06-26.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 223
+  },
+  {
+   "path": "journal/2026-06-29.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 113
+  },
+  {
+   "path": "journal/2026-07-03.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 99
+  },
+  {
+   "path": "journal/2026-07-07.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 129
+  },
+  {
+   "path": "journal/2026-07-12.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 199
+  },
+  {
+   "path": "journal/2026-07-15.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 135
+  },
+  {
+   "path": "journal/2026-07-19.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 138
+  },
+  {
+   "path": "journal/2026-07-23.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 120
+  },
+  {
+   "path": "journal/2026-07-27.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 150
+  },
+  {
+   "path": "journal/2026-07-30.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 148
+  },
+  {
+   "path": "journal/2026-08-03.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 222
+  },
+  {
+   "path": "journal/2026-08-08.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 153
+  },
+  {
+   "path": "journal/2026-08-12.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 166
+  },
+  {
+   "path": "journal/2026-08-16.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 135
+  },
+  {
+   "path": "journal/2026-08-20.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 217
+  },
+  {
+   "path": "journal/2026-08-25.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 167
+  },
+  {
+   "path": "journal/2026-08-28.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 270
+  },
+  {
+   "path": "journal/2026-09-01.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 157
+  },
+  {
+   "path": "journal/2026-09-05.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 181
+  },
+  {
+   "path": "journal/2026-09-09.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 121
+  },
+  {
+   "path": "journal/2026-09-12.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 196
+  },
+  {
+   "path": "journal/2026-09-16.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 206
+  },
+  {
+   "path": "journal/2026-09-20.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 189
+  },
+  {
+   "path": "journal/2026-09-25.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 203
+  },
+  {
+   "path": "journal/2026-09-30.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 121
+  },
+  {
+   "path": "journal/2026-10-04.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 252
+  },
+  {
+   "path": "journal/2026-10-09.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 201
+  },
+  {
+   "path": "journal/2026-10-13.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 187
+  },
+  {
+   "path": "journal/2026-10-17.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 172
+  },
+  {
+   "path": "journal/2026-10-22.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 131
+  },
+  {
+   "path": "journal/2026-10-26.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 154
+  },
+  {
+   "path": "journal/2026-10-29.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 141
+  },
+  {
+   "path": "journal/2026-11-02.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 219
+  },
+  {
+   "path": "journal/2026-11-06.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 222
+  },
+  {
+   "path": "journal/2026-11-11.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 220
+  },
+  {
+   "path": "journal/2026-11-16.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 198
+  },
+  {
+   "path": "journal/2026-11-20.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 144
+  },
+  {
+   "path": "paati/chedigal.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 360
+  },
+  {
+   "path": "paati/kootu.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 464
+  },
+  {
+   "path": "paati/mira-kaditham.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 406
+  },
+  {
+   "path": "paati/naatkaatti-2027.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 199
+  },
+  {
+   "path": "paati/pongal-samayal.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 1110
+  },
+  {
+   "path": "paati/rasam.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 395
+  },
+  {
+   "path": "paati/தீபாவளி-பட்டியல்.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 179
+  },
+  {
+   "path": "school/bee-project.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 129
+  },
+  {
+   "path": "school/calendar-autumn-draft.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 154
+  },
+  {
+   "path": "school/calendar-autumn.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 346
+  },
+  {
+   "path": "school/clubs-autumn.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 275
+  },
+  {
+   "path": "school/piano-exam.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 130
+  },
+  {
+   "path": "school/reading-log.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 6897
+  },
+  {
+   "path": "school/spelling/week-01.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 84
+  },
+  {
+   "path": "school/spelling/week-02.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 80
+  },
+  {
+   "path": "school/spelling/week-03.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 84
+  },
+  {
+   "path": "school/spelling/week-04.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 75
+  },
+  {
+   "path": "school/spelling/week-05.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 81
+  },
+  {
+   "path": "school/spelling/week-06.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 77
+  },
+  {
+   "path": "school/spelling/week-07.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 84
+  },
+  {
+   "path": "school/spelling/week-08.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 88
+  },
+  {
+   "path": "school/spelling/week-09.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 82
+  },
+  {
+   "path": "school/spelling/week-10.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 81
+  },
+  {
+   "path": "school/spelling/week-11.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 84
+  },
+  {
+   "path": "school/spelling/week-12.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 85
+  },
+  {
+   "path": "school/trip-letter-castle.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 197
+  },
+  {
+   "path": "school/trip-letter-wetlands.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 267
+  },
+  {
+   "path": "toolshare/CHANGELOG.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 299
+  },
+  {
+   "path": "toolshare/Makefile",
+   "today": false,
+   "sniff": "text",
+   "bytes": 69
+  },
+  {
+   "path": "toolshare/README",
+   "today": false,
+   "sniff": "text",
+   "bytes": 165
+  },
+  {
+   "path": "toolshare/config/server.yaml",
+   "today": true,
+   "sniff": "text",
+   "bytes": 140
+  },
+  {
+   "path": "toolshare/data/inventory.yaml",
+   "today": true,
+   "sniff": "text",
+   "bytes": 2357
+  },
+  {
+   "path": "toolshare/data/loans-2026.csv",
+   "today": false,
+   "sniff": "text",
+   "bytes": 988
+  },
+  {
+   "path": "toolshare/data/loans-summary.json",
+   "today": true,
+   "sniff": "text",
+   "bytes": 522
+  },
+  {
+   "path": "toolshare/data/volunteer-rota.csv",
+   "today": false,
+   "sniff": "text",
+   "bytes": 106
+  },
+  {
+   "path": "toolshare/docs/committee.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 262
+  },
+  {
+   "path": "toolshare/docs/handbook.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 9131
+  },
+  {
+   "path": "toolshare/docs/issues.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 271
+  },
+  {
+   "path": "toolshare/docs/lending-rules.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 289
+  },
+  {
+   "path": "toolshare/docs/repairs.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 222
+  },
+  {
+   "path": "toolshare/docs/treasurer.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 333
+  },
+  {
+   "path": "toolshare/logs/desk-2026-01.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 329
+  },
+  {
+   "path": "toolshare/logs/desk-2026-02.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 329
+  },
+  {
+   "path": "toolshare/logs/desk-2026-03.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 328
+  },
+  {
+   "path": "toolshare/logs/desk-2026-04.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 329
+  },
+  {
+   "path": "toolshare/logs/desk-2026-05.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 323
+  },
+  {
+   "path": "toolshare/logs/desk-2026-06.txt",
+   "today": true,
+   "sniff": "text",
+   "bytes": 325
+  },
+  {
+   "path": "toolshare/logs/server-2026-01.log",
+   "today": false,
+   "sniff": "text",
+   "bytes": 3564
+  },
+  {
+   "path": "toolshare/logs/server-2026-02.log",
+   "today": false,
+   "sniff": "text",
+   "bytes": 3712
+  },
+  {
+   "path": "toolshare/logs/server-2026-03.log",
+   "today": false,
+   "sniff": "text",
+   "bytes": 4028
+  },
+  {
+   "path": "toolshare/logs/server-2026-04.log",
+   "today": false,
+   "sniff": "text",
+   "bytes": 3772
+  },
+  {
+   "path": "toolshare/logs/server-2026-05.log",
+   "today": false,
+   "sniff": "text",
+   "bytes": 3739
+  },
+  {
+   "path": "toolshare/logs/server-2026-06.log",
+   "today": false,
+   "sniff": "text",
+   "bytes": 4135
+  },
+  {
+   "path": "toolshare/logs/server-2026-07.log",
+   "today": false,
+   "sniff": "text",
+   "bytes": 4079
+  },
+  {
+   "path": "toolshare/logs/server-2026-08.log",
+   "today": false,
+   "sniff": "text",
+   "bytes": 3763
+  },
+  {
+   "path": "toolshare/logs/server-2026-09.log",
+   "today": false,
+   "sniff": "text",
+   "bytes": 3991
+  },
+  {
+   "path": "toolshare/logs/server-2026-10.log",
+   "today": false,
+   "sniff": "text",
+   "bytes": 3908
+  },
+  {
+   "path": "toolshare/logs/server-2026-11.log",
+   "today": false,
+   "sniff": "text",
+   "bytes": 3730
+  },
+  {
+   "path": "toolshare/logs/server-2026-12.log",
+   "today": false,
+   "sniff": "text",
+   "bytes": 3687
+  },
+  {
+   "path": "toolshare/meetings/2026-01-committee.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 348
+  },
+  {
+   "path": "toolshare/meetings/2026-02-committee.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 303
+  },
+  {
+   "path": "toolshare/meetings/2026-04-committee.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 325
+  },
+  {
+   "path": "toolshare/meetings/2026-05-committee.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 253
+  },
+  {
+   "path": "toolshare/meetings/2026-06-committee.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 344
+  },
+  {
+   "path": "toolshare/meetings/2026-07-committee.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 374
+  },
+  {
+   "path": "toolshare/meetings/2026-08-committee.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 373
+  },
+  {
+   "path": "toolshare/meetings/2026-09-committee.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 266
+  },
+  {
+   "path": "toolshare/meetings/2026-10-committee.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 348
+  },
+  {
+   "path": "toolshare/meetings/2026-11-committee.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 309
+  },
+  {
+   "path": "toolshare/meetings/agm-2026.md",
+   "today": true,
+   "sniff": "text",
+   "bytes": 141
+  },
+  {
+   "path": "toolshare/pyproject.toml",
+   "today": true,
+   "sniff": "text",
+   "bytes": 100
+  },
+  {
+   "path": "toolshare/scripts/backup.sh",
+   "today": false,
+   "sniff": "text",
+   "bytes": 124
+  },
+  {
+   "path": "toolshare/site/app.js",
+   "today": true,
+   "sniff": "text",
+   "bytes": 173
+  },
+  {
+   "path": "toolshare/site/index.html",
+   "today": true,
+   "sniff": "text",
+   "bytes": 416
+  },
+  {
+   "path": "toolshare/site/join.html",
+   "today": true,
+   "sniff": "text",
+   "bytes": 215
+  },
+  {
+   "path": "toolshare/site/sitemap.xml",
+   "today": false,
+   "sniff": "text",
+   "bytes": 230
+  },
+  {
+   "path": "toolshare/site/styles.css",
+   "today": true,
+   "sniff": "text",
+   "bytes": 74
+  },
+  {
+   "path": "toolshare/src/app.py",
+   "today": true,
+   "sniff": "text",
+   "bytes": 370
+  },
+  {
+   "path": "toolshare/src/models.py",
+   "today": true,
+   "sniff": "text",
+   "bytes": 320
+  },
+  {
+   "path": "toolshare/src/reminders.py",
+   "today": true,
+   "sniff": "text",
+   "bytes": 647
+  }
+ ]
+}

@@ -1,0 +1,126 @@
+{
+ "searchd": "searchd",
+ "rounds": 7,
+ "folders": {
+  "judged-before": {
+   "report": "analyzer=analyzer-v2 generation=1 files_indexed=246 too_large=0 unreadable=0 budget_exhausted=0 documents=406 terms=1651 postings=9877",
+   "index_bytes": 213525,
+   "sections": {
+    "INDEX-STATE.json": 94,
+    "MANIFEST": 696,
+    "documents-1.hybseg": 111948,
+    "filename-lexical-1.hyblex": 2655,
+    "filenames-1.hybseg": 13205,
+    "lexical-1.hyblex": 61563,
+    "source-1.hybsrc": 14331,
+    "state-1.hybstate": 9033
+   },
+   "index_ms_median": 15.6,
+   "index_ms_range": [
+    15.2,
+    17.2
+   ],
+   "search_ms_median": 12.3,
+   "search_ms_range": [
+    11.8,
+    12.9
+   ]
+  },
+  "judged-after": {
+   "report": "analyzer=analyzer-v2 generation=1 files_indexed=270 too_large=0 unreadable=0 budget_exhausted=0 documents=454 terms=1733 postings=12883",
+   "index_bytes": 303016,
+   "sections": {
+    "INDEX-STATE.json": 94,
+    "MANIFEST": 696,
+    "documents-1.hybseg": 165270,
+    "filename-lexical-1.hyblex": 2839,
+    "filenames-1.hybseg": 14558,
+    "lexical-1.hyblex": 93218,
+    "source-1.hybsrc": 16444,
+    "state-1.hybstate": 9897
+   },
+   "index_ms_median": 18.2,
+   "index_ms_range": [
+    17.4,
+    19.1
+   ],
+   "search_ms_median": 15.9,
+   "search_ms_range": [
+    15.5,
+    16.7
+   ]
+  },
+  "timing-10k": {
+   "report": "analyzer=analyzer-v2 generation=1 files_indexed=10000 too_large=0 unreadable=0 budget_exhausted=0 documents=19959 terms=24057 postings=1023806",
+   "index_bytes": 13712980,
+   "sections": {
+    "INDEX-STATE.json": 94,
+    "MANIFEST": 696,
+    "documents-1.hybseg": 8028417,
+    "filename-lexical-1.hyblex": 92952,
+    "filenames-1.hybseg": 490036,
+    "lexical-1.hyblex": 4200907,
+    "source-1.hybsrc": 539719,
+    "state-1.hybstate": 360159
+   },
+   "index_ms_median": 604.7,
+   "index_ms_range": [
+    592.3,
+    639.5
+   ],
+   "search_ms_median": 589.7,
+   "search_ms_range": [
+    580.0,
+    638.9
+   ]
+  },
+  "prose-10k": {
+   "report": "analyzer=analyzer-v2 generation=1 files_indexed=10000 too_large=0 unreadable=0 budget_exhausted=0 documents=18766 terms=3115 postings=2238541",
+   "index_bytes": 30815993,
+   "sections": {
+    "INDEX-STATE.json": 94,
+    "MANIFEST": 696,
+    "documents-1.hybseg": 18865516,
+    "filename-lexical-1.hyblex": 146333,
+    "filenames-1.hybseg": 607567,
+    "lexical-1.hyblex": 10015061,
+    "source-1.hybsrc": 820567,
+    "state-1.hybstate": 360159
+   },
+   "index_ms_median": 1246.5,
+   "index_ms_range": [
+    1239.8,
+    1326.0
+   ],
+   "search_ms_median": 1244.1,
+   "search_ms_range": [
+    1234.9,
+    1360.9
+   ]
+  },
+  "tamil-10k": {
+   "report": "analyzer=analyzer-v2 generation=1 files_indexed=10000 too_large=0 unreadable=0 budget_exhausted=0 documents=19946 terms=21600 postings=1019062",
+   "index_bytes": 34633368,
+   "sections": {
+    "INDEX-STATE.json": 94,
+    "MANIFEST": 696,
+    "documents-1.hybseg": 28792519,
+    "filename-lexical-1.hyblex": 92952,
+    "filenames-1.hybseg": 490036,
+    "lexical-1.hyblex": 4357296,
+    "source-1.hybsrc": 539616,
+    "state-1.hybstate": 360159
+   },
+   "index_ms_median": 1509.2,
+   "index_ms_range": [
+    1486.5,
+    1581.5
+   ],
+   "search_ms_median": 1499.6,
+   "search_ms_range": [
+    1476.6,
+    1608.6
+   ]
+  }
+ }
+}

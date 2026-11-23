@@ -1,0 +1,17 @@
+S6-T23 Part 1, item 6: an index built under today's rule takes the newly readable files at its next update,
+with no rebuild. main 8ffc41c, ReleaseSmall searchd. <scratch> is the builder's scratch folder.
+
+The renamed copy (corpus-text) holds the 246 files today's rule reads, with the same names and bytes, and the 24
+files the rule adds, under names today's engine reads (docs/evidence/s6-t23/part1/rename-map.json). So an update
+from it onto an index of the real folder is the walk the rule would make on that folder.
+
+$ searchd index <scratch>/base/run/corpus --out <scratch>/upd/idx --filename-index
+analyzer=analyzer-v2 generation=1 files_indexed=246 too_large=0 unreadable=0 budget_exhausted=0 documents=406 terms=1651 postings=9877
+
+$ searchd index <scratch>/after/run/corpus-text --out <scratch>/upd/idx --update
+{'generation': 2, 'added': 24, 'changed': 0, 'removed': 0, 'unchanged': 246, 'too_large': 0, 'unreadable': 0, 'documents': 454}
+
+$ searchd list-files <scratch>/upd/idx --json --page-size 300
+270 files, 270 indexed
+
+documents=454 is the fresh index's count on the renamed copy (index-cost.json, judged-after).
