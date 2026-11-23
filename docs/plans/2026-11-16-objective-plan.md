@@ -233,6 +233,16 @@ the C ABI gets its capability document first.
 | H5 | **The relevant parts.** Passage choice measured on H1 and improved: the passage that answers, its neighbours when the answer spans them, and the open follow-ups in G that concern passages. | Answers are only as good as the passages handed over. |
 | H6 | **Refinement.** Semantic matches for a folder the engine indexed (E, [CAP-21](../requirements/cap-21-host-supplied-vectors.md)), and the language-model loop (query rewording, re-reading with H3, re-ranking with H4's profiles), each kept only if H1's score rises. | Refinement comes after the base, and is judged against it. |
 
+**H1 done 22 Nov 2026** ([S6-T22](../tasks/S6-T22.md); [text-search-score](../text-search-score.md)):
+181 invented questions in 16 kinds over a generated folder, scored as typed and
+as query words, with tightness measures and a stale-copy rule; every question
+frozen by a digest. Baseline on `main` at `87bfd35`, complete answers of 169:
+100 typed and 109 as query words with file names and content, 110 and 118 with
+content only; 9 and 36 complete within 4,096 bytes with file names and content,
+91 and 100 with content only. A usage tester's 113 everyday scenarios are in
+[testing](../testing/scenarios-engine-2026-11-22.md) (81 pass, 25 surprise,
+7 fail).
+
 Other formats (PDF, images through text recognition, word-processor documents)
 are the host application's work today and stay after H1 to H5.
 
