@@ -1,0 +1,36 @@
+# S6-T24 ruling 8: the read-and-caps extraction (apply.readChecked) changes no behaviour
+# main's searchd: ReleaseSmall from main 43a308d (1,152,488 bytes); extraction's searchd: ReleaseSmall from this commit's tree (1,152,280 bytes)
+# each: searchd index <corpus> --out <dir> --filename-index, into its own folder; then cmp of every file (WRITER.LOCK left out)
+judged documents-1.hybseg 165253 bytes identical
+judged filename-lexical-1.hyblex 2839 bytes identical
+judged filenames-1.hybseg 14541 bytes identical
+judged INDEX-STATE.json 94 bytes identical
+judged lexical-1.hyblex 93218 bytes identical
+judged MANIFEST 773 bytes identical
+judged source-1.hybsrc 16444 bytes identical
+judged state-1.hybstate 9897 bytes identical
+timing-10k documents-1.hybseg 8028417 bytes identical
+timing-10k filename-lexical-1.hyblex 92952 bytes identical
+timing-10k filenames-1.hybseg 490036 bytes identical
+timing-10k INDEX-STATE.json 94 bytes identical
+timing-10k lexical-1.hyblex 4200907 bytes identical
+timing-10k MANIFEST 773 bytes identical
+timing-10k source-1.hybsrc 539719 bytes identical
+timing-10k state-1.hybstate 360159 bytes identical
+prose-10k documents-1.hybseg 18865516 bytes identical
+prose-10k filename-lexical-1.hyblex 146333 bytes identical
+prose-10k filenames-1.hybseg 607567 bytes identical
+prose-10k INDEX-STATE.json 94 bytes identical
+prose-10k lexical-1.hyblex 10015061 bytes identical
+prose-10k MANIFEST 773 bytes identical
+prose-10k source-1.hybsrc 820567 bytes identical
+prose-10k state-1.hybstate 360159 bytes identical
+tamil-10k documents-1.hybseg 28792519 bytes identical
+tamil-10k filename-lexical-1.hyblex 92952 bytes identical
+tamil-10k filenames-1.hybseg 490036 bytes identical
+tamil-10k INDEX-STATE.json 94 bytes identical
+tamil-10k lexical-1.hyblex 4357296 bytes identical
+tamil-10k MANIFEST 773 bytes identical
+tamil-10k source-1.hybsrc 539616 bytes identical
+tamil-10k state-1.hybstate 360159 bytes identical
+# zig build test (check_test_counts --run): 613 tests, OK, as on main; zig build test-abi: 24/24; Python: test_native_freshness, test_incremental, test_text_sniff, test_direct_search, test_apply_filename_index, test_file_confinement_race: 36 tests OK

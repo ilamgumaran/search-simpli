@@ -1088,36 +1088,6 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: ?std.Io.Dir, parse
                             },
                             else => unreachable,
                         };
-                        const known_size = size orelse {
-                            try unreadable.append(allocator, .{ .root_id = change.root_id, .path = change.path });
-                            try work.skip(change, record, "unreadable");
-                            markCarried(&work, record);
-                            continue;
-                        };
-                        if (known_size > options.max_file_bytes) {
-                            try tombstone(allocator, &work, &too_large, change, record);
-                            continue;
-                        }
-                        if (options.budget == .exhaust and (over_budget or budget_spent + known_size > options.max_total_bytes)) {
-                            over_budget = true;
-                            try exhausted.append(allocator, .{ .root_id = change.root_id, .path = change.path });
-                            try work.skip(change, record, "budget_exhausted");
-                            markCarried(&work, record);
-                            continue;
-                        }
-                        const length = std.math.cast(usize, known_size) orelse {
-                            try unreadable.append(allocator, .{ .root_id = change.root_id, .path = change.path });
-                            try work.skip(change, record, "unreadable");
-                            markCarried(&work, record);
-                            continue;
-                        };
-                        const read = readContent(allocator, io, change.content, work, change.root_id, length) catch null;
-                        const got = read orelse {
-                            try unreadable.append(allocator, .{ .root_id = change.root_id, .path = change.path });
-                            try work.skip(change, record, "unreadable");
-                            markCarried(&work, record);
-                            continue;
-                        };
                         // S6-T23: a walked file outside the 19 known names
                         // (`indexer.default_extensions`) is sniffed again on
                         // the bytes just read, so a file that turned binary
@@ -1125,23 +1095,44 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: ?std.Io.Dir, parse
                         // previous version leaves the index. A known name is
                         // never sniffed: valid UTF-8 decides, as before 2.9.0
                         // (rework 1, the Verdict's finding 1).
-                        if (options.readable and change.content == .walk and
-                            !indexer.hasAllowedExtension(std.fs.path.basename(change.path)) and
-                            indexer.sniff(got[0..@min(got.len, indexer.sniff_head_bytes)], got.len) == .binary)
-                        {
-                            budget_spent += got.len;
-                            walk_binary += 1;
-                            if (work.files.fetchRemove(record)) |_| try work.gone.put(allocator, record, .removed);
-                            continue;
+                        const caps = ReadCaps{
+                            .max_file_bytes = options.max_file_bytes,
+                            .budget = if (options.budget == .exhaust) .{ .spent = budget_spent, .max = options.max_total_bytes, .over = over_budget } else null,
+                            .sniff = options.readable and change.content == .walk and
+                                !indexer.hasAllowedExtension(std.fs.path.basename(change.path)),
+                        };
+                        // The root's local path is looked up only for `.file` content; a
+                        // missing one fails at the read, as before.
+                        const local_root: ?[]const u8 = if (change.content == .file) (if (work.rootIndex(change.root_id)) |i| work.roots.items[i].local_path else null) else null;
+                        switch (try readChecked(allocator, io, change.content, local_root, size, caps)) {
+                            .unreadable => {
+                                try unreadable.append(allocator, .{ .root_id = change.root_id, .path = change.path });
+                                try work.skip(change, record, "unreadable");
+                                markCarried(&work, record);
+                                continue;
+                            },
+                            .too_large => {
+                                try tombstone(allocator, &work, &too_large, change, record);
+                                continue;
+                            },
+                            .over_budget => {
+                                over_budget = true;
+                                try exhausted.append(allocator, .{ .root_id = change.root_id, .path = change.path });
+                                try work.skip(change, record, "budget_exhausted");
+                                markCarried(&work, record);
+                                continue;
+                            },
+                            .binary => |length| {
+                                budget_spent += length;
+                                walk_binary += 1;
+                                if (work.files.fetchRemove(record)) |_| try work.gone.put(allocator, record, .removed);
+                                continue;
+                            },
+                            .ok => |got| {
+                                budget_spent += got.len;
+                                bytes = got;
+                            },
                         }
-                        if (!std.unicode.utf8ValidateSlice(got)) {
-                            try unreadable.append(allocator, .{ .root_id = change.root_id, .path = change.path });
-                            try work.skip(change, record, "unreadable");
-                            markCarried(&work, record);
-                            continue;
-                        }
-                        budget_spent += got.len;
-                        bytes = got;
                     },
                     .none => unreachable,
                 }
@@ -1469,12 +1460,62 @@ fn markCarried(work: *Work, record: []const u8) void {
     if (work.files.getPtr(record)) |file| file.carried_after_failure = true;
 }
 
-fn readContent(allocator: std.mem.Allocator, io: std.Io, content: Content, work: Work, root_id: []const u8, length: usize) !?[]const u8 {
+/// What a file's read and caps decided (S6-T24: shared by `apply` and the
+/// folder source of `scan`, `readChecked`).
+pub const ReadOutcome = union(enum) {
+    /// The bytes, valid UTF-8 (owned by the allocator passed in).
+    ok: []const u8,
+    /// Its size could not be stated, it could not be read, or it is not UTF-8.
+    unreadable,
+    /// Over `max_file_bytes`.
+    too_large,
+    /// The batch's byte budget is spent (`Budget.exhaust`).
+    over_budget,
+    /// Read, then sniffed binary (`ReadCaps.sniff`); the bytes read.
+    binary: usize,
+};
+
+/// The caps `readChecked` applies.
+pub const ReadCaps = struct {
+    max_file_bytes: u64 = default_max_file_bytes,
+    /// A byte budget across files, or null for none: `spent` so far, `max`
+    /// the batch's cap, `over` once a file was refused for it (it stays so).
+    budget: ?struct { spent: u64, max: u64, over: bool } = null,
+    /// Sniff the bytes read (`indexer.sniff`): a walked name outside the 19.
+    sniff: bool = false,
+};
+
+/// One file's read and caps, in `apply`'s order (S6-T24 ruling 8, moved out
+/// of `applyParsed` with no change of behaviour): a size that could not be
+/// stated (`size == null`) is `unreadable`; over `max_file_bytes` is
+/// `too_large`; over the budget is `over_budget`; then the read (any error,
+/// or a `.file` whose size changed, is `unreadable`), the sniff when asked
+/// (`binary`) and the UTF-8 check (`unreadable`). `local_root` is the root's
+/// local path for `.file` content, unused for `.walk`.
+pub fn readChecked(allocator: std.mem.Allocator, io: std.Io, content: Content, local_root: ?[]const u8, size: ?u64, caps: ReadCaps) !ReadOutcome {
+    const known_size = size orelse return .unreadable;
+    if (known_size > caps.max_file_bytes) return .too_large;
+    if (caps.budget) |b| if (b.over or b.spent + known_size > b.max) return .over_budget;
+    const length = std.math.cast(usize, known_size) orelse return .unreadable;
+    const read = readContent(allocator, io, content, local_root, length) catch null;
+    const got = read orelse return .unreadable;
+    if (caps.sniff and indexer.sniff(got[0..@min(got.len, indexer.sniff_head_bytes)], got.len) == .binary) return .{ .binary = got.len };
+    if (!std.unicode.utf8ValidateSlice(got)) return .unreadable;
+    return .{ .ok = got };
+}
+
+/// `readChecked` for a file of a walked folder: its size from `statFile`.
+pub fn readWalkedFile(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, sub_path: []const u8, caps: ReadCaps) !ReadOutcome {
+    const size: ?u64 = if (dir.statFile(io, sub_path, .{})) |stat| stat.size else |_| null;
+    return readChecked(allocator, io, .{ .walk = .{ .dir = dir, .sub_path = sub_path } }, null, size, caps);
+}
+
+fn readContent(allocator: std.mem.Allocator, io: std.Io, content: Content, local_root: ?[]const u8, length: usize) !?[]const u8 {
     const buffer = try allocator.alloc(u8, length);
     switch (content) {
         .walk => |w| return try w.dir.readFile(io, w.sub_path, buffer),
         .file => |abs| {
-            var file = try openConfined(io, work.roots.items[work.rootIndex(root_id).?].local_path.?, abs);
+            var file = try openConfined(io, local_root.?, abs);
             defer file.close(io);
             const stat = try file.stat(io);
             if (stat.size != length) return null;
