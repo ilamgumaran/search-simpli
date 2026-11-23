@@ -1,0 +1,8 @@
+name: scenarios_dart_probe
+description: Scenario probe of the search_simpli Dart binding (not published).
+publish_to: none
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+dependencies:
+  search_simpli:
+    path: BINDING_PATH
