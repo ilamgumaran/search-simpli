@@ -110,6 +110,7 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-22 | [Query warnings under every search field](cap-22-field-warnings.md) | UC-006, UC-007, UC-002 | FR-31 | Implemented (S6-T5: [task](../tasks/S6-T5.md); merged on the maintainer's decision of 17 Nov 2026; approved by the orchestrator under the maintainer's instruction of 16 Nov 2026; not Validated) |
 | CAP-23 | [The command line keeps two generations by default](cap-23-cli-generation-retention.md) | UC-001, UC-006, UC-002 | FR-32, FR-33, NFR-17 | Proposed (S6-T11, 03-next D2-5; pending maintainer approval and answers to its open questions Q1–Q6) |
 | CAP-24 | [Which files are text: a walk reads a file when its bytes are text](cap-24-which-files-are-text.md) | UC-001, UC-007, UC-006, UC-002 | FR-34, FR-35, FR-36, NFR-18 | Implemented (S6-T23 Part 2: [task](../tasks/S6-T23.md), on `task/S6-T23`, awaiting verification and merge; accepted under the maintainer's direction of 22 Nov 2026, text first, plan step H2; recorded for his review; not Validated) |
+| CAP-25 | [Pattern search: `scan`, exact strings and a small pattern language, line by line](cap-25-pattern-search.md) | UC-001, UC-002, UC-004, UC-007 | FR-37, FR-38, FR-39, FR-40, FR-41, NFR-19, NFR-20 | Proposed · accepted under the maintainer's direction of 22 and 23 Nov 2026; recorded for his review (S6-T24: [task](../tasks/S6-T24.md), [ADR 0006](../decisions/0006-pattern-search.md); Part 2 being built on `task/S6-T24`) |
 
 New capabilities append here as `CAP-17`, `CAP-18`, … via the process, each with
 a filled spec (see the three above as worked examples).
@@ -176,6 +177,11 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-34 | The walk reads a file when its bytes are text (`text-sniff-v1`: name check, skip list of non-text kinds, 8,192-byte sniff); changes FR-01; the Python reference walks the same | CAP-24 | Implemented (S6-T23 Part 2 on `task/S6-T23`; awaiting verification and merge) |
 | FR-35 | A walk's report counts not-read files by kind, without paths (`not_read`), on every interface; not in the manifest's `skipped` | CAP-24 | Implemented (S6-T23 Part 2 on `task/S6-T23`; awaiting verification and merge) |
 | FR-36 | A walk-built generation records `readable` (`text-sniff-v1`) in the manifest meta; older readers ignore it; an older index takes the newly readable files at its next update | CAP-24 | Implemented (S6-T23 Part 2 on `task/S6-T23`; awaiting verification and merge) |
+| FR-37 | `scan`, a read-only line search on every interface (`searchd scan`, `--folder`, `ss_scan`, RPC and MCP `scan`, Dart, the Python reference); hits are lines in root, path, line order | CAP-25 | Proposed (S6-T24) |
+| FR-38 | The pattern language: literal by default, a regex subset matched per line in linear time, refusals naming the construct; case by the analyser's simple fold, `whole_word`, `\w` without `_`, `\d` Unicode Nd; the reference agrees | CAP-25 | Proposed (S6-T24) |
+| FR-39 | Two sources, one result: an index's source section (unscannable files counted, `truncated`) and a folder under the walk's text rule (writes nothing; identical hits to an index of it) | CAP-25 | Proposed (S6-T24) |
+| FR-40 | Paging by `next_cursor`: stale across a publish as `find`; refused for another request; a folder cursor sees adds and removes, not edits; counts sum over pages | CAP-25 | Proposed (S6-T24) |
+| FR-41 | A time budget (2 s default, up to 30 s): `stopped: "time"` with a cursor strictly ahead; a line that alone outlasts it is refused with `capacity`; no cancel | CAP-25 | Proposed (S6-T24) |
 
 ## Non-functional requirements (NFR)
 
@@ -205,6 +211,8 @@ until promoted.
 | NFR-16 | Vectors in their own versioned section, loaded only by vector queries; lexical answers and memory unchanged; vector costs measured before promotion | CAP-21 | Proposed (S6-T6) |
 | NFR-17 | With the command line's defaults at most two complete generations after a publish; deletion confined to the engine's own superseded section files in the index directory | CAP-23 | Proposed (S6-T11) |
 | NFR-18 | The sniff costs no extra open for a known-text name and one read of at most 8,192 bytes for any other; the 10k corpora's answers byte-identical and index folders differing only in `MANIFEST` | CAP-24 | Implemented (S6-T23 Part 2 on `task/S6-T23`; awaiting verification and merge) |
+| NFR-19 | `scan` matching linear in the line (Pike VM, program ≤ 8,192 instructions, repeats ≤ 255), no allocation per line, one file in memory at a time | CAP-25 | Proposed (S6-T24) |
+| NFR-20 | Existing answers (ranked, `find`, evidence) byte-identical on the three 10k corpora and the judged set; the 181 judged questions untouched; no index format change | CAP-25 | Proposed (S6-T24) |
 
 ## Contracts (CON)
 
@@ -278,8 +286,11 @@ section is the point of the whole register.
 | CFT-31 | CAP-24 ↔ FR-01 / CAP-09 | The Zig walk mirrors the Python reference's candidate set, and the chunk goldens come from the Python walk. | The Python reference takes the same rule; every fixture folder is read in full today, so the goldens do not move. See CAP-24 §8. | Resolved |
 | CFT-32 | CAP-24 ↔ INV-07 / NFR-02 | A new meta key in every walk-built manifest. | Additive; older readers ignore unknown meta keys (tested); no format version, header or flag change; an older engine updating a newer index drops the newly read files again, recorded. See CAP-24 §8. | Resolved (design) |
 | CFT-33 | CAP-24 ↔ FR-12 / CAP-11 | Reading more files moves the ranking of judged questions whose answers were readable before (typed file@1 over readable-now 94 → 90 on the prototype). | Causes are ranking and the ten-result cut, owned by plan steps H5 and H6; each worsened question listed with its cause; ranking not tuned here. See CAP-24 §8. | Accepted with rationale |
+| CFT-34 | CAP-25 ↔ FR-25 / CAP-19 | An index keeps source bytes only for retained roots, so a scan of a non-retained root finds nothing. | Counted as `not_scanned.not_retained`, the answer is `truncated`, and the user document says so. See CAP-25 §8. | Resolved |
+| CFT-35 | CAP-25 ↔ CAP-13 / NFR-09 | The MCP server answers one request at a time and has no cancel; a scan holds it for up to its budget. | Bounded by the budget (2 s default, 30 s at most); cancel is a later capability. See CAP-25 §8. | Accepted |
+| CFT-36 | CAP-25 ↔ `grep`'s conventions | `\w` without `_`, Unicode `\d`, and every `str.splitlines` terminator differ from `grep`. | Ruling O-1: stated in the user document with an example; the agreement test records its exclusions. See CAP-25 §8. | Resolved |
 
-New conflicts append as `CFT-34`, … Record the conflict even if you resolve it
+New conflicts append as `CFT-37`, … Record the conflict even if you resolve it
 immediately — the record is the value.
 
 ## Traceability
