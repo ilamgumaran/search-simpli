@@ -1,0 +1,1 @@
+pmset -g log, read after the five runs for 2026-11-23 10:49:00 to 10:58:30 (the five runs: 10:49:51 to 10:57:56): no Sleep, Wake or DarkWake line in the window.
