@@ -37,18 +37,22 @@ evidence envelope's results in order:
 - tightness (rework 1, so that handing over more text cannot look like
   progress): `judged_share`, the share of the returned passages' bytes (each
   content line and its newline, line i of a passage taken as its file's line
-  start_line + i) that lie inside a judged range of the question; `first_passage`,
+  start_line + offset + i, the offset aligning the content's first line to the
+  file, rework 2) that lie inside a judged range of the question; `first_passage`,
   whether every part is held by the first passage returned from one of its
-  ranges' files; `complete_within`, complete with at most BUDGET_BYTES evidence
+  ranges' files (a ranking measure, reported with finding, not tightness);
+  `complete_within`, complete with at most BUDGET_BYTES evidence
   bytes; for a question with `stale` ranges, `stale_first`, whether a stale
-  file ranks before every answer file.
+  file ranks before every answer file (or comes back when none does).
 
 `not read` counts the questions with an answer file the index does not list
 (`searchd list-files`): the engine never read it, so nothing can find it.
 Aggregates are counts and means over the questions of a kind; `total` is every
 question with an answer (no-answer questions are reported on their own row),
 and `total_without_single_source` leaves out the questions marked
-`single_source` (their rarest query word is in one readable file only).
+`single_source` (their rarest query word is in one readable file only);
+`total_readable_now` (rework 2) keeps only the questions marked `readable_now`
+(every part has a range in a file of an extension the engine reads today).
 The output holds no time and no absolute path; the same binary, judgments and
 arguments give the same bytes.
 """
@@ -68,7 +72,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import gen_text_search_corpus as corpus_mod  # noqa: E402
 
-SCHEMA = "text-search-score-v2"
+SCHEMA = "text-search-score-v3"
 JUDGMENTS_SCHEMA = "text-search-judgments-v2"
 DEFAULT_JUDGMENTS = ROOT / "fixtures" / "text-search" / "judgments.json"
 SURFACES = ("direct", "index")
@@ -77,9 +81,9 @@ FORMS = ("typed", "query")
 # "Complete within N bytes": N is the evidence a caller gets for one question.
 # 4,096 (4 KiB), chosen from the baselines (docs/text-search-score.md): just
 # above the median evidence size with `content` (v1 mean 2,477; rework-1
-# median 3,479 typed, 2,785 query), a quarter to a third of the median with
-# `both` (11,814 typed, 9,403 query), so it tells the tight answer from the
-# same answer buried in more text.
+# median 3,479 typed, 2,785 query), 35% and 44% of the median with `both`
+# (11,814 typed, 9,403 query), so it tells the tight answer from the same
+# answer buried in more text.
 BUDGET_BYTES = 4096
 CALL_TIMEOUT_S = 120
 
@@ -101,7 +105,7 @@ def validate_judgments(data: dict) -> list[str]:
         if not isinstance(qid, str) or qid in seen:
             problems.append(f"bad or repeated id {qid!r}")
         seen.add(qid)
-        for key in ("kind", "question", "query", "files", "parts", "single_source"):
+        for key in ("kind", "question", "query", "files", "parts", "single_source", "readable_now"):
             if key not in q:
                 problems.append(f"{qid}: no {key}")
         if q.get("kind") not in kinds:
@@ -110,8 +114,9 @@ def validate_judgments(data: dict) -> list[str]:
             problems.append(f"{qid}: empty question")
         if "query" in q and (not isinstance(q["query"], str) or not q["query"].strip()):
             problems.append(f"{qid}: empty query")
-        if "single_source" in q and not isinstance(q["single_source"], bool):
-            problems.append(f"{qid}: single_source must be true or false")
+        for key in ("single_source", "readable_now"):
+            if key in q and not isinstance(q[key], bool):
+                problems.append(f"{qid}: {key} must be true or false")
         for r in q.get("stale", []):
             if r.get("path") in q.get("files", []):
                 problems.append(f"{qid}: stale file {r.get('path')} is also an answer file")
@@ -168,25 +173,45 @@ def holds(passage: dict, rng: dict) -> bool:
             and rng["end_line"] <= passage["end_line"])
 
 
-def judged_bytes(passages: list[dict], ranges: list[dict]) -> tuple[int, int]:
+def first_line_offset(p: dict, file_lines: dict | None) -> int:
+    """Where the passage's content starts, counted from `start_line`.
+
+    The engine's content usually starts at `start_line`; a few passages start on
+    a blank line that the content skips (the Verdict's second pass, finding 7).
+    With the file's lines at hand, the content's first line is looked for from
+    `start_line` to `end_line`, compared without surrounding spaces (some
+    passages trim them); without them, or when it is not found, the offset is 0."""
+    lines = (file_lines or {}).get(p["path"])
+    first = p["content"].split("\n", 1)[0].strip()
+    if not lines or not first:
+        return 0
+    for k in range(0, p["end_line"] - p["start_line"] + 1):
+        n = p["start_line"] + k
+        if n <= len(lines) and lines[n - 1].strip() == first:
+            return k
+    return 0
+
+
+def judged_bytes(passages: list[dict], ranges: list[dict], file_lines: dict | None = None) -> tuple[int, int]:
     """(bytes inside a judged range, all bytes) of the passages' content lines, newline included."""
     inside = total = 0
     for p in passages:
+        offset = first_line_offset(p, file_lines)
         for i, line in enumerate(p["content"].split("\n")):
             size = len(line.encode("utf-8")) + 1
             total += size
-            n = p["start_line"] + i
+            n = p["start_line"] + offset + i
             if any(r["path"] == p["path"] and r["start_line"] <= n <= r["end_line"] for r in ranges):
                 inside += size
     return inside, total
 
 
-def score_question(q: dict, passages: list[dict], evidence_bytes: int) -> dict:
+def score_question(q: dict, passages: list[dict], evidence_bytes: int, file_lines: dict | None = None) -> dict:
     row = {"id": q["id"], "kind": q["kind"], "returned": len(passages), "evidence_bytes": evidence_bytes,
            "passage_bytes": sum(len(p["content"].encode("utf-8")) for p in passages),
            "top_paths": [p["path"] for p in passages[:3]]}
     ranges = [r for part in q["parts"] for r in part["ranges"]]
-    inside, total = judged_bytes(passages, ranges)
+    inside, total = judged_bytes(passages, ranges, file_lines)
     row["judged_share"] = round(inside / total, 4) if total else None
     if q["kind"] == "no-answer":
         return row
@@ -212,6 +237,7 @@ def score_question(q: dict, passages: list[dict], evidence_bytes: int) -> dict:
         row["stale_first"] = row["stale_rank"] is not None and (row["file_rank"] is None
                                                                 or row["stale_rank"] < row["file_rank"])
     row["single_source"] = q.get("single_source", False)
+    row["readable_now"] = q.get("readable_now", False)
     return row
 
 
@@ -253,6 +279,7 @@ def summarize(rows: list[dict], kinds: list[str], unread: set[str]) -> dict:
     answerable = [r for r in rows if r["kind"] != "no-answer"]
     return {"total": aggregate(answerable, unread),
             "total_without_single_source": aggregate([r for r in answerable if not r["single_source"]], unread),
+            "total_readable_now": aggregate([r for r in answerable if r["readable_now"]], unread),
             "no_answer": aggregate([r for r in rows if r["kind"] == "no-answer"], unread),
             "per_kind": per_kind}
 
@@ -298,6 +325,7 @@ def score(binary: Path, judgments_path: Path, scratch: Path, top_k: int, fields:
         raise SystemExit(f"--scratch must be empty or absent: {scratch}")
     folder, index = scratch / "corpus", scratch / "index"
     corpus = corpus_mod.write_corpus(folder)
+    file_lines = {path: data.decode("utf-8").replace("\r\n", "\n").split("\n") for path, data in corpus.items()}
     digest = corpus_mod.corpus_digest(corpus)
     if digest != data["corpus"]["corpus_sha256"]:
         raise SystemExit(f"generated corpus {digest} is not the judged one {data['corpus']['corpus_sha256']}")
@@ -318,7 +346,7 @@ def score(binary: Path, judgments_path: Path, scratch: Path, top_k: int, fields:
                     else:
                         out = run(binary, ["evidence", str(index), text, *rest], scratch)
                     raw[(field, form, surface, q["id"])] = out
-                    rows.append(score_question(q, passages_of(json.loads(out)), len(out)))
+                    rows.append(score_question(q, passages_of(json.loads(out)), len(out), file_lines))
                 configs[f"{surface}/{field}/{form}"] = {"surface": surface, "search_field": field, "form": form,
                                                         "summary": summarize(rows, kinds, unread),
                                                         "questions": rows}
@@ -367,6 +395,7 @@ def ratio(value) -> str:
 
 
 ROWS_TOTAL = (("**total** (with an answer)", "total"),
+              ("**total readable now**", "total_readable_now"),
               ("**total without single-source**", "total_without_single_source"))
 
 
@@ -375,19 +404,20 @@ def tables(typed: dict, query: dict, kinds: list[str]) -> list[str]:
     names = [(kind, typed["per_kind"][kind], query["per_kind"][kind]) for kind in kinds]
     names += [(label, typed[key], query[key]) for label, key in ROWS_TOTAL]
     find = ["| Kind | n | single-source | not read | file@1 | file@3 | file@10 | passage@1 | passage@3 "
-            "| passage@10 | complete | returned anything |",
-            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+            "| passage@10 | complete | answer in its file's first passage (ranking) | stale copy ranked first "
+            "| returned anything |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
     tight = [f"| Kind | n | complete | complete within {BUDGET_BYTES:,} bytes | evidence bytes, median "
-             "| judged share of passage bytes, mean | answer in its file's first passage | stale copy ranked first |",
-             "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+             "| judged share of passage bytes, mean |",
+             "| --- | ---: | ---: | ---: | ---: | ---: |"]
     for name, t, q in names:
         n = t["questions"]
         cells = [pair(t, q, f"file@{k}", hits) for k in RANKS] + [pair(t, q, f"passage@{k}", hits) for k in RANKS]
         find.append(f"| {name} | {n} | {hits(t.get('single_source'))} | {hits(t.get('not_read'))} | "
-                    + " | ".join(cells) + f" | {pair(t, q, 'complete', hits)} | {pair(t, q, 'returned_something', hits)} |")
+                    + " | ".join(cells) + f" | {pair(t, q, 'complete', hits)} | {pair(t, q, 'first_passage', hits)} | "
+                    f"{pair(t, q, 'stale_first', hits)} | {pair(t, q, 'returned_something', hits)} |")
         tight.append(f"| {name} | {n} | {pair(t, q, 'complete', hits)} | {pair(t, q, 'complete_within', hits)} | "
-                     f"{pair(t, q, 'evidence_bytes_median', number)} | {pair(t, q, 'judged_share_mean', ratio)} | "
-                     f"{pair(t, q, 'first_passage', hits)} | {pair(t, q, 'stale_first', hits)} |")
+                     f"{pair(t, q, 'evidence_bytes_median', number)} | {pair(t, q, 'judged_share_mean', ratio)} |")
     return ["Finding: how many questions (typed / query).", "", *find, "",
             "Tightness (typed / query).", "", *tight]
 

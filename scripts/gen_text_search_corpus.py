@@ -103,6 +103,8 @@ Thermostat schedule: 6:30 to 8:30 and 17:00 to 22:00 on weekdays.
 ## Bins
 
 Black bin on Thursdays, green bin every other Monday.
+
+Status: superseded.
 """)
 
 plant("home/house/boiler.md", """\
@@ -656,6 +658,8 @@ Chair: Orla Quent. Treasurer: Kofi Dunleavy. Secretary: Tamsin Pellow.
 ## Meetings
 
 The committee meets on the second Wednesday of the month at the Copper Lane hall, 7 pm.
+
+Status: superseded.
 """)
 
 plant("toolshare/docs/treasurer.md", """\
@@ -936,6 +940,16 @@ plant("paati/தீபாவளி-பட்டியல்.txt", """\
 """)
 
 # --- Rework 1: older or draft copies that disagree with the current file ------
+# Rework 2: each says in its own text that it is a draft or superseded (the
+# Verdict's second pass, finding 5), and so do the two archive copies of
+# version 1 (CHANGED_IN_REWORK_2). The line is the same everywhere and holds no
+# word of the topic, so it does not pull the old copy up for a topic query.
+
+CHANGED_IN_REWORK_2 = (
+    "archive/committee-2025.md",    # + a last line "Status: superseded."
+    "archive/house-notes-2024.md",  # + a last line "Status: superseded."
+    "inbox/note-08.txt",            # "desk" -> "repairs": the rota says Ines is on the desk on the 21st
+)
 # Added for the `current-copy` kind. Planted text only, so the RNG draws of the
 # filler below (and every file of the first version) are unchanged.
 
@@ -949,7 +963,7 @@ ADDED_IN_REWORK_1 = (
 )
 
 plant("home/trips/cornwall-2026-draft.md", """\
-# Cornwall, half term 2026
+# Cornwall, half term 2026 (draft)
 
 ## Getting there
 
@@ -958,6 +972,8 @@ Arrive Friday 23 October in the evening; collect the key from the farm shop.
 ## Accommodation
 
 Two cottages to choose from: Gull Cottage or Heron Barn.
+
+Status: draft, superseded.
 """)
 
 plant("archive/lending-rules-2024.md", """\
@@ -970,6 +986,8 @@ Tools can be borrowed for up to 14 days.
 ## Deposits
 
 A refundable deposit of 10 pounds is taken for power tools.
+
+Status: superseded.
 """)
 
 plant("archive/boiler-2025.md", """\
@@ -985,6 +1003,8 @@ Make: Halvard Combi 28. Installed 2019, in the airing cupboard.
 ## Next service
 
 Next service due in March 2026.
+
+Status: superseded.
 """)
 
 plant("school/calendar-autumn-draft.md", """\
@@ -1002,6 +1022,8 @@ plant("archive/pickle-2024.md", """\
 ## Food
 
 One scoop in the morning only; a chew in the evening.
+
+Status: superseded.
 """)
 
 # A Markdown table, for the `table` kind: a row found by one column, the answer
@@ -1136,7 +1158,7 @@ ONE_LINERS = [
     "Mira's sketchbook is A4, not A5.",
     "Meter read in the morning.",
     "Order more printer paper.",
-    "Wilf can do the Saturday desk on the 21st.",
+    "Wilf can do the Saturday repairs on the 21st.",  # rework 2: was "desk", which the rota contradicts
     "Picture hooks are in the second kitchen drawer.",
     "Return the cake tin to next door.",
     "The bike pump lives in the shed now.",

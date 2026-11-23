@@ -1,0 +1,65 @@
+"""Rework 2 plants: each copies the worktree's scripts/tests/fixtures/src into a fresh folder, makes one fault,
+and runs the named tests there. Every plant must fail; the unplanted copy must pass."""
+import shutil, subprocess, sys, os
+from pathlib import Path
+W, OUT = Path(sys.argv[1]), Path(sys.argv[2])
+def sub(path, a, b):
+    def f(root):
+        p = root / path; s = p.read_text(encoding="utf-8"); assert s.count(a) == 1, (path, a); p.write_text(s.replace(a, b), encoding="utf-8")
+    return f
+JT = "tests.test_text_search_score.JudgmentTests"
+ST = "tests.test_text_search_score.ScoringTests"
+CT = "tests.test_text_search_score.CorpusTests"
+Q = "scripts/text_search_questions.py"
+PLANTS = [
+    ("none (the unplanted copy)", None, [JT, ST, CT]),
+    ("syn-05 reworded in the questions script; judgments regenerated, digests not",
+     sub(Q, '"What do we do about the insects by the back door?"', '"What do we do about insects by the back door?"'), [f"{JT}.test_every_question_matches_its_frozen_digest"]),
+    ("syn-08's treasurer.md alternative dropped, judgments regenerated",
+     sub(Q, '''["treasurer"]),
+              R(TS + "docs/treasurer.md", "# Treasurer's notes", ["treasurer"])]],''', '''["treasurer"])]],'''), [f"{JT}.test_every_question_matches_its_frozen_digest"]),
+    ("syn-02's agreeing 2024 copy marked stale again (rework 1's mark)",
+     sub(Q, '''      absent_files=["rubbish", "collected"],
+''', '''      absent_files=["rubbish", "collected"], stale=[R("archive/house-notes-2024.md", "Black bin on Thursdays", ["thursdays"])],
+'''), [f"{JT}.test_a_stale_copy_disagrees_and_says_it_is_old"]),
+    ("the 2024 lending rules without their status line",
+     sub("scripts/gen_text_search_corpus.py", '''A refundable deposit of 10 pounds is taken for power tools.
+
+Status: superseded.
+''', '''A refundable deposit of 10 pounds is taken for power tools.
+'''), [f"{JT}.test_a_stale_copy_disagrees_and_says_it_is_old"]),
+    ("note-08 back to 'desk'",
+     sub("scripts/gen_text_search_corpus.py", '"Wilf can do the Saturday repairs on the 21st.",', '"Wilf can do the Saturday desk on the 21st.",'),
+     [f"{JT}.test_no_other_file_states_a_different_value_for_a_judged_fact"]),
+    ("a filler sentence stating another deposit",
+     sub("scripts/gen_text_search_corpus.py", '"Wilf can do the Saturday repairs on the 21st.",', '"The refundable deposit for power tools is 30 pounds now.",'),
+     [f"{JT}.test_no_other_file_states_a_different_value_for_a_judged_fact"]),
+    ("budget: < for <=", sub("scripts/text_search_score.py", "evidence_bytes <= BUDGET_BYTES", "evidence_bytes < BUDGET_BYTES"),
+     [f"{ST}.test_tightness_judged_share_first_passage_and_budget"]),
+    ("line alignment removed", sub("scripts/text_search_score.py", "            n = p[\"start_line\"] + offset + i", "            n = p[\"start_line\"] + i"),
+     [f"{ST}.test_judged_share_follows_the_file_when_content_skips_a_blank_start_line"]),
+    ("readable-now total counts every answerable question",
+     sub("scripts/text_search_score.py", 'aggregate([r for r in answerable if r["readable_now"]], unread)', 'aggregate(answerable, unread)'),
+     [f"{ST}.test_the_readable_now_total"]),
+    ("readable_now computed from the first range only",
+     sub(Q, 'all(any(readable(r["path"]) for r in part["ranges"]) for part in parts)', 'all(readable(part["ranges"][0]["path"]) for part in parts)'),
+     [f"{JT}.test_readable_now_is_every_part_in_a_readable_file"]),
+]
+lines = []
+for i, (name, plant, tests) in enumerate(PLANTS):
+    root = OUT / f"p{i:02d}"
+    if root.exists():
+        raise SystemExit(f"{root} exists")
+    for d in ("scripts", "tests", "fixtures", "src"):
+        shutil.copytree(W / d, root / d)
+    if plant:
+        plant(root)
+        if "regenerated" in name or "marked stale" in name or "status line" in name or "readable_now computed" in name or "note-08" in name or "filler" in name:
+            subprocess.run([sys.executable, "-I", "scripts/text_search_questions.py", "--write", "fixtures/text-search/judgments.json"], cwd=root, check=True, capture_output=True)
+    env = dict(os.environ, SEARCH_SIMPLI_NO_ZIG="1"); env.pop("SEARCH_SIMPLI_LIBRARY_PATH", None)
+    r = subprocess.run([sys.executable, "-m", "unittest", *tests], cwd=root, capture_output=True, text=True, env=env)
+    verdict = "passes" if r.returncode == 0 else "FAILS"
+    last = [l for l in r.stderr.splitlines() if l.startswith(("FAIL:", "ERROR:"))]
+    lines.append(f"{name}: {verdict}" + ("".join(f"\n    {l}" for l in last)))
+print("Rework 2 plants (scratch copies of scripts/, tests/, fixtures/ and src/; SEARCH_SIMPLI_NO_ZIG=1):")
+print("\n".join(lines))

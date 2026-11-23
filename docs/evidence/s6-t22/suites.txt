@@ -68,3 +68,11 @@ Ran 552 tests in 49.320s
 OK (skipped=44)
 
 test_text_search_score.py: 16 -> 28 tests (+12).
+
+Rework 2 (22 Nov 2026), SEARCH_SIMPLI_LIBRARY_PATH unset, after the rework-2 changes:
+  Debug (env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY python3 -m unittest discover -s tests): Ran 616 tests, OK
+  ReleaseSmall (SEARCHD_BINARY=<scratch>/prefix/bin/searchd, the worktree build): Ran 616 tests, OK
+  no-Zig (SEARCH_SIMPLI_NO_ZIG=1): Ran 560 tests, OK (skipped=44)
+  tests/test_text_search_score.py: 36 tests (28 at rework 1)
+  check_test_counts --run: OK (5 steps, 600 Zig tests); check_layers, check_requirements, check_no_home_paths: OK;
+  text_search_questions.py --check: up to date

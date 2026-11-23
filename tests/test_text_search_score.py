@@ -8,6 +8,11 @@ the repository analyzer. Rework 1 adds: the 129 questions of version 1 keep
 their wording (a digest), the answers judged after the Verdict stay judged (a
 question that loses one fails), `single_source` is recomputed here, stale
 copies are checked like answers, and the files of version 1 keep their bytes.
+Rework 2 adds: a digest per question freezes all 181 (wording, both forms,
+files, parts, ranges, alternatives, stale copies, checks), every stale copy
+disagrees with the answer and says in its text that it is a draft or
+superseded, and a scripted search finds no other file stating a different value
+for a judged key fact beyond a reviewed list.
 The scorer's arithmetic is tested on hand-made
 answers; one end-to-end run through the real `searchd` (found as
 `test_direct_search.py` finds it; `SEARCH_SIMPLI_NO_ZIG=1` skips) checks that
@@ -42,6 +47,24 @@ KINDS = ["word", "word-form", "misspelt", "phrase", "number", "two-passages", "t
 
 # The corpus of version 1 (264 files): its files keep their bytes in rework 1.
 V1_CORPUS_SHA256 = "d2bf0314a2769cb78d9077dbe196a1c53216e8393b0c150a6781badae0e94e26"
+# Rework 2 changes three of them on purpose (CHANGED_IN_REWORK_2); the other 261 keep their bytes.
+V1_UNCHANGED_SHA256 = "f5a8bc17e3c8c8b8143b4c8ba3093449378bda6a2c8a804f4050c821f2a48287"
+CHANGED_IN_REWORK_2 = {
+    "archive/committee-2025.md": "7ec25643fe28e6f0c6f8b9d7a28e9344a751c4efaf736787ac3ca084f6023e02",
+    "archive/house-notes-2024.md": "5947c390a036b4af369d0b2702b5fd4b3dabccfedb10743b39787aacf72b11f3",
+    "inbox/note-08.txt": "709846f58e4d38e5ca0e65150959e0205ea20b535a2ae2a9452dcc906cc18e65",
+}
+DIGESTS = ROOT / "fixtures" / "text-search" / "question-digests.json"
+
+# What the scripted contradiction search (questions_mod.contradictions) returns
+# today, each read by eye: none states a different value for the same fact.
+REVIEWED_NON_CONTRADICTIONS = {
+    ("about-11", "toolshare/docs/treasurer.md", 8): "a hardware invoice, not the electricity bill",
+    ("name-12", "toolshare/docs/treasurer.md", 8): "a hardware invoice, not the electricity bill",
+    ("word-02", "home/recipes/flatbread.md", 3): "another recipe's flour and water",
+    ("word-13", "school/trip-letter-castle.md", 1): "another school trip",
+    ("word-13", "school/trip-letter-castle.md", 5): "another school trip, on another day",
+}
 # sha256 of the sorted [id, question] pairs of version 1's 129 questions
 # (judgments sha256 078a85fb..., commit 0cd6f5f): no question's wording changes.
 V1_QUESTIONS_SHA256 = "cd90ba207bb0f250daa923fc618dd57f801c9208ba01884fd8bb7b97152f40dd"
@@ -105,7 +128,11 @@ class CorpusTests(unittest.TestCase):
         self.assertTrue(added <= set(self.corpus))
         v1 = {p: b for p, b in self.corpus.items() if p not in added}
         self.assertEqual(len(v1), 264)
-        self.assertEqual(corpus_mod.corpus_digest(v1), V1_CORPUS_SHA256)
+        self.assertEqual(set(corpus_mod.CHANGED_IN_REWORK_2), set(CHANGED_IN_REWORK_2))
+        unchanged = {p: b for p, b in v1.items() if p not in CHANGED_IN_REWORK_2}
+        self.assertEqual(corpus_mod.corpus_digest(unchanged), V1_UNCHANGED_SHA256)
+        for path, digest in CHANGED_IN_REWORK_2.items():
+            self.assertEqual(hashlib.sha256(self.corpus[path]).hexdigest(), digest, path)
 
     def test_deterministic_and_the_judged_one(self):
         again = corpus_mod.build_corpus()
@@ -286,6 +313,85 @@ class JudgmentTests(unittest.TestCase):
             marked += expected
         self.assertGreater(marked, 20)
 
+    def test_every_question_matches_its_frozen_digest(self):
+        """All 181 are frozen: a change to any is made on purpose, with --freeze (docs/text-search-score.md)."""
+        frozen = json.loads(DIGESTS.read_text(encoding="utf-8"))
+        self.assertEqual(DIGESTS.read_text(encoding="utf-8"), questions_mod.render_digests(self.data))
+        now = {q["id"]: questions_mod.question_digest(q) for q in self.data["questions"]}
+        self.assertEqual(len(now), 181)
+        self.assertEqual(now, frozen["questions"])
+
+    def test_any_edit_to_a_question_changes_its_digest(self):
+        by_id = {q["id"]: q for q in self.data["questions"]}
+        edits = {
+            "syn-05 reworded": lambda q: q.update(question=q["question"] + " please"),
+            "syn-05 query": lambda q: q.update(query=q["query"] + " please"),
+            "syn-08 alternative dropped": lambda q: q["parts"][0]["ranges"].pop(),
+            "word-06 range moved": lambda q: q["parts"][0]["ranges"][0].update(end_line=99),
+            "word-05 stale dropped": lambda q: q.pop("stale"),
+            "spell-01 check dropped": lambda q: q.pop("checks"),
+            "pair-04 kind": lambda q: q.update(kind="word"),
+        }
+        for name, edit in edits.items():
+            q = json.loads(json.dumps(by_id[name.split()[0]]))
+            before = questions_mod.question_digest(q)
+            edit(q)
+            self.assertNotEqual(questions_mod.question_digest(q), before, name)
+
+    def test_readable_now_is_every_part_in_a_readable_file(self):
+        for q in self.data["questions"]:
+            expected = bool(q["files"]) and all(
+                any(questions_mod.readable(r["path"]) for r in part["ranges"]) for part in q["parts"])
+            self.assertEqual(q["readable_now"], expected, q["id"])
+        self.assertEqual(sum(q["readable_now"] for q in self.data["questions"]), 146)
+
+    def test_a_stale_copy_disagrees_and_says_it_is_old(self):
+        """Stale: a key of the copy is not in the answer files, or a key of the answer is not in the copy.
+        The copy's own text says draft or superseded; the answer files say neither (finding 5)."""
+        def says_old(path):
+            text = self.corpus[path].decode("utf-8").casefold()
+            return "draft" in text or "superseded" in text
+
+        marked = 0
+        for q in self.data["questions"]:
+            answers = fold(" ".join(self.corpus[p].decode("utf-8") for p in q["files"]))
+            answer_keys = [k for part in q["parts"] for k in part["ranges"][0]["keys"]]
+            for r in q.get("stale", []):
+                copy = fold(self.corpus[r["path"]].decode("utf-8"))
+                disagrees = (any(fold(k) not in answers for k in r["keys"])
+                             or any(fold(k) not in copy for k in answer_keys))
+                self.assertTrue(disagrees, f"{q['id']}: {r['path']} agrees with the answer")
+                self.assertTrue(says_old(r["path"]), f"{q['id']}: {r['path']}")
+                marked += 1
+            if q.get("stale"):
+                for path in q["files"]:
+                    self.assertFalse(says_old(path), f"{q['id']}: {path}")
+        self.assertEqual(marked, 23)  # stale ranges, over 22 questions
+        syn02 = next(q for q in self.data["questions"] if q["id"] == "syn-02")
+        self.assertNotIn("stale", syn02)  # its 2024 copy agrees: an alternative
+        self.assertIn("archive/house-notes-2024.md", syn02["files"])
+
+    def test_no_other_file_states_a_different_value_for_a_judged_fact(self):
+        found = questions_mod.contradictions(self.corpus, self.data["questions"])
+        self.assertEqual(set(found), set(REVIEWED_NON_CONTRADICTIONS), found)
+
+    def test_the_contradiction_search_finds_planted_clashes(self):
+        old = dict(self.corpus)
+        old["inbox/note-08.txt"] = b"Wilf can do the Saturday desk on the 21st.\n"  # before rework 2
+        self.assertIn(("table-09", "inbox/note-08.txt", 1), questions_mod.contradictions(old, self.data["questions"]))
+        planted = dict(self.corpus)
+        planted["inbox/note-99.txt"] = b"The refundable deposit for power tools is 30 pounds now.\n"
+        self.assertIn(("word-05", "inbox/note-99.txt", 1),
+                      questions_mod.contradictions(planted, self.data["questions"]))
+        unmarked = json.loads(json.dumps(self.data["questions"]))
+        for q in unmarked:
+            q.pop("stale", None)
+        found = questions_mod.contradictions(self.corpus, unmarked)
+        for qid, path in (("word-05", "archive/lending-rules-2024.md"), ("pair-01", "archive/boiler-2025.md"),
+                          ("span-08", "archive/boiler-2025.md"), ("span-10", "school/calendar-autumn-draft.md"),
+                          ("span-03", "archive/committee-2025.md")):
+            self.assertTrue(any(k[:2] == (qid, path) for k in found), (qid, path))
+
     def test_stale_copies_hold_their_keys_and_are_not_answers(self):
         stale_questions = 0
         for q in self.data["questions"]:
@@ -298,7 +404,7 @@ class JudgmentTests(unittest.TestCase):
                 for key in r["keys"]:
                     self.assertIn(fold(key), text, q["id"])
                 stale_questions += 1
-        self.assertGreaterEqual(stale_questions, 9)
+        self.assertGreaterEqual(stale_questions, 22)
 
     def test_the_new_kinds_are_of_their_shape(self):
         tamil = re.compile("[஀-௿]")
@@ -375,6 +481,7 @@ class ScoringTests(unittest.TestCase):
         self.assertTrue(row["complete_within"])
         row = scorer.score_question(self.Q, got, scorer.BUDGET_BYTES + 1)
         self.assertFalse(row["complete_within"])
+        self.assertTrue(scorer.score_question(self.Q, got, scorer.BUDGET_BYTES)["complete_within"])  # <=, not <
         one = dict(self.Q, parts=self.Q["parts"][:1])
         self.assertTrue(scorer.score_question(one, got, 1)["first_passage"])
         # an a.md passage before the one holding 5-6: complete, not in the first passage
@@ -385,6 +492,20 @@ class ScoringTests(unittest.TestCase):
         # the alternative b.md, first in its file, counts
         self.assertTrue(scorer.score_question(one, [passage("a.md", 1, 2), passage("b.md", 1, 3)], 1)["first_passage"])
         self.assertEqual(scorer.score_question(self.Q, [], 1)["judged_share"], None)
+
+    def test_judged_share_follows_the_file_when_content_skips_a_blank_start_line(self):
+        """The engine sometimes starts a passage on a blank line its content skips (the Verdict's finding 7)."""
+        q = {"id": "b", "kind": "word", "files": ["a.md"],
+             "parts": [{"ranges": [{"path": "a.md", "start_line": 3, "end_line": 3, "keys": ["k"]}]}]}
+        file_lines = {"a.md": ["one", "", "  three", "four"]}
+        got = [passage("a.md", 2, 4, "three\nfour")]       # starts at the blank line 2, leading spaces trimmed
+        self.assertEqual(scorer.first_line_offset(got[0], file_lines), 1)
+        aligned = scorer.score_question(q, got, 1, file_lines)
+        self.assertEqual(aligned["judged_share"], round(6 / 11, 4))  # "three\n" is line 3
+        unaligned = scorer.score_question(q, got, 1)
+        self.assertEqual(unaligned["judged_share"], round(5 / 11, 4))  # without the file: "four\n" taken as line 3
+        self.assertEqual(scorer.first_line_offset(passage("a.md", 3, 4, "three\nfour"), file_lines), 0)
+        self.assertEqual(scorer.first_line_offset(passage("a.md", 1, 2, "absent"), file_lines), 0)
 
     def test_a_stale_copy_ranked_first_is_counted(self):
         q = {"id": "s", "kind": "current-copy", "files": ["new.md"], "single_source": False,
@@ -405,6 +526,15 @@ class ScoringTests(unittest.TestCase):
         self.assertEqual(summary["total"]["complete"]["hits"], 1)
         self.assertEqual(summary["total_without_single_source"]["questions"], 1)
         self.assertEqual(summary["total_without_single_source"]["complete"]["hits"], 0)
+
+    def test_the_readable_now_total(self):
+        now = dict(self.Q, id="now", single_source=False, readable_now=True)
+        later = dict(self.Q, id="later", single_source=False, readable_now=False)
+        rows = [scorer.score_question(now, [], 1), scorer.score_question(later, [passage("a.md", 1, 30)], 1)]
+        summary = scorer.summarize(rows, ["two-passages"], set())
+        self.assertEqual(summary["total"]["complete"]["hits"], 1)
+        self.assertEqual(summary["total_readable_now"]["questions"], 1)
+        self.assertEqual(summary["total_readable_now"]["complete"]["hits"], 0)
 
     def test_both_envelopes_parse(self):
         tool = {"results": [{"citation": {"path": "a.md", "start_line": 1, "end_line": 2}, "content": "x"}]}
@@ -468,6 +598,8 @@ class EndToEndTests(unittest.TestCase):
             self.assertEqual(unread, sorted(p for p in corpus if not questions_mod.readable(p)))
             self.assertEqual(scorer.markdown(out, KINDS).count("| **total** (with an answer)"), 4)
             self.assertEqual(scorer.markdown(out, KINDS).count("| **total without single-source**"), 4)
+            self.assertEqual(scorer.markdown(out, KINDS).count("| **total readable now**"), 4)
+            self.assertIn("first passage (ranking)", scorer.markdown(out, KINDS))
 
 
 if __name__ == "__main__":

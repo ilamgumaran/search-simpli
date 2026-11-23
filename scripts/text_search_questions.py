@@ -30,10 +30,14 @@ Usage:
     python3 scripts/text_search_questions.py --write fixtures/text-search/judgments.json
     python3 scripts/text_search_questions.py --check fixtures/text-search/judgments.json
         # exit 1 when the file differs from what this script writes
+    python3 scripts/text_search_questions.py --freeze fixtures/text-search/question-digests.json
+        # record one digest per question; run it only to change the yardstick on purpose,
+        # and list every changed question, with its score before and after, in the task's Report
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -106,7 +110,8 @@ QUESTIONS = [
     Q("word-04", "word", "What did we plan for the trellis?", "trellis",
       [[R("home/garden/garden-plan-2026.md", "Put the trellis up", ["trellis", "back fence"])]]),
     Q("word-05", "word", "How much is the deposit for power tools?", "deposit power tools",
-      [[R(TS + "docs/lending-rules.md", "A refundable deposit", ["deposit", "20 pounds"])]]),
+      [[R(TS + "docs/lending-rules.md", "A refundable deposit", ["deposit", "20 pounds"])]],
+      stale=[R("archive/lending-rules-2024.md", "A refundable deposit of 10 pounds", ["10 pounds"])]),
     Q("word-06", "word", "பொங்கல் எப்போது வைப்போம்?", "பொங்கல்",
       [[R("paati/pongal-samayal.md", "புதிய பானையில் பொங்கல்", ["பொங்கல்", "தை முதல் நாள்"]),
         R("paati/naatkaatti-2027.md", "பொங்கல்: ஜனவரி 14", ["பொங்கல்", "ஜனவரி 14"])]],
@@ -189,7 +194,8 @@ QUESTIONS = [
       absent_corpus=["physiotherpy"], note="one letter dropped"),
     Q("spell-06", "misspelt", "accomodation in Cornwall", "accomodation",
       [[R("home/trips/cornwall-2026.md", "Accommodation: Gull Cottage", ["accommodation", "gull cottage"])]],
-      absent_corpus=["accomodation"], note="the common one-m spelling"),
+      absent_corpus=["accomodation"], stale=[R("home/trips/cornwall-2026-draft.md", "Two cottages to choose from", ["heron barn"])],
+      note="the common one-m spelling; the draft had not chosen the cottage"),
     Q("spell-07", "misspelt", "hedghog in the garden", "hedghog",
       [[R("home/garden/garden-diary-2025.txt", "Hedgehog seen", ["hedgehog"])]],
       absent_corpus=["hedghog"], note="one letter dropped, in a long file"),
@@ -213,9 +219,11 @@ QUESTIONS = [
     # ---------------------------------------------------------------- phrase
     Q("phrase-01", "phrase", "spare key under the blue pot",
       parts=[[R(HOUSE + "house-notes.md", "spare key under the blue pot", ["spare key under the blue pot"])]],
-      note="the near duplicate in archive/ has spare key and blue pot apart"),
+      stale=[R("archive/house-notes-2024.md", "The spare key is in the key safe", ["key safe"])],
+      note="the near duplicate in archive/ has spare key and blue pot apart, and the key in the key safe"),
     Q("phrase-02", "phrase", "first Tuesday of the month",
       parts=[[R(TS + "docs/committee.md", "first Tuesday of the month", ["first tuesday of the month"])]],
+      stale=[R("archive/committee-2025.md", "The committee meets on", ["second wednesday"])],
       note="the 2025 copy says second Wednesday; meeting notes are dated Tuesdays"),
     Q("phrase-03", "phrase", "do not tumble dry",
       parts=[[R("home/notes/laundry.md", "do not tumble dry", ["do not tumble dry", "wool"])]],
@@ -285,6 +293,7 @@ QUESTIONS = [
     Q("span-03", "two-passages", "Who is on the Tool Share committee and when does it meet?", "committee members meets",
       parts=[[R(TS + "docs/committee.md", "Chair: Ines Marrow", ["ines marrow", "kofi dunleavy"])],
              [R(TS + "docs/committee.md", "The committee meets on", ["first tuesday", "7:30"])]],
+      stale=[R("archive/committee-2025.md", "Chair: Orla Quent", ["orla quent"]), R("archive/committee-2025.md", "The committee meets on", ["second wednesday"])],
       note="the 2025 copy in archive/ has another chair and another day"),
     Q("span-04", "two-passages", "When were the broad beans sown and when were they picked?", "broad beans sown picked",
       parts=[[R("home/garden/garden-diary-2025.txt", "2025-03-08 Sat", ["2025-03-08", "broad beans"], end="Sowed the first broad beans")],
@@ -295,24 +304,28 @@ QUESTIONS = [
              [R("home/car/car-notes.md", "Tyre pressure:", ["33 psi"])]]),
     Q("span-06", "two-passages", "What time do we arrive at Gull Cottage and what is the wifi?", "arrive Gull Cottage wifi",
       parts=[[R("home/trips/cornwall-2026.md", "Arrive Saturday 24 October", ["after 4 pm"])],
-             [R("home/trips/cornwall-2026.md", "Wifi at the cottage", ["gullnest"])]]),
+             [R("home/trips/cornwall-2026.md", "Wifi at the cottage", ["gullnest"])]],
+      stale=[R("home/trips/cornwall-2026-draft.md", "Arrive Friday 23 October", ["friday 23 october"])]),
     Q("span-07", "two-passages", "How long can a tool be borrowed and what happens if it comes back late?", "tool borrowed how long back late",
       parts=[[R(TS + "docs/lending-rules.md", "up to 7 days", ["7 days"])],
-             [R(TS + "docs/lending-rules.md", "Late returns pay", ["50p a day"])]]),
+             [R(TS + "docs/lending-rules.md", "Late returns pay", ["50p a day"])]],
+      stale=[R("archive/lending-rules-2024.md", "up to 14 days", ["14 days"])]),
     Q("span-08", "two-passages", "When was the boiler last serviced and who do I call?", "boiler serviced call",
       parts=[[R(HOUSE + "boiler.md", "2026-03-14: serviced", ["2026-03-14"]),
               R("inbox/boiler-service-2026-03-14.txt", 1, ["paid by card"], end=1)],
              [R(HOUSE + "boiler.md", "ask for Dara Wenlow", ["01632 960233"]),
               R("home/lists/useful-numbers.txt", "Wenlow Heating:", ["01632 960233"]),
               R("home/contacts.tsv", "Dara Wenlow", ["01632 960233"])]],
-      note="the inbox note's file name gives the date of the last service"),
+      stale=[R("archive/boiler-2025.md", "2025-03-11: serviced", ["2025-03-11"])],
+      note="the inbox note's file name gives the date of the last service; the 2025 copy's record stops at 2025-03-11"),
     Q("span-09", "two-passages", "பொங்கலுக்கு என்ன பொருட்கள் வேண்டும், எப்படிச் செய்வது?", "பொங்கல் பொருட்கள் செய்முறை",
       parts=[[R("paati/pongal-samayal.md", "பச்சரிசி ஒரு கோப்பை", ["பச்சரிசி", "வெல்லம்"])],
              [R("paati/pongal-samayal.md", "அரிசியையும் பருப்பையும்", ["வேக வைக்கவும்"])]],
       note="Tamil: what goes into Pongal and how it is made"),
     Q("span-10", "two-passages", "When is half term and when is the Christmas concert?", "half term Christmas concert",
       parts=[[R("school/calendar-autumn.md", "26 to 30 October", ["half term"])],
-             [R("school/calendar-autumn.md", "Christmas concert", ["16 december"])]]),
+             [R("school/calendar-autumn.md", "Christmas concert", ["16 december"])]],
+      stale=[R("school/calendar-autumn-draft.md", "Christmas concert", ["15 december"])]),
     Q("span-11", "two-passages", "Where are the ladder and the cordless drill kept?", "ladder cordless drill kept",
       parts=[[R(TS + "data/inventory.yaml", "name: ladder", ["ladder", "outside rack"], end="shelf: outside rack")],
              [R(TS + "data/inventory.yaml", "name: cordless drill", ["cordless drill", "a2"], end="shelf: A2")]]),
@@ -321,7 +334,8 @@ QUESTIONS = [
     Q("pair-01", "two-files", "How much was the boiler service and when is the next one due?", "boiler service cost next due",
       parts=[[R("home/money/receipts-note.md", "Wenlow Heating, 14 March", ["96 pounds"])],
              [R(HOUSE + "boiler.md", "Next service due", ["march 2027"]),
-              R("inbox/boiler-service-2026-03-14.txt", 1, ["next one in a year"], end=1)]]),
+              R("inbox/boiler-service-2026-03-14.txt", 1, ["next one in a year"], end=1)]],
+      stale=[R("archive/boiler-2025.md", "Next service due", ["march 2026"])]),
     Q("pair-02", "two-files", "What's for dinner on Wednesday and what do I need for it?", "Wednesday dinner ingredients",
       parts=[[R("home/schedules/meal-plan-week-38.md", "Wednesday: lentil dal", ["lentil dal"])],
              [R("home/recipes/lentil-dal.md", "250 g red lentils", ["red lentils"], end="cumin seeds and turmeric")]]),
@@ -380,7 +394,8 @@ QUESTIONS = [
     Q("name-01", "filename", "Find the boiler service note.", "boiler service note",
       parts=[[R("inbox/boiler-service-2026-03-14.txt", 1, ["paid by card"], end=1),
               R(HOUSE + "boiler.md", "## Service record", ["service record", "2026-03-14"], end="2026-03-14: serviced")]],
-      absent_files=["boiler", "service"], note="the date is in the name, the text says only 'Done'; boiler.md's service record also answers"),
+      absent_files=["boiler", "service"], stale=[R("archive/boiler-2025.md", "## Service record", ["2025-03-11"], end="2025-03-11")],
+      note="the date is in the name, the text says only 'Done'; boiler.md's service record also answers; the 2025 copy's record stops a year earlier"),
     Q("name-02", "filename", "Where's my passport renewal checklist?", "passport renewal checklist",
       parts=[[R("inbox/passport-renewal-checklist.txt", 1, ["two photos"], end=1)]],
       absent_files=["passport", "renewal", "checklist"]),
@@ -422,14 +437,17 @@ QUESTIONS = [
              [R("school/bee-project.md", "# Mira's bee project", ["bee project"])]],
       note="one file says bees, the others bee and beekeeping"),
     Q("about-02", "about", "Which files are about the Cornwall trip?", "Cornwall trip",
-      parts=[[R("home/trips/cornwall-2026.md", "# Cornwall, half term 2026", ["cornwall"])],
+      parts=[[R("home/trips/cornwall-2026.md", "# Cornwall, half term 2026", ["cornwall"]),
+              R("home/trips/cornwall-2026-draft.md", "# Cornwall, half term 2026 (draft)", ["cornwall"])],
              [R("home/trips/directions-to-gull-cottage.txt", "From the A-road", ["porthwenna"])],
              [R("home/lists/cornwall-packing.txt", "Cornwall packing", ["cornwall"])]],
-      note="the directions never say Cornwall"),
+      note="the directions never say Cornwall; the trip's draft is an alternative to the trip file"),
     Q("about-03", "about", "Which files are about Pickle the dog?", "Pickle dog",
-      parts=[[R("home/pets/pickle.md", "Pickle is our dog", ["pickle", "dog"])],
+      parts=[[R("home/pets/pickle.md", "Pickle is our dog", ["pickle", "dog"]),
+              R("archive/pickle-2024.md", "# Pickle", ["pickle"])],
              [R("home/pets/pickle-walks.md", "# Pickle's walks", ["pickle"])],
-             [R("home/lists/pickle-shopping.txt", "Pickle: dog food", ["pickle", "dog food"])]]),
+             [R("home/lists/pickle-shopping.txt", "Pickle: dog food", ["pickle", "dog food"])]],
+      note="the 2024 note is an alternative to pickle.md"),
     Q("about-04", "about", "பாட்டியின் சமையல் குறிப்புகள் எந்தக் கோப்புகளில் உள்ளன?", "சமையல் குறிப்பு",
       parts=[[R("paati/pongal-samayal.md", "# பொங்கல் சமையல்", ["சமையல்"])],
              [R("paati/rasam.md", "பாட்டியின் சமையல் குறிப்பு", ["ரசம்"])],
@@ -460,7 +478,7 @@ QUESTIONS = [
              [R(TS + "site/join.html", "<title>", ["join the tool share"])],
              [R(TS + "site/styles.css", 1, ["font-family"], end=1)],
              [R(TS + "site/sitemap.xml", "<urlset>", ["urlset"])]],
-      note="the README (not read today) says the website code is in src/ and site/; none says website or code"),
+      note="the README (not read today) says the website code is in src/ and site/, so sitemap.xml counts as site code; none says website or code"),
     Q("about-10", "about", "Which files are about sourdough?", "sourdough",
       parts=[both_copies("# Sourdough loaf", ["sourdough"]),
              [R("home/notes/baking-log.txt", "Sourdough loaf 1", ["sourdough"])]]),
@@ -561,12 +579,14 @@ QUESTIONS = [
 
     # ---------------------------------------------------------------- rework 1: synonym
     Q("syn-02", "synonym", "Which day is the rubbish collected?", "rubbish collected day",
-      parts=[[R(HOUSE + "house-notes.md", "Black bin on Thursdays", ["thursdays"])]],
-      absent_files=["rubbish", "collected"], stale=[R("archive/house-notes-2024.md", "Black bin on Thursdays", ["thursdays"])],
-      note="bin for rubbish; the 2024 notes say the same"),
+      parts=[[R(HOUSE + "house-notes.md", "Black bin on Thursdays", ["thursdays"]),
+              R("archive/house-notes-2024.md", "Black bin on Thursdays", ["thursdays"])]],
+      absent_files=["rubbish", "collected"],
+      note="bin for rubbish; the 2024 notes say the same, so they are an alternative (rework 1 marked them stale)"),
     Q("syn-03", "synonym", "How do I shut off the mains?", "shut off mains",
-      parts=[[R(HOUSE + "house-notes.md", "stopcock", ["stopcock"])]],
-      absent_files=["shut", "mains"], note="the stopcock line; the 2024 notes have it too"),
+      parts=[[R(HOUSE + "house-notes.md", "stopcock", ["stopcock"]),
+              R("archive/house-notes-2024.md", "stopcock", ["stopcock", "kitchen sink"])]],
+      absent_files=["shut", "mains"], note="the stopcock line; the 2024 notes say the same, an alternative"),
     Q("syn-04", "synonym", "When is the car's roadworthiness check due?", "car roadworthiness check",
       parts=[[R("home/car/car-notes.md", "MOT due", ["2026-11-30"])]],
       absent_files=["roadworthiness", "check"], note="MOT for the check"),
@@ -671,7 +691,7 @@ QUESTIONS = [
       absent_files=["website", "stylesheet"], note="styles.css; neither word in the file"),
     Q("where-05", "where-is-it", "Which Python file defines the loan record?", "python loan record",
       parts=[[R(TS + "src/models.py", 1, ["plain records"], end=1)]],
-      absent_files=["python"], note="models.py; the docstring says records and loans"),
+      absent_files=["python"], note="models.py; the docstring says records and loans, so it is reached by word forms more than by its role"),
     Q("where-06", "where-is-it", "Where is the Tool Share site map?", "site map",
       parts=[[R(TS + "site/sitemap.xml", "<urlset>", ["urlset"])]],
       absent_files=["map"], note="an XML file (not read today); sitemap is one word in its name"),
@@ -763,6 +783,118 @@ def single_source(query: str, counts: dict[str, int]) -> bool:
     return bool(present) and min(present) == 1
 
 
+_MONTHS = ("january", "february", "march", "april", "may", "june", "july", "august",
+           "september", "october", "november", "december")
+_DAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+_STOPWORDS = frozenset(
+    "a an and the of to in on at for by is are was were be it its this that with from or as we our i my "
+    "you your he she they them his her do does did can could will would should what when where which who "
+    "how there here if then than so not no up out off into over after before".split())
+
+
+def contradictions(corpus: dict[str, bytes], questions: list[dict]) -> dict[tuple[str, str, int], str]:
+    """Lines of other files that may state a different value for a judged key fact.
+
+    For every key of a judged range that is a value (it holds a digit, or every
+    word of it is a name: a word the corpus only ever writes with a capital), the
+    line of the range holding the key gives the fact's subject: its other words,
+    less stopwords, names and words in more than 15% of files; for a table row,
+    its other cells (years dropped) and the key's column heading. A line of
+    another file is returned when it shares at least two subject words and 30% of
+    them (for a table row, the heading among them), does not hold the key, and
+    holds another value of the key's shape (digit runs, and month names, matched
+    loosely; for a name, another name). The files of the question, its stale
+    copies, their exact copies and files of the same series (digits aside) are
+    not searched. Returns {(question id, path, line): the line}; the test
+    compares it with a reviewed list, so a new contradiction fails it."""
+    import re
+    from src.search_platform.core import tokenize
+
+    def toks(text: str) -> set[str]:
+        return {re.sub(r"^(\d+)(st|nd|rd|th)$", r"\1", t) for t in tokenize(text)} - _STOPWORDS
+
+    text = {path: data.decode("utf-8") for path, data in corpus.items()}
+    lines = {path: t.replace("\r\n", "\n").split("\n") for path, t in text.items()}
+    lower, caps = set(), set()
+    for t in text.values():
+        for w in re.findall(r"\b[A-Za-z][a-z]+\b", t):
+            (caps if w[0].isupper() else lower).add(w.lower())
+    names = caps - lower - set(_DAYS) - set(_MONTHS)
+    df: dict[str, int] = {}
+    for t in text.values():
+        for tok in toks(t):
+            df[tok] = df.get(tok, 0) + 1
+    common = {tok for tok, n in df.items() if n > 0.15 * len(text)}
+    copies: dict[bytes, set[str]] = {}
+    for path, data in corpus.items():
+        copies.setdefault(data, set()).add(path)
+    month = "(?:" + "|".join(_MONTHS) + ")"
+
+    def shape(key: str):
+        parts = re.split(r"(\d+|" + month + ")", key)
+        out = "".join(r"\d+" if re.fullmatch(r"\d+", x) else month if re.fullmatch(month, x) else re.escape(x)
+                      for x in parts)
+        return re.compile(r"(?<![\w.])" + out + r"(?![\w])")
+
+    def heading(path: str, n: int, key: str) -> set[str]:
+        ls = lines[path]
+        row = ls[n - 1]
+        if row.startswith("|"):
+            top = n - 1
+            while top > 0 and ls[top - 1].startswith("|"):
+                top -= 1
+            cells, head = row.strip("|").split("|"), ls[top].strip("|").split("|")
+        else:
+            sep = "\t" if "\t" in row else ","
+            cells, head = row.split(sep), ls[0].split(sep)
+        for i, cell in enumerate(cells):
+            if key in cell.lower() and i < len(head):
+                return toks(head[i])
+        return set()
+
+    found: dict[tuple[str, str, int], str] = {}
+    for q in questions:
+        own = set(q["files"]) | {r["path"] for r in q.get("stale", [])}
+        own |= {p for path in list(own) for p in copies[corpus[path]]}
+        series = {re.sub(r"\d", "#", path) for path in q["files"]}
+        for part in q["parts"]:
+            for r in part["ranges"]:
+                for key in r["keys"]:
+                    kt = toks(key)
+                    is_name = not re.search(r"\d", key) and bool(kt) and kt <= names
+                    if not is_name and not re.search(r"\d", key):
+                        continue
+                    pattern = None if is_name else shape(key)
+                    for n in range(r["start_line"], r["end_line"] + 1):
+                        line = lines[r["path"]][n - 1]
+                        lt = toks(line)
+                        if not kt <= lt:
+                            continue
+                        table = r["path"].endswith((".csv", ".tsv")) or line.startswith("|")
+                        if table:
+                            head = heading(r["path"], n, key) - _STOPWORDS
+                            ctx = {t for t in lt - kt - names if not re.fullmatch(r"(19|20)\d\d", t)
+                                   and (re.search(r"\d", t) or t not in common)} | head
+                        else:
+                            head = set()
+                            ctx = {t for t in lt - kt - names - common if not re.search(r"\d", t)}
+                        for path, ls in lines.items():
+                            if path in own or re.sub(r"\d", "#", path) in series:
+                                continue
+                            for m, other in enumerate(ls, 1):
+                                ot = toks(other)
+                                ov = ctx & ot
+                                if len(ov) < 2 or len(ov) < 0.3 * len(ctx) or (head and not head & ov) or kt <= ot:
+                                    continue
+                                if is_name:
+                                    clash = bool((ot - kt) & names)
+                                else:
+                                    clash = any(v.group(0) != key for v in pattern.finditer(other.lower()))
+                                if clash:
+                                    found[(q["id"], path, m)] = other.strip()
+    return found
+
+
 def resolve(corpus: dict[str, bytes]) -> list[dict]:
     out = []
     counts = file_counts(corpus)
@@ -787,6 +919,7 @@ def resolve(corpus: dict[str, bytes]) -> list[dict]:
         if q["stale"]:
             row["stale"] = [resolve_range(corpus, q["id"], r) for r in q["stale"]]
         row["single_source"] = bool(files) and single_source(query, counts)
+        row["readable_now"] = bool(files) and all(any(readable(r["path"]) for r in part["ranges"]) for part in parts)
         checks = {}
         if q["absent_from_corpus"]:
             checks["absent_from_corpus"] = q["absent_from_corpus"]
@@ -808,7 +941,7 @@ def judgments() -> dict:
     counts = {kind: sum(1 for q in questions if q["kind"] == kind) for kind in KINDS}
     return {
         "schema": SCHEMA,
-        "version": 2,
+        "version": 3,
         "pack": "text-search",
         "corpus": {
             "generator": "scripts/gen_text_search_corpus.py",
@@ -822,8 +955,10 @@ def judgments() -> dict:
             "forms": "every question is sent twice: `question` as typed, and `query`, the words a caller would pick (the same text when none were picked)",
             "was": "the id the question had in version 1, when it moved kind",
             "added": "rework-1 for a question that version 1 did not have",
+            "frozen": "fixtures/text-search/question-digests.json holds a sha256 per question over its id, kind, question, query, files, parts, stale and checks; tests fail on any difference, so a change to the yardstick is made on purpose with --freeze",
             "stale": "ranges of an older or draft copy that disagrees with the answer; returning them is not an answer",
-            "single_source": "the rarest query token that any readable file holds is held by exactly one (repository analyzer, no stemming, exact copies counted once; readable = an extension the engine reads today)",
+            "readable_now": "every part has a range in a file of an extension the engine reads today (a fixed list, so H2 does not move the set); false for no-answer questions",
+            "single_source": "computed from the query form only: the rarest query token that any readable file holds is held by exactly one (repository analyzer, no stemming, exact copies counted once; readable = an extension the engine reads today)",
             "parts": "every part is one thing a complete answer cites; any one of a part's ranges satisfies it",
             "files": "every path named in any part; `files` is empty exactly for no-answer questions",
             "range_inside_passage": "a range is found when a returned passage has the same path and start_line <= range start and range end <= end_line",
@@ -839,11 +974,30 @@ def render() -> str:
     return json.dumps(judgments(), ensure_ascii=False, indent=2) + "\n"
 
 
+FROZEN_FIELDS = ("id", "kind", "question", "query", "files", "parts", "stale", "checks")
+
+
+def question_digest(row: dict) -> str:
+    """sha256 over the fields that make the yardstick (not the notes or the computed marks)."""
+    frozen = {key: row.get(key) for key in FROZEN_FIELDS}
+    return hashlib.sha256(json.dumps(frozen, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def render_digests(data: dict) -> str:
+    digests = {q["id"]: question_digest(q) for q in data["questions"]}
+    return json.dumps({"schema": "text-search-question-digests-v1", "fields": list(FROZEN_FIELDS),
+                       "questions": digests}, indent=2) + "\n"
+
+
 def main(argv: list[str]) -> int:
-    if len(argv) != 2 or argv[0] not in ("--write", "--check"):
+    if len(argv) != 2 or argv[0] not in ("--write", "--check", "--freeze"):
         print(__doc__.split("Usage:")[1], file=sys.stderr)
         return 2
     target = Path(argv[1])
+    if argv[0] == "--freeze":
+        target.write_text(render_digests(judgments()), encoding="utf-8")
+        print(f"wrote {target}: one digest per question")
+        return 0
     text = render()
     if argv[0] == "--write":
         target.parent.mkdir(parents=True, exist_ok=True)

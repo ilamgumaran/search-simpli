@@ -1,0 +1,8 @@
+Rework 2: the scorer aligns a passage's content to its file's lines (text_search_score.first_line_offset).
+Every passage of the four direct configurations of baseline-rework-2, re-fetched with the same searchd (87bfd35):
+5364 passages; 3 start on a line the content skips; 0 whose first content line differs from the file line it is mapped to.
+The shifted ones:
+  content-04 content query: home/garden/garden-diary-2025.txt start_line 715, content starts 1 line(s) later
+  none-10 content query: home/garden/garden-diary-2025.txt start_line 311, content starts 1 line(s) later
+  none-10 content query: home/garden/garden-diary-2025.txt start_line 715, content starts 1 line(s) later
+Judged-share values the alignment changes: 0 []

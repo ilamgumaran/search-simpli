@@ -1,21 +1,23 @@
 {
   "schema": "text-search-judgments-v2",
-  "version": 2,
+  "version": 3,
   "pack": "text-search",
   "corpus": {
     "generator": "scripts/gen_text_search_corpus.py",
     "seed": 2211,
     "files": 270,
-    "bytes": 141726,
-    "corpus_sha256": "35a08d3237d32952ad77abfc5ea19c61098dce23e486a6bc136b2eaa3d5519d9"
+    "bytes": 141870,
+    "corpus_sha256": "b7cf14314ee097b82cb75d9568a7fae22e728f7e7aa4af17abc159d21eef8dec"
   },
   "conventions": {
     "lines": "1-based; a line ends at \\n or \\r\\n; a final line without a terminator counts",
     "forms": "every question is sent twice: `question` as typed, and `query`, the words a caller would pick (the same text when none were picked)",
     "was": "the id the question had in version 1, when it moved kind",
     "added": "rework-1 for a question that version 1 did not have",
+    "frozen": "fixtures/text-search/question-digests.json holds a sha256 per question over its id, kind, question, query, files, parts, stale and checks; tests fail on any difference, so a change to the yardstick is made on purpose with --freeze",
     "stale": "ranges of an older or draft copy that disagrees with the answer; returning them is not an answer",
-    "single_source": "the rarest query token that any readable file holds is held by exactly one (repository analyzer, no stemming, exact copies counted once; readable = an extension the engine reads today)",
+    "readable_now": "every part has a range in a file of an extension the engine reads today (a fixed list, so H2 does not move the set); false for no-answer questions",
+    "single_source": "computed from the query form only: the rarest query token that any readable file holds is held by exactly one (repository analyzer, no stemming, exact copies counted once; readable = an extension the engine reads today)",
     "parts": "every part is one thing a complete answer cites; any one of a part's ranges satisfies it",
     "files": "every path named in any part; `files` is empty exactly for no-answer questions",
     "range_inside_passage": "a range is found when a returned passage has the same path and start_line <= range start and range end <= end_line",
@@ -112,7 +114,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "word-02",
@@ -147,7 +150,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "word-03",
@@ -171,7 +175,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "word-04",
@@ -196,7 +201,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "word-05",
@@ -221,7 +227,18 @@
           ]
         }
       ],
-      "single_source": false
+      "stale": [
+        {
+          "path": "archive/lending-rules-2024.md",
+          "start_line": 9,
+          "end_line": 9,
+          "keys": [
+            "10 pounds"
+          ]
+        }
+      ],
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "word-06",
@@ -257,6 +274,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "Tamil: when Paati makes Pongal; the 2027 calendar gives the date"
     },
     {
@@ -283,6 +301,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": false,
       "note": "the answer is in a CSV file"
     },
     {
@@ -309,6 +328,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": false,
       "note": "the answer is in a .log file"
     },
     {
@@ -335,6 +355,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "note": "deep inside a 1,462-line file"
     },
     {
@@ -361,6 +382,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "note": "YAML data"
     },
     {
@@ -386,6 +408,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "Python source"
     },
     {
@@ -412,6 +435,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": false,
       "note": "a file with no extension"
     },
     {
@@ -438,6 +462,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "repainting"
@@ -468,6 +493,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "batteries"
@@ -498,6 +524,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "knitted"
@@ -528,6 +555,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "pruned"
@@ -558,6 +586,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "swims"
@@ -588,6 +617,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "descaling"
@@ -617,6 +647,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "தோட்டம்"
@@ -647,6 +678,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "geese"
@@ -678,6 +710,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "mice"
@@ -709,6 +742,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "wrapping"
@@ -740,6 +774,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "invoices"
@@ -770,6 +805,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "leaking"
@@ -800,6 +836,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "பள்ளி"
@@ -830,6 +867,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_corpus": [
           "dehumidifer"
@@ -861,6 +899,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_corpus": [
           "reciept"
@@ -891,6 +930,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_corpus": [
           "trelis"
@@ -930,6 +970,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_corpus": [
           "sourdogh"
@@ -961,6 +1002,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_corpus": [
           "physiotherpy"
@@ -991,13 +1033,24 @@
           ]
         }
       ],
+      "stale": [
+        {
+          "path": "home/trips/cornwall-2026-draft.md",
+          "start_line": 9,
+          "end_line": 9,
+          "keys": [
+            "heron barn"
+          ]
+        }
+      ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_corpus": [
           "accomodation"
         ]
       },
-      "note": "the common one-m spelling"
+      "note": "the common one-m spelling; the draft had not chosen the cottage"
     },
     {
       "id": "spell-07",
@@ -1022,6 +1075,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_corpus": [
           "hedghog"
@@ -1053,6 +1107,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_corpus": [
           "wadrobe"
@@ -1083,6 +1138,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_corpus": [
           "calender"
@@ -1122,6 +1178,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_corpus": [
           "lawnmover"
@@ -1152,6 +1209,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_corpus": [
           "பொங்கள்"
@@ -1183,6 +1241,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_corpus": [
           "rubarb"
@@ -1212,8 +1271,19 @@
           ]
         }
       ],
+      "stale": [
+        {
+          "path": "archive/house-notes-2024.md",
+          "start_line": 7,
+          "end_line": 7,
+          "keys": [
+            "key safe"
+          ]
+        }
+      ],
       "single_source": false,
-      "note": "the near duplicate in archive/ has spare key and blue pot apart"
+      "readable_now": true,
+      "note": "the near duplicate in archive/ has spare key and blue pot apart, and the key in the key safe"
     },
     {
       "id": "phrase-02",
@@ -1237,7 +1307,18 @@
           ]
         }
       ],
+      "stale": [
+        {
+          "path": "archive/committee-2025.md",
+          "start_line": 9,
+          "end_line": 9,
+          "keys": [
+            "second wednesday"
+          ]
+        }
+      ],
       "single_source": false,
+      "readable_now": true,
       "note": "the 2025 copy says second Wednesday; meeting notes are dated Tuesdays"
     },
     {
@@ -1264,6 +1345,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "note": "the next line says fine to tumble dry"
     },
     {
@@ -1289,6 +1371,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "the castle letter says lunch will be provided"
     },
     {
@@ -1313,7 +1396,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "phrase-06",
@@ -1337,7 +1421,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "phrase-07",
@@ -1363,6 +1448,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "order is a common word (orders.md, the order book)"
     },
     {
@@ -1388,6 +1474,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "note": "Tamil: if it rains"
     },
     {
@@ -1412,7 +1499,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "phrase-10",
@@ -1437,6 +1525,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": false,
       "note": "the answer is in a TSV file; the electricity bill also says direct debit"
     },
     {
@@ -1461,7 +1550,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "phrase-12",
@@ -1485,7 +1575,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "number-01",
@@ -1510,7 +1601,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "number-02",
@@ -1555,7 +1647,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "number-03",
@@ -1580,7 +1673,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "number-04",
@@ -1605,7 +1699,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "number-05",
@@ -1631,6 +1726,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": false,
       "note": "the answer is in a .log file"
     },
     {
@@ -1667,6 +1763,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "note": "CRLF file; contacts.tsv holds the number too (not read today)"
     },
     {
@@ -1692,7 +1789,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "number-08",
@@ -1718,6 +1816,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": false,
       "note": "the answer is in a CSV file"
     },
     {
@@ -1742,7 +1841,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "number-10",
@@ -1766,7 +1866,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "number-11",
@@ -1792,6 +1893,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "the school calendar also has 21 November (photographs)"
     },
     {
@@ -1817,7 +1919,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "span-01",
@@ -1854,7 +1957,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "span-02",
@@ -1907,7 +2011,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "span-03",
@@ -1945,7 +2050,26 @@
           ]
         }
       ],
+      "stale": [
+        {
+          "path": "archive/committee-2025.md",
+          "start_line": 5,
+          "end_line": 5,
+          "keys": [
+            "orla quent"
+          ]
+        },
+        {
+          "path": "archive/committee-2025.md",
+          "start_line": 9,
+          "end_line": 9,
+          "keys": [
+            "second wednesday"
+          ]
+        }
+      ],
       "single_source": false,
+      "readable_now": true,
       "note": "the 2025 copy in archive/ has another chair and another day"
     },
     {
@@ -1985,6 +2109,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "note": "the two entries are 104 days apart in a long file"
     },
     {
@@ -2021,7 +2146,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "span-06",
@@ -2057,7 +2183,18 @@
           ]
         }
       ],
-      "single_source": true
+      "stale": [
+        {
+          "path": "home/trips/cornwall-2026-draft.md",
+          "start_line": 5,
+          "end_line": 5,
+          "keys": [
+            "friday 23 october"
+          ]
+        }
+      ],
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "span-07",
@@ -2093,7 +2230,18 @@
           ]
         }
       ],
-      "single_source": false
+      "stale": [
+        {
+          "path": "archive/lending-rules-2024.md",
+          "start_line": 5,
+          "end_line": 5,
+          "keys": [
+            "14 days"
+          ]
+        }
+      ],
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "span-08",
@@ -2156,8 +2304,19 @@
           ]
         }
       ],
+      "stale": [
+        {
+          "path": "archive/boiler-2025.md",
+          "start_line": 8,
+          "end_line": 8,
+          "keys": [
+            "2025-03-11"
+          ]
+        }
+      ],
       "single_source": false,
-      "note": "the inbox note's file name gives the date of the last service"
+      "readable_now": true,
+      "note": "the inbox note's file name gives the date of the last service; the 2025 copy's record stops at 2025-03-11"
     },
     {
       "id": "span-09",
@@ -2195,6 +2354,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "note": "Tamil: what goes into Pongal and how it is made"
     },
     {
@@ -2231,7 +2391,18 @@
           ]
         }
       ],
-      "single_source": false
+      "stale": [
+        {
+          "path": "school/calendar-autumn-draft.md",
+          "start_line": 6,
+          "end_line": 6,
+          "keys": [
+            "15 december"
+          ]
+        }
+      ],
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "span-11",
@@ -2269,7 +2440,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "pair-01",
@@ -2315,7 +2487,18 @@
           ]
         }
       ],
-      "single_source": false
+      "stale": [
+        {
+          "path": "archive/boiler-2025.md",
+          "start_line": 12,
+          "end_line": 12,
+          "keys": [
+            "march 2026"
+          ]
+        }
+      ],
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "pair-02",
@@ -2352,7 +2535,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "pair-03",
@@ -2390,7 +2574,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "word-13",
@@ -2440,6 +2625,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "the letter alone answers both parts (v1 judged it as two files)"
     },
     {
@@ -2480,6 +2666,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "note": "new in rework 1 (v1's pair-04 is now word-13)"
     },
     {
@@ -2517,7 +2704,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "word-14",
@@ -2565,6 +2753,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "note": "the directions alone answer both parts (v1 judged it as two files)"
     },
     {
@@ -2640,6 +2829,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "one line of jobs-autumn.md answers both parts (v1 judged it as two files)"
     },
     {
@@ -2689,6 +2879,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": false,
       "note": "new in rework 1 (v1's pair-06 is now word-14); the number is only in contacts.tsv, not read today"
     },
     {
@@ -2728,6 +2919,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "new in rework 1 (v1's pair-07 is now word-15)"
     },
     {
@@ -2766,6 +2958,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "note": "Tamil: what to cook for Pongal and the date of the next one"
     },
     {
@@ -2804,7 +2997,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "pair-10",
@@ -2842,7 +3036,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "pair-11",
@@ -2879,7 +3074,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "name-01",
@@ -2913,14 +3109,25 @@
           ]
         }
       ],
+      "stale": [
+        {
+          "path": "archive/boiler-2025.md",
+          "start_line": 5,
+          "end_line": 8,
+          "keys": [
+            "2025-03-11"
+          ]
+        }
+      ],
       "single_source": true,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "boiler",
           "service"
         ]
       },
-      "note": "the date is in the name, the text says only 'Done'; boiler.md's service record also answers"
+      "note": "the date is in the name, the text says only 'Done'; boiler.md's service record also answers; the 2025 copy's record stops a year earlier"
     },
     {
       "id": "name-02",
@@ -2945,6 +3152,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "passport",
@@ -2977,6 +3185,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "wifi",
@@ -3008,6 +3217,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "birthday",
@@ -3039,6 +3249,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "dentist"
@@ -3068,6 +3279,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "garage",
@@ -3099,6 +3311,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "தீபாவளி",
@@ -3131,6 +3344,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "insurance",
@@ -3162,6 +3376,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "agm"
@@ -3191,6 +3406,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": false,
       "checks": {
         "absent_from_files": [
           "volunteer",
@@ -3223,6 +3439,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "camping",
@@ -3254,6 +3471,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "electricity",
@@ -3312,6 +3530,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "one file says bees, the others bee and beekeeping"
     },
     {
@@ -3321,6 +3540,7 @@
       "query": "Cornwall trip",
       "files": [
         "home/trips/cornwall-2026.md",
+        "home/trips/cornwall-2026-draft.md",
         "home/trips/directions-to-gull-cottage.txt",
         "home/lists/cornwall-packing.txt"
       ],
@@ -3329,6 +3549,14 @@
           "ranges": [
             {
               "path": "home/trips/cornwall-2026.md",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "cornwall"
+              ]
+            },
+            {
+              "path": "home/trips/cornwall-2026-draft.md",
               "start_line": 1,
               "end_line": 1,
               "keys": [
@@ -3363,7 +3591,8 @@
         }
       ],
       "single_source": false,
-      "note": "the directions never say Cornwall"
+      "readable_now": true,
+      "note": "the directions never say Cornwall; the trip's draft is an alternative to the trip file"
     },
     {
       "id": "about-03",
@@ -3372,6 +3601,7 @@
       "query": "Pickle dog",
       "files": [
         "home/pets/pickle.md",
+        "archive/pickle-2024.md",
         "home/pets/pickle-walks.md",
         "home/lists/pickle-shopping.txt"
       ],
@@ -3385,6 +3615,14 @@
               "keys": [
                 "pickle",
                 "dog"
+              ]
+            },
+            {
+              "path": "archive/pickle-2024.md",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "pickle"
               ]
             }
           ]
@@ -3415,7 +3653,9 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true,
+      "note": "the 2024 note is an alternative to pickle.md"
     },
     {
       "id": "about-04",
@@ -3466,6 +3706,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "Tamil: which files hold Paati's recipes; kootu.md never says recipe"
     },
     {
@@ -3526,6 +3767,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "either tool list (the YAML inventory or the loans CSV) satisfies the third part"
     },
     {
@@ -3563,7 +3805,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "about-07",
@@ -3601,6 +3844,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "the receipt never says car; its folder does"
     },
     {
@@ -3638,7 +3882,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "about-09",
@@ -3754,7 +3999,8 @@
         }
       ],
       "single_source": true,
-      "note": "the README (not read today) says the website code is in src/ and site/; none says website or code"
+      "readable_now": false,
+      "note": "the README (not read today) says the website code is in src/ and site/, so sitemap.xml counts as site code; none says website or code"
     },
     {
       "id": "about-10",
@@ -3800,7 +4046,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "about-11",
@@ -3851,6 +4098,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": false,
       "note": "no file says household; one name says bill"
     },
     {
@@ -3876,7 +4124,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "content-02",
@@ -3902,6 +4151,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": false,
       "note": "a file with no extension"
     },
     {
@@ -3927,6 +4177,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": false,
       "note": "a CSV file; the header says what it holds"
     },
     {
@@ -3952,7 +4203,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "content-05",
@@ -3977,7 +4229,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "content-06",
@@ -4001,7 +4254,8 @@
           ]
         }
       ],
-      "single_source": true
+      "single_source": true,
+      "readable_now": true
     },
     {
       "id": "content-07",
@@ -4026,6 +4280,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "Tamil: what is in kootu.md; a Latin file name over Tamil text"
     },
     {
@@ -4050,7 +4305,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "content-09",
@@ -4074,7 +4330,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "content-10",
@@ -4098,7 +4355,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "content-11",
@@ -4125,6 +4383,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": false,
       "note": "a TSV file"
     },
     {
@@ -4135,6 +4394,7 @@
       "files": [],
       "parts": [],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_corpus": [
           "snorkel"
@@ -4149,6 +4409,7 @@
       "files": [],
       "parts": [],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_corpus": [
           "trampoline"
@@ -4164,6 +4425,7 @@
       "files": [],
       "parts": [],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_corpus": [
           "tuner"
@@ -4179,6 +4441,7 @@
       "files": [],
       "parts": [],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_corpus": [
           "burglar"
@@ -4194,6 +4457,7 @@
       "files": [],
       "parts": [],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_corpus": [
           "கிரிக்கெட்"
@@ -4209,6 +4473,7 @@
       "files": [],
       "parts": [],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_corpus": [
           "kayak"
@@ -4225,6 +4490,7 @@
       "files": [],
       "parts": [],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_corpus": [
           "hammock"
@@ -4257,6 +4523,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_corpus": [
           "orthodontist"
@@ -4272,6 +4539,7 @@
       "files": [],
       "parts": [],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_corpus": [
           "solar"
@@ -4287,6 +4555,7 @@
       "files": [],
       "parts": [],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_corpus": [
           "999"
@@ -4302,6 +4571,7 @@
       "files": [],
       "parts": [],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_corpus": [
           "wedding",
@@ -4317,6 +4587,7 @@
       "files": [],
       "parts": [],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_corpus": [
           "flu",
@@ -4333,6 +4604,7 @@
       "files": [],
       "parts": [],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_corpus": [
           "van"
@@ -4373,6 +4645,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "pongal"
@@ -4405,6 +4678,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "rasam"
@@ -4436,6 +4710,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "poosanikkai",
@@ -4468,6 +4743,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "paatti",
@@ -4500,6 +4776,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "thulasi",
@@ -4532,6 +4809,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "kaditham"
@@ -4563,6 +4841,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "puthaandu"
@@ -4594,6 +4873,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "pacharisi"
@@ -4625,6 +4905,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "deepavali",
@@ -4666,6 +4947,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "murukku"
@@ -4680,7 +4962,8 @@
       "query": "rubbish collected day",
       "added": "rework-1",
       "files": [
-        "home/house/house-notes.md"
+        "home/house/house-notes.md",
+        "archive/house-notes-2024.md"
       ],
       "parts": [
         {
@@ -4692,28 +4975,27 @@
               "keys": [
                 "thursdays"
               ]
+            },
+            {
+              "path": "archive/house-notes-2024.md",
+              "start_line": 23,
+              "end_line": 23,
+              "keys": [
+                "thursdays"
+              ]
             }
           ]
         }
       ],
-      "stale": [
-        {
-          "path": "archive/house-notes-2024.md",
-          "start_line": 23,
-          "end_line": 23,
-          "keys": [
-            "thursdays"
-          ]
-        }
-      ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "rubbish",
           "collected"
         ]
       },
-      "note": "bin for rubbish; the 2024 notes say the same"
+      "note": "bin for rubbish; the 2024 notes say the same, so they are an alternative (rework 1 marked them stale)"
     },
     {
       "id": "syn-03",
@@ -4722,7 +5004,8 @@
       "query": "shut off mains",
       "added": "rework-1",
       "files": [
-        "home/house/house-notes.md"
+        "home/house/house-notes.md",
+        "archive/house-notes-2024.md"
       ],
       "parts": [
         {
@@ -4734,18 +5017,28 @@
               "keys": [
                 "stopcock"
               ]
+            },
+            {
+              "path": "archive/house-notes-2024.md",
+              "start_line": 13,
+              "end_line": 13,
+              "keys": [
+                "stopcock",
+                "kitchen sink"
+              ]
             }
           ]
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "shut",
           "mains"
         ]
       },
-      "note": "the stopcock line; the 2024 notes have it too"
+      "note": "the stopcock line; the 2024 notes say the same, an alternative"
     },
     {
       "id": "syn-04",
@@ -4771,6 +5064,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "roadworthiness",
@@ -4803,6 +5097,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "insects"
@@ -4835,6 +5130,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "ear",
@@ -4877,6 +5173,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "diet"
@@ -4927,6 +5224,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "money"
@@ -4958,6 +5256,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "subscription"
@@ -4989,6 +5288,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_corpus": [
           "jab"
@@ -5021,6 +5321,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "back"
@@ -5052,6 +5353,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "Markdown table: the row by What, its Date"
     },
     {
@@ -5078,6 +5380,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "note": "Markdown table: the row by Club, its Room"
     },
     {
@@ -5104,6 +5407,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "Markdown table: the row by Day, its Runs it; Thursday occurs in many files"
     },
     {
@@ -5131,6 +5435,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "note": "YAML records: the entry by name, its shelf"
     },
     {
@@ -5157,6 +5462,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": false,
       "note": "CSV (not read today): the row by tool, its loans_2026"
     },
     {
@@ -5192,6 +5498,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "note": "TSV (not read today): the row by name, its role; the numbers list says it too"
     },
     {
@@ -5218,6 +5525,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": false,
       "note": "CSV (not read today): the row by month (mar), its energy column"
     },
     {
@@ -5244,6 +5552,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": false,
       "note": "CSV (not read today): the row by date, its desk column"
     },
     {
@@ -5278,6 +5587,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": false,
       "note": "CSV (not read today): either row by who, its amount"
     },
     {
@@ -5313,7 +5623,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "cur-02",
@@ -5357,7 +5668,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "cur-03",
@@ -5393,7 +5705,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "cur-04",
@@ -5428,7 +5741,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "cur-05",
@@ -5464,7 +5778,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "cur-06",
@@ -5499,7 +5814,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "cur-07",
@@ -5535,7 +5851,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "cur-08",
@@ -5570,7 +5887,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "cur-09",
@@ -5605,7 +5923,8 @@
           ]
         }
       ],
-      "single_source": false
+      "single_source": false,
+      "readable_now": true
     },
     {
       "id": "where-01",
@@ -5631,6 +5950,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_files": [
           "spreadsheet"
@@ -5662,6 +5982,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": false,
       "checks": {
         "absent_from_files": [
           "backup"
@@ -5693,6 +6014,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": false,
       "checks": {
         "absent_from_files": [
           "june"
@@ -5724,6 +6046,7 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "website",
@@ -5756,12 +6079,13 @@
         }
       ],
       "single_source": true,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "python"
         ]
       },
-      "note": "models.py; the docstring says records and loans"
+      "note": "models.py; the docstring says records and loans, so it is reached by word forms more than by its role"
     },
     {
       "id": "where-06",
@@ -5787,6 +6111,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_files": [
           "map"
@@ -5818,6 +6143,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_files": [
           "spreadsheet"
@@ -5858,6 +6184,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "list"
@@ -5889,6 +6216,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": false,
       "checks": {
         "absent_from_files": [
           "list"
@@ -5920,6 +6248,7 @@
         }
       ],
       "single_source": false,
+      "readable_now": true,
       "checks": {
         "absent_from_files": [
           "timers"
