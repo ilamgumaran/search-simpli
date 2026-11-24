@@ -1,0 +1,4 @@
+judged: 270 files, 1080 calls (read-span x3, outline), 788 answered with exit 0 by main, 0 differ (stdout, stderr and exit code compared)
+tamil-10k: 400 files, 1600 calls (read-span x3, outline), 1200 answered with exit 0 by main, 0 differ (stdout, stderr and exit code compared)
+timing-10k: 400 files, 1600 calls (read-span x3, outline), 1200 answered with exit 0 by main, 0 differ (stdout, stderr and exit code compared)
+prose-10k: 400 files, 1600 calls (read-span x3, outline), 1200 answered with exit 0 by main, 0 differ (stdout, stderr and exit code compared)

@@ -1,0 +1,16 @@
+S6-T24 rework 2: scripts/prototypes/s6t24/rework2/meter_bench.zig, zig run -OReleaseSmall (outside the default test run), 24 Nov 2026 03:36, load { 2.05 3.23 3.26 }
+compile: 3638 patterns (longest 1024 bytes) x 2 cases; slowest 292 us (1022 bytes: [ -￿][ -￿][ -￿][ -￿][ -￿][ -￿][ -￿][ -￿][ -�)
+meter: [^\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w (1024 bytes) over 196608 bytes: widest gap 195 us, 2.87 ns a unit
+meter: [^\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s (1024 bytes) over 196608 bytes: widest gap 189 us, 2.87 ns a unit
+meter: [^\W\W\W\W\W\W\W\W\W\W\W\W\W\W\W\W\W\W\W (1024 bytes) over 131072 bytes: widest gap 154 us, 2.35 ns a unit
+meter: (?:[\d\sα-ωа-яK]|\b){1,255}(?:[^\w\d (53 bytes) over 262132 bytes: widest gap 136 us, 1.69 ns a unit
+meter: (?:\w|\W){1,255}(?:\w|\W){1,255}z (33 bytes) over 262132 bytes: widest gap 146 us, 1.93 ns a unit
+meter: (?:[a-j ]{1,255}){15}z (22 bytes) over 1048572 bytes: widest gap 184 us, 2.39 ns a unit
+meter: (?:\w|\W){1,255}(?:\w|\W){1,255}z (33 bytes) over 1048572 bytes: widest gap 135 us, 1.65 ns a unit
+meter: a(.*z)? (7 bytes) over 1048572 bytes: widest gap 169 us, 2.03 ns a unit
+meter: abcdefghij z (12 bytes) over 1048572 bytes: widest gap 70 us, 1.02 ns a unit
+meter: ABCDEFGHIJ Z (12 bytes) over 1048572 bytes: widest gap 81 us, 1.24 ns a unit
+meter: ωж→ 1ſk ωж→ 1ſk z (27 bytes) over 262132 bytes: widest gap 252 us, 3.59 ns a unit
+meter: widest gap over all cases 252 us; most time a unit 3.59 ns
+meter fuzz: 950 patterns matched over 65520 bytes; most time a unit 4.28 ns (19 bytes: (?:(?:.{200,255}))*)
+glob: 20,000 names of 255 bytes against * + 253 a + b: 15638 us in all, 3.1 ns a byte, 0 kept

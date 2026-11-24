@@ -8,16 +8,18 @@
 //!   walk and read rules as `searchd index`, root `r-legacy`). The loop never knows which one it reads.
 //! - **A hit is a line**, numbered as `read_span` numbers it (`source.lineStarts`'s rule: a leading BOM is not
 //!   part of line 1), without its terminator, cut to 512 bytes at a code-point boundary (or shorter, where regex
-//!   mode stopped looking for matches: `pattern.Matcher.matchLine`); `match_offsets` are code-point pairs into
-//!   that text, and `before`/`after` the context lines.
+//!   mode found a 17th non-empty match: `matches_truncated`, `pattern.Matcher.matchLine`); `match_offsets` are
+//!   code-point pairs into that text, and `before`/`after` the context lines.
 //! - **Paging**: `"<generation>:<request>:<file>:<line>:<listed>"` over an index and
 //!   `"f<walk>:<request>:<file>:<line>:<listed>"` over a folder, where `<request>` is an XXH3-64 of the request
 //!   without its cursor, page size and budget (`requestHash`), `<walk>` one of the walk's sorted paths, `<file>`
-//!   the file's ordinal in scan order, `<line>` the next line to search and `<listed>` the hit lines already
+//!   the file's ordinal among the files the caller may see (before `path_prefix` and `name_glob`, which are
+//!   tested as the scan reaches each file), `<line>` the next line to search and `<listed>` the hit lines already
 //!   returned from that file. Resuming reads no earlier file. A file's counts go on the page where its scan ends.
 //! - **Budget** (rework 1, rulings 1, 3 and 5): the clock starts before the pattern is parsed. Every loop charges
 //!   its work to `pattern.Budget.charge` (a byte read for line breaks, a byte searched for a literal, a step of
-//!   the VM), which reads the clock once per 65,536 units, and the clock is also read between files. A page that
+//!   the VM, a byte of a path tested against the scope: rework 2, rulings 1 and 2), which reads the clock once
+//!   per 65,536 units, and the clock is also read between files. A page that
 //!   runs out ends with `stopped: "time"` and a cursor strictly after the request's. The page's first line gets
 //!   at least `grace_ms` (10 ms) from when it starts, even when the budget went on compiling or reading the file;
 //!   a page that still completes no position past the request's cursor is refused with `capacity` instead
@@ -94,8 +96,8 @@ pub const Source = struct {
     /// Index: the generation. Folder: the XXH3-64 of the walk's sorted paths.
     generation: u64 = 0,
     walk: u64 = 0,
-    /// Every file the caller may see, ordered by `root_id` then path (bytes); `run` keeps those in the request's
-    /// `path_prefix` and `name_glob`.
+    /// Every file the caller may see, ordered by `root_id` then path (bytes); `run` tests each against the
+    /// request's `path_prefix` and `name_glob` as it reaches it.
     files: []const File,
     context: *anyopaque,
     read: *const fn (context: *anyopaque, allocator: std.mem.Allocator, file: File) error{OutOfMemory}!Read,
@@ -114,6 +116,9 @@ pub const Hit = struct {
     line: u32,
     text: []const u8,
     text_truncated: bool,
+    /// Regex mode: the text ends where a 17th non-empty match starts (rework 2, ruling 4), so the line holds
+    /// more matches than `match_offsets` lists. False when only the 512-byte cut applies.
+    matches_truncated: bool,
     match_offsets: []const [2]u32,
     before: []const ContextLine,
     after: []const ContextLine,
@@ -151,52 +156,157 @@ fn fail(allocator: std.mem.Allocator, code: source.Code, comptime format: []cons
 
 // ------------------------------------------------------------------- scope ---
 
-/// `*` any run of code points, `?` one code point, every other code point itself.
-pub fn globMatches(glob: []const u8, name: []const u8) bool {
-    var g: usize = 0;
-    var n: usize = 0;
-    var star_g: ?usize = null;
-    var star_n: usize = 0;
-    while (n < name.len) {
-        if (g < glob.len and glob[g] == '*') {
-            star_g = g;
-            g += 1;
-            star_n = n;
-            continue;
-        }
-        if (g < glob.len) {
-            const gl = cpLen(glob, g);
-            const nl = cpLen(name, n);
-            if (glob[g] == '?' or (gl == nl and std.mem.eql(u8, glob[g .. g + gl], name[n .. n + nl]))) {
-                g += gl;
-                n += nl;
-                continue;
-            }
-        }
-        const sg = star_g orelse return false;
-        star_n += cpLen(name, star_n);
-        n = star_n;
-        g = sg + 1;
-    }
-    while (g < glob.len and glob[g] == '*') g += 1;
-    return g == glob.len;
-}
-
+/// A name's units, as the glob reads it: a code point's bytes (as many as its first byte says, fewer at the end of
+/// the name), or one byte that starts none.
 fn cpLen(bytes: []const u8, at: usize) usize {
     const len = std.unicode.utf8ByteSequenceLength(bytes[at]) catch return 1;
     return @min(len, bytes.len - at);
 }
 
-/// Whether a root-relative `path` is in the request's `path_prefix` and `name_glob`.
-pub fn inScope(request: Request, path: []const u8) bool {
-    if (request.path_prefix) |prefix| if (!std.mem.startsWith(u8, path, prefix)) return false;
-    if (request.name_glob) |glob| {
-        const slash = std.mem.lastIndexOfScalar(u8, path, '/');
-        const name = if (slash) |s| path[s + 1 ..] else path;
-        if (!globMatches(glob, name)) return false;
-    }
-    return true;
+/// A unit's bytes, first byte highest: two units are the same exactly when their keys are (a valid sequence's
+/// first byte fixes its length, and a cut-short one has a zero where a valid one has a continuation byte).
+fn unitKey(bytes: []const u8) u32 {
+    var key: u32 = 0;
+    for (0..4) |i| key = key << 8 | (if (i < bytes.len) bytes[i] else 0);
+    return key;
 }
+
+/// A `name_glob` (rework 2, ruling 1): `*` any run of code points, `?` one code point, every other code point
+/// itself. A match reads each unit of the name once, so it costs at most one step per byte of the name whatever
+/// the glob: the glob's items (at most 255, runs of `*` read as one) are the states of an automaton held as one
+/// 256-bit set, and a unit moves every state at once (shift-and). Built once per request, with no allocation.
+pub const Glob = struct {
+    /// The state after the last item: the name matches when it is reached.
+    last: u8 = 0,
+    /// The states at a `*` (which a unit leaves where they are) and at a `?` (which any unit moves on).
+    star: u256 = 0,
+    any: u256 = 0,
+    /// Per ASCII byte, then per other unit the glob names (sorted keys), the states it moves on (with `?`'s).
+    ascii: [128]u256 = @splat(0),
+    keys: [max_glob_bytes]u32 = undefined,
+    masks: [max_glob_bytes]u256 = undefined,
+    distinct: usize = 0,
+
+    /// `glob`: valid UTF-8 of 1 to 255 bytes (`validate` refuses anything else).
+    pub fn init(glob: []const u8) Glob {
+        var g = Glob{};
+        var literal_keys: [max_glob_bytes]u32 = undefined;
+        var literal_states: [max_glob_bytes]u8 = undefined;
+        var literals: usize = 0;
+        var state: u8 = 0;
+        var at: usize = 0;
+        while (at < glob.len) {
+            const len = cpLen(glob, at);
+            const unit = glob[at .. at + len];
+            at += len;
+            if (unit[0] == '*') {
+                if (state > 0 and g.star & (@as(u256, 1) << (state - 1)) != 0) continue;
+                g.star |= @as(u256, 1) << state;
+            } else if (unit[0] == '?') {
+                g.any |= @as(u256, 1) << state;
+            } else {
+                literal_keys[literals] = unitKey(unit);
+                literal_states[literals] = state;
+                literals += 1;
+            }
+            state += 1;
+        }
+        g.last = state;
+        for (&g.ascii) |*mask| mask.* = g.any;
+        for (literal_keys[0..literals], literal_states[0..literals]) |key, at_state| {
+            const bit = @as(u256, 1) << at_state;
+            if (key < 0x8000_0000) {
+                g.ascii[key >> 24] |= bit;
+                continue;
+            }
+            // Insertion into the sorted keys (at most 255 of them, once per request).
+            var i: usize = 0;
+            while (i < g.distinct and g.keys[i] < key) i += 1;
+            if (i < g.distinct and g.keys[i] == key) {
+                g.masks[i] |= bit;
+                continue;
+            }
+            var j = g.distinct;
+            while (j > i) : (j -= 1) {
+                g.keys[j] = g.keys[j - 1];
+                g.masks[j] = g.masks[j - 1];
+            }
+            g.keys[i] = key;
+            g.masks[i] = g.any | bit;
+            g.distinct += 1;
+        }
+        return g;
+    }
+
+    fn maskOf(g: *const Glob, unit: []const u8) u256 {
+        if (unit[0] < 0x80) return g.ascii[unit[0]];
+        const key = unitKey(unit);
+        var lo: usize = 0;
+        var hi: usize = g.distinct;
+        while (lo < hi) {
+            pattern.work(1);
+            const mid = lo + (hi - lo) / 2;
+            if (g.keys[mid] == key) return g.masks[mid];
+            if (g.keys[mid] < key) lo = mid + 1 else hi = mid;
+        }
+        return g.any;
+    }
+
+    /// A state at a `*` may also skip it (the `*` matching nothing); runs of `*` are one item, so one shift.
+    fn closure(g: *const Glob, states: u256) u256 {
+        return states | ((states & g.star) << 1);
+    }
+
+    pub fn matches(g: *const Glob, name: []const u8) bool {
+        var states = g.closure(1);
+        var at: usize = 0;
+        while (at < name.len) {
+            pattern.work(1);
+            const len = cpLen(name, at);
+            states = g.closure(((states & g.maskOf(name[at .. at + len])) << 1) | (states & g.star));
+            if (states == 0) return false;
+            at += len;
+        }
+        return (states >> g.last) & 1 == 1;
+    }
+};
+
+/// Whether `glob` matches `name` (a `Glob` built for one name; `Scope` builds it once per request).
+pub fn globMatches(glob: []const u8, name: []const u8) bool {
+    const g = Glob.init(glob);
+    return g.matches(name);
+}
+
+/// The request's `path_prefix` and `name_glob`, ready to test paths one at a time as the scan reaches them.
+pub const Scope = struct {
+    prefix: ?[]const u8,
+    glob: ?Glob,
+
+    pub fn init(request: Request) Scope {
+        return .{ .prefix = request.path_prefix, .glob = if (request.name_glob) |glob| Glob.init(glob) else null };
+    }
+
+    /// Whether a root-relative `path` is in the scope, and the work it took: one unit per path and per byte
+    /// compared or read (`run` charges it to the budget).
+    pub fn check(s: *const Scope, path: []const u8) struct { in: bool, units: u64 } {
+        var units: u64 = 1;
+        if (s.prefix) |prefix| {
+            units += @min(prefix.len, path.len);
+            if (!std.mem.startsWith(u8, path, prefix)) return .{ .in = false, .units = units };
+        }
+        if (s.glob) |*glob| {
+            const slash = std.mem.lastIndexOfScalar(u8, path, '/');
+            const name = if (slash) |at| path[at + 1 ..] else path;
+            units += path.len;
+            return .{ .in = glob.matches(name), .units = units };
+        }
+        return .{ .in = true, .units = units };
+    }
+
+    pub fn contains(s: *const Scope, path: []const u8) bool {
+        return s.check(path).in;
+    }
+};
 
 // ------------------------------------------------------------------ cursor ---
 
@@ -343,6 +453,7 @@ pub const Lines = struct {
         var charged = start;
         const span: LineSpan = while (true) {
             if (at - charged >= pattern.check_units) {
+                pattern.work(at - charged);
                 if (budget) |b| try b.charge(at - charged);
                 charged = at;
             }
@@ -360,6 +471,7 @@ pub const Lines = struct {
             }
             break .{ .start = start, .end = candidate, .next = candidate + width };
         };
+        pattern.work(span.next - charged + 1);
         if (budget) |b| try b.charge(span.next - charged + 1);
         self.at = span.next;
         self.number += 1;
@@ -430,9 +542,9 @@ pub fn run(allocator: std.mem.Allocator, request: Request, src: Source, clock: p
         .foreign => return fail(allocator, .invalid_argument, foreign_cursor_message, .{}),
     } else .{};
 
-    var kept = std.ArrayList(usize).empty;
-    for (src.files, 0..) |file, index| if (inScope(request, file.path)) try kept.append(allocator, index);
-    if (start.file > kept.items.len or start.listed > request.max_hits_per_file) return fail(allocator, .invalid_argument, malformed_cursor_message, .{});
+    if (start.file > src.files.len or start.listed > request.max_hits_per_file) return fail(allocator, .invalid_argument, malformed_cursor_message, .{});
+    // Each file's path is tested as the scan reaches it, its cost charged (rework 2, ruling 1).
+    const in_scope = Scope.init(request);
 
     var matcher = try pattern.Matcher.init(allocator, compiled, &budget);
     var file_arena = std.heap.ArenaAllocator.init(allocator);
@@ -458,13 +570,24 @@ pub fn run(allocator: std.mem.Allocator, request: Request, src: Source, clock: p
     var progress = false;
     var resume_at: ?Position = null;
 
-    files: while (position.file < kept.items.len) {
+    files: while (position.file < src.files.len) {
         if (progress and budget.expired()) {
             answer.stopped = .time;
             resume_at = position;
             break;
         }
-        const file = src.files[kept.items[position.file]];
+        const file = src.files[position.file];
+        const tested = in_scope.check(file.path);
+        budget.charge(tested.units) catch if (progress) {
+            answer.stopped = .time;
+            resume_at = position;
+            break;
+        };
+        if (!tested.in) {
+            position = .{ .file = position.file + 1 };
+            progress = true;
+            continue;
+        }
         _ = file_arena.reset(.retain_capacity);
         const fa = file_arena.allocator();
         const bytes = switch (try src.read(src.context, fa, file)) {
@@ -538,6 +661,7 @@ pub fn run(allocator: std.mem.Allocator, request: Request, src: Source, clock: p
                     .line = line,
                     .text = try allocator.dupe(u8, content[0..result.text_len]),
                     .text_truncated = result.text_len < content.len,
+                    .matches_truncated = result.matches_truncated,
                     .match_offsets = try allocator.dupe([2]u32, offsets.items),
                     .before = if (context == 0) &.{} else try contextLines(allocator, bytes, ring, @max(1, line -| context), line - 1),
                     .after = try contextLines(allocator, bytes, ring, line + 1, @min(line +| context, lines.number)),
@@ -601,12 +725,13 @@ pub fn indexSource(allocator: std.mem.Allocator, request: Request, section: sour
     var entries = std.ArrayList(source.FileEntry).empty;
     var files = std.ArrayList(File).empty;
     var counts = not_scanned;
+    const in_scope = Scope.init(request);
     for (candidates) |candidate| {
         const entry = if (candidate.retained) section.find(candidate.record) else null;
         if (entry) |found| {
             try files.append(allocator, .{ .root_id = candidate.root_id, .path = candidate.path, .key = entries.items.len });
             try entries.append(allocator, found);
-        } else if (inScope(request, candidate.path)) counts.not_retained += 1;
+        } else if (in_scope.contains(candidate.path)) counts.not_retained += 1;
     }
     context.* = .{ .section = section, .entries = entries.items };
     return .{
@@ -759,6 +884,8 @@ pub fn writeJson(json: *std.json.Stringify, answer: Answer, scope_roots: []const
         try json.write(hit.text);
         try json.objectField("text_truncated");
         try json.write(hit.text_truncated);
+        try json.objectField("matches_truncated");
+        try json.write(hit.matches_truncated);
         try json.objectField("match_offsets");
         try json.beginArray();
         for (hit.match_offsets) |range| {

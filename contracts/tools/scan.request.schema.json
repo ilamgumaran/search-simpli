@@ -59,7 +59,7 @@
       ],
       "minLength": 1,
       "maxLength": 255,
-      "description": "Matched against the file name (the last path component): * is any run of code points, ? one code point, every other code point itself; case-sensitive; no /."
+      "description": "Matched against the file name (the last path component): * is any run of code points, ? one code point, every other code point itself; case-sensitive; no /. Tested on each file as the scan reaches it, inside time_budget_ms, so a page can stop with stopped time while passing over names that do not match."
     },
     "context_lines": {
       "type": "integer",
@@ -92,7 +92,7 @@
     },
     "time_budget_ms": {
       "type": "integer",
-      "description": "How long this page may search, in milliseconds; a page that runs out ends with stopped time and a cursor to continue.",
+      "description": "How long this page may search, in milliseconds; a page that runs out ends with stopped time and a cursor to continue. A page holds its caller for at most this plus 50 ms, the folder walk, the index's list of files and the read of the file in hand excepted (docs/scan.md, Time).",
       "minimum": 1,
       "maximum": 30000,
       "default": 2000

@@ -18,8 +18,8 @@ same rules a second time so the tests can compare them:
   under the fold.
 - **Every match**: `re.finditer`'s matches; an empty match makes the line a hit and is left out of the
   offsets; only matches starting within the hit's `text` (at most 512 bytes) are listed, ends clipped. In
-  regex mode at most 16 matches are looked for per line (empty ones included); a 17th starting within the text
-  cuts the text where it starts.
+  regex mode at most 16 non-empty matches are listed per line (empty ones neither count nor cut); a 17th
+  starting within the text cuts the text where it starts, with `matches_truncated` (S6-T24 rework 2).
 - **Lines** are `core.line_starts`'s (`read_span`'s numbering), without their terminator.
 
 Two sources: `scan(index, request)` over a `core.build_index` index (root `r-legacy`, the bytes read again and
@@ -618,18 +618,18 @@ def match_line(compiled: Compiled, line: str, text_cps: int) -> tuple[bool, list
 
 def match_line_cut(compiled: Compiled, line: str, text_cps: int) -> tuple[bool, list[list[int]], int]:
     """`match_line`, and the code points the hit's text keeps: `text_cps`, or fewer when regex mode found more
-    than `MAX_MATCHES_PER_LINE` matches starting within it (the text then ends where the next one starts)."""
-    hit, offsets, looked = False, [], 0
+    than `MAX_MATCHES_PER_LINE` non-empty matches starting within it (the text then ends where the next one
+    starts). Empty matches are not listed and do not count (rework 2, ruling 4)."""
+    hit, offsets = False, []
     for match in compiled.regex.finditer(compiled.prepare(line)):
         hit = True
         start, end = match.span()
         if start >= text_cps:
             break
-        looked += 1
-        if compiled.mode == "regex" and looked > MAX_MATCHES_PER_LINE:
-            return True, offsets, start
         if start == end:
             continue
+        if compiled.mode == "regex" and len(offsets) == MAX_MATCHES_PER_LINE:
+            return True, offsets, start
         offsets.append([start, min(end, text_cps)])
     return hit, offsets, text_cps
 
@@ -841,8 +841,7 @@ def _run(request: dict, *, kind: str, stamp: str, generation: int | None, files:
     file_at, line_at, listed_at = 0, 1, 0
     if request["cursor"] is not None:
         file_at, line_at, listed_at = _parse_cursor(request["cursor"], kind, stamp, request_hash)
-    kept = [(root_id, path) for root_id, path in files if in_scope(request, path)]
-    if file_at > len(kept) or listed_at > request["max_hits_per_file"]:
+    if file_at > len(files) or listed_at > request["max_hits_per_file"]:
         raise _invalid("malformed cursor")
     deadline = clock() + request["time_budget_ms"] / 1000
     not_scanned = dict(not_scanned)
@@ -854,11 +853,17 @@ def _run(request: dict, *, kind: str, stamp: str, generation: int | None, files:
     context = request["context_lines"]
     max_hits = request["max_hits_per_file"]
     position = (file_at, line_at, listed_at)
-    while position[0] < len(kept):
+    while position[0] < len(files):
         if progress and clock() >= deadline:
             stopped, resume = "time", position
             break
-        root_id, path = kept[position[0]]
+        root_id, path = files[position[0]]
+        # The scope is tested as the scan reaches each file (rework 2, ruling 1): the cursor's file is an ordinal
+        # among the files the caller may see.
+        if not in_scope(request, path):
+            position = (position[0] + 1, 1, 0)
+            progress = True
+            continue
         outcome, data = read(root_id, path)
         if data is None:
             if outcome == "binary" and not_read is not None:
@@ -898,6 +903,7 @@ def _run(request: dict, *, kind: str, stamp: str, generation: int | None, files:
                     "line": line,
                     "text": decode(content[:cut]),
                     "text_truncated": cut < len(content),
+                    "matches_truncated": kept_cps < text_cps,
                     "match_offsets": offsets,
                     "before": _context(data, starts, max(0, index - context), index - 1) if context and index else [],
                     "after": _context(data, starts, index + 1, min(index + context, line_count - 1)),

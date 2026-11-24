@@ -20,14 +20,21 @@
 //!   the fold of a member (`Class.extras`). `smart` is `insensitive` unless a code point the pattern writes
 //!   changes under the fold.
 //! - **Classes**: `\w` is the analyser's word code points (letters, digits, marks Mn and Mc, ZWNJ, ZWJ; not `_`),
-//!   `\d` is Unicode Nd (`digit_ranges`), `\s` the analyser's whitespace (`chunker.isWhitespace`).
+//!   `\d` is Unicode Nd (`digit_ranges`), `\s` the analyser's whitespace (`chunker.isWhitespace`). A class is
+//!   normalised when compiled (`Members`, rework 2, ruling 2): its ranges sorted and merged, each of `\w`, `\d`
+//!   and `\s` kept once, so testing a code point is at most five binary searches whatever the class says.
 //! - **Every match** (`Matcher.matchLine`): Python's `finditer`; empty matches make the line a hit but are left
 //!   out of the offsets, and only matches starting within the hit's `text` are listed. Deciding the hit is one
-//!   pass; in regex mode at most 16 matches are looked for per line (empty ones included), and a line with a
-//!   17th starting within its text has its text cut where that one starts (`text_truncated`), so a line costs at
-//!   most 17 passes (rework 1, ruling 2). A literal's matches are found in one pass, all of them.
-//! - **Budget**: every loop charges its work to `Budget.charge` (a VM thread step, a byte searched), which reads
-//!   the clock once per 65,536 units and stops the line with `error.OutOfTime`.
+//!   pass; in regex mode at most 16 non-empty matches are listed per line, and a line with a 17th starting
+//!   within its text has its text cut where that one starts (`matches_truncated`, and `text_truncated`). Empty
+//!   matches neither count nor cut (rework 2, ruling 4), so a line costs at most 17 passes plus one per code
+//!   point of its text (at most 512) that an empty match starts at (rework 1, ruling 2). A literal's matches are
+//!   found in one pass, all of them.
+//! - **Budget**: every loop charges its work to `Budget.charge`, which reads the clock once per 65,536 units and
+//!   stops the line with `error.OutOfTime`. A unit is a bounded amount of work (rework 2, ruling 2): a byte
+//!   searched, a VM thread followed or stepped, a position (one unit more for the fold, two for a word test), and
+//!   a step on a class outside ASCII one unit per search it may do (`Class.cost`). Test builds count the work
+//!   behind each unit (`work`), and tests bound it by count.
 const std = @import("std");
 const chunker = @import("chunker.zig");
 const tables = @import("unicode_tables.zig");
@@ -36,7 +43,7 @@ pub const max_pattern_bytes: usize = 1024;
 /// The compile's cap, on instructions emitted and on nodes expanded alike.
 pub const max_program: usize = 8192;
 pub const max_repeat: u32 = 255;
-/// Regex mode: the matches looked for in one line (empty ones included) before its text is cut.
+/// Regex mode: the non-empty matches listed for one line; the text is cut where the next one starts.
 pub const max_matches_per_line: u32 = 16;
 /// The budget reads the clock once per this many units of work.
 pub const check_units: u64 = 1 << 16;
@@ -63,12 +70,27 @@ pub const Case = enum {
 /// What `smart` resolved to.
 pub const Applied = enum { sensitive, insensitive };
 
+// --------------------------------------------------------------- work counts ---
+
+/// Test builds count the elementary steps behind the budget's units (rework 2, rulings 2 and 3): a probe of a
+/// table or range search, an item or a thread tested, a byte or a code point passed. A test then bounds the work
+/// between two reads of the clock, and the work per unit charged, by counting, never by a clock (NFR-19). Other
+/// builds count nothing (`counts_work` is false and the counters are never referenced).
+pub const counts_work = @import("builtin").is_test;
+pub threadlocal var work_done: u64 = 0;
+pub threadlocal var units_charged: u64 = 0;
+
+pub inline fn work(n: u64) void {
+    if (counts_work) work_done += n;
+}
+
 // ------------------------------------------------------------------ classes ---
 
 fn inRanges(ranges: []const tables.CodepointRange, cp: u21) bool {
     var lo: usize = 0;
     var hi: usize = ranges.len;
     while (lo < hi) {
+        work(1);
         const mid = lo + (hi - lo) / 2;
         if (cp < ranges[mid].start) hi = mid else if (cp > ranges[mid].end) lo = mid + 1 else return true;
     }
@@ -78,19 +100,26 @@ fn inRanges(ranges: []const tables.CodepointRange, cp: u21) bool {
 /// `\w`: the analyser's token code points (`analyzer_v2.zig`): letters, digits (Nd, Nl, No), the marks Mn and
 /// Mc, ZWNJ and ZWJ. Not `_`.
 pub fn isWord(cp: u21) bool {
+    work(1);
     if (cp < 0x80) return (cp >= 'a' and cp <= 'z') or (cp >= 'A' and cp <= 'Z') or (cp >= '0' and cp <= '9');
     return inRanges(&tables.letter_digit_ranges, cp) or inRanges(&tables.mark_ranges, cp) or cp == 0x200C or cp == 0x200D;
 }
 
 /// `\d`: Unicode Nd.
 pub fn isDigit(cp: u21) bool {
+    work(1);
     if (cp < 0x80) return cp >= '0' and cp <= '9';
     return inRanges(&tables.digit_ranges, cp);
 }
 
-/// `\s`: Python's `str.isspace`, the analyser's whitespace.
+/// `\s`: Python's `str.isspace`, the analyser's whitespace (`chunker.isWhitespace`, the same set: a test checks
+/// every code point up to U+3100, past its last member), in one switch.
 pub fn isSpace(cp: u21) bool {
-    return chunker.isWhitespace(cp);
+    work(1);
+    return switch (cp) {
+        0x09...0x0d, 0x1c...0x20, 0x85, 0xa0, 0x1680, 0x2000...0x200a, 0x2028, 0x2029, 0x202f, 0x205f, 0x3000 => true,
+        else => false,
+    };
 }
 
 /// The analyser's simple fold of one code point (`analyzer_v2.casefoldCodepoint`).
@@ -99,6 +128,7 @@ pub fn fold(cp: u21) u21 {
     var lo: usize = 0;
     var hi: usize = tables.casefold_pairs.len;
     while (lo < hi) {
+        work(1);
         const mid = lo + (hi - lo) / 2;
         const entry = tables.casefold_pairs[mid];
         if (entry.from == cp) return entry.to;
@@ -117,29 +147,94 @@ pub fn isLineBreak(cp: u21) bool {
 
 const Item = union(enum) { range: [2]u21, word: bool, digit: bool, space: bool };
 
-const Class = struct {
-    negated: bool,
-    items: []const Item,
-    /// Insensitive only: the folds of the members that are not members themselves, sorted.
-    extras: []const u21 = &.{},
-    ascii: [128]bool = undefined,
+/// Whether `cp` is in one of `ranges` (sorted, disjoint), by binary search.
+fn inSorted(ranges: []const [2]u21, cp: u21) bool {
+    var lo: usize = 0;
+    var hi: usize = ranges.len;
+    while (lo < hi) {
+        work(1);
+        const mid = lo + (hi - lo) / 2;
+        if (cp < ranges[mid][0]) hi = mid else if (cp > ranges[mid][1]) lo = mid + 1 else return true;
+    }
+    return false;
+}
 
-    fn member(items: []const Item, cp: u21) bool {
-        for (items) |item| {
-            const in = switch (item) {
-                .range => |r| cp >= r[0] and cp <= r[1],
-                .word => |positive| isWord(cp) == positive,
-                .digit => |positive| isDigit(cp) == positive,
-                .space => |positive| isSpace(cp) == positive,
-            };
-            if (in) return true;
+fn lessThanRange(_: void, a: [2]u21, b: [2]u21) bool {
+    return a[0] < b[0];
+}
+
+/// A class's members, normalised when it is compiled (rework 2, ruling 2), so that testing a code point costs a
+/// bounded number of steps whatever the class says: its ranges sorted and merged (one binary search), and each
+/// of `\w`, `\d` and `\s` at most once (a table with its negation is every code point). At most five searches:
+/// the ranges, the two tables of `\w`, the table of `\d` and (in `Class`) the folds; `\s` is one switch.
+const Members = struct {
+    all: bool = false,
+    ranges: []const [2]u21 = &.{},
+    word: ?bool = null,
+    digit: ?bool = null,
+    space: ?bool = null,
+
+    fn of(allocator: std.mem.Allocator, items: []const Item) !Members {
+        var m = Members{};
+        var ranges = std.ArrayList([2]u21).empty;
+        work(items.len);
+        for (items) |item| switch (item) {
+            .range => |r| try ranges.append(allocator, r),
+            .word => |positive| m.word = once(&m.all, m.word, positive),
+            .digit => |positive| m.digit = once(&m.all, m.digit, positive),
+            .space => |positive| m.space = once(&m.all, m.space, positive),
+        };
+        std.mem.sort([2]u21, ranges.items, {}, lessThanRange);
+        work(ranges.items.len * (std.math.log2_int_ceil(usize, ranges.items.len + 1) + 1));
+        var kept: usize = 0;
+        for (ranges.items) |r| {
+            if (kept > 0 and r[0] <= ranges.items[kept - 1][1] +| 1) {
+                ranges.items[kept - 1][1] = @max(ranges.items[kept - 1][1], r[1]);
+                continue;
+            }
+            ranges.items[kept] = r;
+            kept += 1;
         }
+        m.ranges = ranges.items[0..kept];
+        return m;
+    }
+
+    fn once(all: *bool, have: ?bool, positive: bool) bool {
+        if (have) |sign| if (sign != positive) {
+            all.* = true;
+        };
+        return positive;
+    }
+
+    fn contains(m: *const Members, cp: u21) bool {
+        if (m.all) return true;
+        if (m.ranges.len > 0 and inSorted(m.ranges, cp)) return true;
+        if (m.word) |positive| if (isWord(cp) == positive) return true;
+        if (m.digit) |positive| if (isDigit(cp) == positive) return true;
+        if (m.space) |positive| if (isSpace(cp) == positive) return true;
         return false;
     }
 
+    /// The table and range searches a test may do (`\w` counts two).
+    fn searches(m: *const Members) u32 {
+        if (m.all) return 0;
+        return @as(u32, @intFromBool(m.ranges.len > 0)) + (if (m.word != null) @as(u32, 2) else 0) + @intFromBool(m.digit != null);
+    }
+};
+
+const Class = struct {
+    negated: bool,
+    members: Members,
+    /// Insensitive only: the folds of the members that are not members themselves, sorted.
+    extras: []const u21 = &.{},
+    ascii: [128]bool = undefined,
+    /// The units a VM step on this class charges for a code point outside ASCII: one, and one per search the
+    /// test may do, so that a unit stays a bounded amount of work (rework 2, ruling 2).
+    cost: u32 = 1,
+
     fn evaluate(class: *const Class, cp: u21) bool {
-        var hit = member(class.items, cp);
-        if (!hit and class.extras.len > 0) hit = std.sort.binarySearch(u21, class.extras, cp, orderU21) != null;
+        var hit = class.members.contains(cp);
+        if (!hit and class.extras.len > 0) hit = sortedHas(class.extras, cp);
         return hit != class.negated;
     }
 
@@ -149,8 +244,16 @@ const Class = struct {
     }
 };
 
-fn orderU21(key: u21, item: u21) std.math.Order {
-    return std.math.order(key, item);
+fn sortedHas(values: []const u21, cp: u21) bool {
+    var lo: usize = 0;
+    var hi: usize = values.len;
+    while (lo < hi) {
+        work(1);
+        const mid = lo + (hi - lo) / 2;
+        if (values[mid] == cp) return true;
+        if (values[mid] < cp) lo = mid + 1 else hi = mid;
+    }
+    return false;
 }
 
 // ------------------------------------------------------------ parse, compile ---
@@ -208,6 +311,7 @@ const Parser = struct {
     }
 
     fn take(p: *Parser) ?u21 {
+        work(1);
         if (p.at >= p.text.len) return null;
         const d = decodeAt(p.text, p.at);
         p.at += d.len;
@@ -414,6 +518,7 @@ fn escapeItem(e: u21) Item {
 }
 
 fn nullable(node: Node) bool {
+    work(1);
     return switch (node) {
         .empty, .assert => true,
         .char, .any, .class => false,
@@ -429,6 +534,7 @@ fn nullable(node: Node) bool {
 
 /// Whether `node` can only match the empty string (it consumes no code point on any path).
 fn zeroWidth(node: Node) bool {
+    work(1);
     return switch (node) {
         .empty, .assert => true,
         .char, .any, .class => false,
@@ -470,6 +576,7 @@ const Compiler = struct {
     work: usize = 0,
 
     fn emit(c: *Compiler, inst: Inst) error{ TooLarge, OutOfMemory }!u32 {
+        work(1);
         if (c.program.items.len >= max_program) return error.TooLarge;
         try c.program.append(c.allocator, inst);
         return @intCast(c.program.items.len - 1);
@@ -488,6 +595,7 @@ const Compiler = struct {
     }
 
     fn node(c: *Compiler, n: Node) error{ TooLarge, OutOfMemory }!void {
+        work(1);
         c.work += 1;
         if (c.work > max_program) return error.TooLarge;
         switch (n) {
@@ -623,8 +731,9 @@ pub fn compile(allocator: std.mem.Allocator, pattern: []const u8, mode: Mode, ca
 
     const classes = try allocator.alloc(Class, class_items.len);
     for (classes, class_items, class_negated) |*class, items, negated| {
-        class.* = .{ .negated = negated, .items = items };
-        if (insensitive) class.extras = try foldExtras(allocator, items);
+        class.* = .{ .negated = negated, .members = try Members.of(allocator, items) };
+        if (insensitive) class.extras = try foldExtras(allocator, &class.members);
+        class.cost = 1 + class.members.searches() + @intFromBool(class.extras.len > 0);
         for (0..128) |c| class.ascii[c] = class.evaluate(@intCast(c));
     }
 
@@ -664,17 +773,28 @@ fn asciiFoldExact(needle: []const u8) bool {
 }
 
 /// The folds of a class's members that are not members themselves, sorted and unique.
-fn foldExtras(allocator: std.mem.Allocator, items: []const Item) ![]const u21 {
+fn foldExtras(allocator: std.mem.Allocator, members: *const Members) ![]const u21 {
     // `\w`, `\d`, `\s` and their negations are closed under the fold (a test below checks the whole table), so
-    // only a range can add a fold that is not a member.
-    for (items) |item| {
-        if (item == .range) break;
-    } else return &.{};
+    // only a range can add a fold that is not a member: the pairs whose code point lies in one, found by a
+    // binary search of the (sorted) table per range.
+    if (members.all) return &.{};
     var extras = std.ArrayList(u21).empty;
-    for (tables.casefold_pairs) |pair| {
-        if (Class.member(items, pair.from) and !Class.member(items, pair.to)) try extras.append(allocator, pair.to);
+    const pairs = &tables.casefold_pairs;
+    for (members.ranges) |r| {
+        var lo: usize = 0;
+        var hi: usize = pairs.len;
+        while (lo < hi) {
+            work(1);
+            const mid = lo + (hi - lo) / 2;
+            if (pairs[mid].from < r[0]) lo = mid + 1 else hi = mid;
+        }
+        while (lo < pairs.len and pairs[lo].from <= r[1]) : (lo += 1) {
+            work(1);
+            if (!members.contains(pairs[lo].to)) try extras.append(allocator, pairs[lo].to);
+        }
     }
     std.mem.sort(u21, extras.items, {}, std.sort.asc(u21));
+    work(extras.items.len * (std.math.log2_int_ceil(usize, extras.items.len + 1) + 1));
     var kept: usize = 0;
     for (extras.items) |cp| {
         if (kept > 0 and extras.items[kept - 1] == cp) continue;
@@ -765,6 +885,7 @@ pub const Budget = struct {
 
     /// Charge `units` of work; the clock is read once `check_units` have built up.
     pub fn charge(budget: *Budget, units: u64) error{OutOfTime}!void {
+        if (counts_work) units_charged += units;
         budget.units += units;
         if (budget.units < check_units) return;
         budget.units = 0;
@@ -789,6 +910,9 @@ pub const Budget = struct {
 
 pub const Span = struct { start: u32, end: u32, end_byte: usize };
 
+/// A position between two code points, as the assertions see it.
+const Around = struct { first: bool, last: bool, before_word: bool, after_word: bool };
+
 /// The matcher of one compiled pattern: the VM's lists, set up once.
 pub const Matcher = struct {
     compiled: *const Compiled,
@@ -804,6 +928,11 @@ pub const Matcher = struct {
     stack_starts: []u32 = &.{},
     /// VM work since the last charge.
     units: u64 = 0,
+    /// The program tests word boundaries (`\b`, `\B`, whole word): each position tests the code point after it.
+    word_asserts: bool = false,
+    /// The units a position charges: one, one more for the fold of an insensitive pattern, two more for the word
+    /// test (its two table searches).
+    position_cost: u64 = 1,
     /// The literal strategies: the needle as compared (ASCII-lowered for `ascii_ci`), its Knuth-Morris-Pratt
     /// prefix table and its length in code points.
     key: []const u8 = "",
@@ -829,6 +958,13 @@ pub const Matcher = struct {
             m.key_cps = codepointCount(needle);
             return m;
         }
+        for (compiled.program) |inst| switch (inst) {
+            .assert => |a| if (a != .bol and a != .eol) {
+                m.word_asserts = true;
+            },
+            else => {},
+        };
+        m.position_cost = 1 + @as(u64, @intFromBool(compiled.case_applied == .insensitive)) + (if (m.word_asserts) @as(u64, 2) else 0);
         const n = compiled.program.len;
         m.pcs = .{ try allocator.alloc(u32, n), try allocator.alloc(u32, n) };
         m.starts = .{ try allocator.alloc(u32, n), try allocator.alloc(u32, n) };
@@ -843,8 +979,11 @@ pub const Matcher = struct {
     pub const LineMatch = struct {
         hit: bool,
         /// The bytes of the line the hit's `text` keeps: the `text_len` given, or less when regex mode found more
-        /// than `max_matches_per_line` matches starting within it (the text then ends where the next one starts).
+        /// than `max_matches_per_line` non-empty matches starting within it (the text then ends where the next
+        /// one starts).
         text_len: usize,
+        /// The text was cut at the 17th non-empty match (rework 2, ruling 4).
+        matches_truncated: bool,
     };
 
     /// Whether `line` (no terminator) is a hit, and its matches starting within its text (the first `text_len`
@@ -855,27 +994,27 @@ pub const Matcher = struct {
         var from: usize = 0;
         var from_cp: u32 = 0;
         var forbid: ?u32 = null;
-        var looked: u32 = 0;
         while (from <= line.len) {
             const span = (try m.search(line, from, from_cp, forbid)) orelse break;
             hit = true;
             if (span.start >= text_cps) break;
-            looked += 1;
-            if (m.compiled.mode == .regex and looked > max_matches_per_line) {
-                return .{ .hit = true, .text_len = advance(line, from, span.start - from_cp) };
-            }
+            // An empty match is not listed, so it neither counts towards the 16 nor cuts the text (rework 2,
+            // ruling 4). There is at most one per code point of the text, each search charged to the budget.
             if (span.start == span.end) {
                 forbid = span.end;
                 from = span.end_byte;
                 from_cp = span.end;
                 continue;
             }
+            if (m.compiled.mode == .regex and offsets.items.len == max_matches_per_line) {
+                return .{ .hit = true, .text_len = advance(line, from, span.start - from_cp), .matches_truncated = true };
+            }
             try offsets.append(allocator, .{ span.start, @min(span.end, text_cps) });
             forbid = null;
             from = span.end_byte;
             from_cp = span.end;
         }
-        return .{ .hit = hit, .text_len = text_len };
+        return .{ .hit = hit, .text_len = text_len, .matches_truncated = false };
     }
 
     /// The leftmost-first match at or after byte `from` (code point `from_cp`), not an empty one at `forbid`.
@@ -909,6 +1048,7 @@ pub const Matcher = struct {
         }
         while (at < line.len) {
             if (at - state.charged >= check_units) {
+                work(at - state.charged);
                 try m.charge(at - state.charged);
                 state.charged = at;
             }
@@ -922,16 +1062,21 @@ pub const Matcher = struct {
                 if (at == window.len) continue;
             }
             const byte = if (lower) std.ascii.toLower(line[at]) else line[at];
-            while (matched > 0 and key[matched] != byte) matched = m.prefix[matched - 1];
+            while (matched > 0 and key[matched] != byte) {
+                work(1);
+                matched = m.prefix[matched - 1];
+            }
             if (key[matched] == byte) matched += 1;
             at += 1;
             if (matched == key.len) {
                 matched = m.prefix[matched - 1];
+                work(at - state.charged);
                 try m.charge(at - state.charged);
                 state.charged = at;
                 return at - key.len;
             }
         }
+        work(at - state.charged);
         try m.charge(at - state.charged);
         state.charged = at;
         return null;
@@ -970,7 +1115,7 @@ pub const Matcher = struct {
 
     /// Follow jumps, splits and assertions from `pc0` at the position between `prev` and `next`, in priority
     /// order, appending the threads that wait on a code point (or `match`) to list `which`.
-    fn add(m: *Matcher, which: usize, pc0: u32, start: u32, prev: ?u21, next: ?u21) void {
+    fn add(m: *Matcher, which: usize, pc0: u32, start: u32, at: Around) void {
         const program = m.compiled.program;
         m.stack[0] = pc0;
         m.stack_starts[0] = start;
@@ -978,6 +1123,7 @@ pub const Matcher = struct {
         while (top > 0) {
             top -= 1;
             m.units += 1;
+            work(1);
             const pc = m.stack[top];
             const s = m.stack_starts[top];
             if (m.onList(pc)) continue;
@@ -996,15 +1142,13 @@ pub const Matcher = struct {
                     top += 2;
                 },
                 .assert => |a| {
-                    const before = if (prev) |c| isWord(c) else false;
-                    const after = if (next) |c| isWord(c) else false;
                     const ok = switch (a) {
-                        .bol => prev == null,
-                        .eol => next == null,
-                        .boundary => before != after,
-                        .not_boundary => before == after,
-                        .prev_not_word => !before,
-                        .next_not_word => !after,
+                        .bol => at.first,
+                        .eol => at.last,
+                        .boundary => at.before_word != at.after_word,
+                        .not_boundary => at.before_word == at.after_word,
+                        .prev_not_word => !at.before_word,
+                        .next_not_word => !at.after_word,
                     };
                     if (ok) {
                         m.stack[top] = pc + 1;
@@ -1021,9 +1165,10 @@ pub const Matcher = struct {
         }
     }
 
-    /// Charge the VM's work since the last position (each thread followed or stepped, and the position).
+    /// Charge the VM's work since the last position: each thread followed or stepped (a step on a class outside
+    /// ASCII its `Class.cost`), and the position itself, `position_cost` (its decoding, fold and word test).
     fn tick(m: *Matcher) error{OutOfTime}!void {
-        const units = m.units + 1;
+        const units = m.units + m.position_cost;
         m.units = 0;
         try m.charge(units);
     }
@@ -1036,30 +1181,38 @@ pub const Matcher = struct {
         var cpi = from_cp;
         var prev: ?u21 = decodeBefore(line, from);
         if (folded) prev = if (prev) |c| fold(c) else null;
+        // The word test of the code points either side of a position, done once per code point and only for a
+        // program that asks (so an assertion followed is one step, whatever the code point).
+        const words = m.word_asserts;
+        var prev_word = words and prev != null and isWord(prev.?);
         var current: usize = 0;
         m.lens = .{ 0, 0 };
         var matched: ?Span = null;
         while (true) {
             try m.tick();
+            work(1);
             var width: usize = 0;
             const next: ?u21 = if (at < line.len) blk: {
                 const d = decodeAt(line, at);
                 width = d.len;
                 break :blk if (folded) fold(d.cp) else d.cp;
             } else null;
+            const next_word = words and next != null and isWord(next.?);
+            const around = Around{ .first = prev == null, .last = next == null, .before_word = prev_word, .after_word = next_word };
             // The closure of the carried threads, then (until something matched) a new thread starting here.
             const carried = m.lens[current];
             const other = 1 - current;
             m.lens[other] = 0;
             m.marks = 0;
-            for (0..carried) |i| m.add(other, m.pcs[current][i], m.starts[current][i], prev, next);
-            if (matched == null) m.add(other, 0, cpi, prev, next);
+            for (0..carried) |i| m.add(other, m.pcs[current][i], m.starts[current][i], around);
+            if (matched == null) m.add(other, 0, cpi, around);
             current = other;
             if (m.lens[current] == 0) {
                 if (matched != null or next == null) break;
                 at += width;
                 cpi += 1;
                 prev = next;
+                prev_word = next_word;
                 continue;
             }
             // Step: consume `next`, in priority order; a `match` cuts every thread after it.
@@ -1068,6 +1221,7 @@ pub const Matcher = struct {
             const out = 1 - current;
             m.lens[out] = 0;
             for (0..list_len) |i| {
+                work(1);
                 const pc = m.pcs[current][i];
                 const s = m.starts[current][i];
                 const take = switch (program[pc]) {
@@ -1078,7 +1232,11 @@ pub const Matcher = struct {
                     },
                     .char => |c| next != null and next.? == c,
                     .any => next != null,
-                    .class => |k| next != null and classes[k].contains(next.?),
+                    .class => |k| blk: {
+                        const cp = next orelse break :blk false;
+                        if (cp >= 128) m.units += classes[k].cost - 1;
+                        break :blk classes[k].contains(cp);
+                    },
                     else => false,
                 };
                 if (take) {
@@ -1093,8 +1251,161 @@ pub const Matcher = struct {
             at += width;
             cpi += 1;
             prev = next;
+            prev_word = next_word;
         }
         return matched;
+    }
+};
+
+/// The pattern families of the compile and meter fuzz (rework 2, rulings 2 and 3), shared by the tests below,
+/// which count the work, and `scripts/prototypes/s6t24/rework2/meter_bench.zig`, which times the same work with a
+/// clock outside the default run. The library never calls them.
+pub const fuzz = struct {
+    /// Patterns of at most `max_len` bytes drawn from a grammar that favours what costs the compiler work: nested
+    /// counted repeats, empty groups, assertions, classes with ranges, alternations.
+    pub fn randomPattern(random: std.Random, out: *std.ArrayList(u8), arena: std.mem.Allocator, depth: u32) !void {
+        const atoms = [_][]const u8{ "a", "é", ".", "\\w", "\\d", "\\S", "[a-z]", "[^a-cK-Z0-9]", "[ſK\\d]", "(?:)", "^", "$", "\\b", "\\B", "K", "ß" };
+        const repeats = [_][]const u8{ "", "", "*", "+", "?", "{255}", "{0,255}", "{2,}", "{1,3}", "{200,255}" };
+        const pick = random.uintLessThan(u32, if (depth == 0) 1 else 4);
+        switch (pick) {
+            0 => try out.appendSlice(arena, atoms[random.uintLessThan(usize, atoms.len)]),
+            1 => {
+                try out.appendSlice(arena, "(?:");
+                try randomPattern(random, out, arena, depth - 1);
+                try out.appendSlice(arena, ")");
+            },
+            2 => {
+                try randomPattern(random, out, arena, depth - 1);
+                try randomPattern(random, out, arena, depth - 1);
+            },
+            else => {
+                try randomPattern(random, out, arena, depth - 1);
+                try out.append(arena, '|');
+                try randomPattern(random, out, arena, depth - 1);
+            },
+        }
+        if (out.items.len > 0 and out.items[out.items.len - 1] != '|' and out.items[out.items.len - 1] != '(') {
+            try out.appendSlice(arena, repeats[random.uintLessThan(usize, repeats.len)]);
+        }
+    }
+
+    /// Up to 1,024 bytes of `[...]` classes, each of random items (ranges, escapes, single code points, inside and
+    /// outside ASCII) and maybe negated, each followed by a random repeat.
+    pub fn randomClasses(random: std.Random, out: *std.ArrayList(u8), arena: std.mem.Allocator) !void {
+        const items = [_][]const u8{ "\\w", "\\W", "\\d", "\\D", "\\s", "\\S", "a-z", "A-Z", "0-9", "é", "ß-ſ", "Α-ω", "а-я", "K", "ſ", "\\-", "→", "ā-ž" };
+        const repeats = [_][]const u8{ "", "*", "+", "?", "{255}", "{0,255}", "{1,3}" };
+        while (true) {
+            var class = std.ArrayList(u8).empty;
+            try class.append(arena, '[');
+            if (random.boolean()) try class.append(arena, '^');
+            const count = 1 + random.uintLessThan(usize, 600);
+            for (0..count) |_| try class.appendSlice(arena, items[random.uintLessThan(usize, items.len)]);
+            try class.append(arena, ']');
+            try class.appendSlice(arena, repeats[random.uintLessThan(usize, repeats.len)]);
+            if (out.items.len + class.items.len > max_pattern_bytes) return;
+            try out.appendSlice(arena, class.items);
+        }
+    }
+
+    /// The patterns of the compile and meter fuzz (rework 2, rulings 2 and 3): crafted ones at the caps (empty
+    /// repeats nested as deep as 1,024 bytes allow, the work cap's edge, 1,024-byte classes of 508 `\w`, `\W`,
+    /// `\s` or `\d`, a class of 200 ranges, 204 classes, full-range classes, 510 alternatives), then `random`
+    /// patterns of up to 1,024 bytes and `random` class-heavy ones.
+    pub fn patterns(arena: std.mem.Allocator, random_count: usize) ![]const []const u8 {
+        var prng = std.Random.DefaultPrng.init(20261124);
+        const random = prng.random();
+        var crafted = std.ArrayList([]const u8).empty;
+        {
+            var nest = std.ArrayList(u8).empty;
+            try nest.appendSlice(arena, "(?:)(?:)");
+            while (nest.items.len + 9 <= max_pattern_bytes) {
+                const inner = try arena.dupe(u8, nest.items);
+                nest.clearRetainingCapacity();
+                try nest.appendSlice(arena, "(?:");
+                try nest.appendSlice(arena, inner);
+                try nest.appendSlice(arena, "){255}");
+            }
+            try crafted.append(arena, nest.items);
+        }
+        try crafted.append(arena, "(?:a{255}){31}");
+        try crafted.append(arena, "(?:(?:(?:)a){255}){32}");
+        try crafted.append(arena, "(?:[a-z]{255}){31}");
+        try crafted.append(arena, "(?:a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z){255}");
+        for ([_][]const u8{ "\\w", "\\W", "\\s", "\\S", "\\d" }) |escape| {
+            try crafted.append(arena, try std.fmt.allocPrint(arena, "[^{s}]{{255}}", .{try repeatText(arena, escape, 508)}));
+            try crafted.append(arena, try std.fmt.allocPrint(arena, "[{s}]{{255}}", .{try repeatText(arena, escape, 508)}));
+        }
+        try crafted.append(arena, try repeatText(arena, "\\w", 512));
+        try crafted.append(arena, try repeatText(arena, "\\b", 512));
+        try crafted.append(arena, try repeatText(arena, "[A-Z]", 204));
+        try crafted.append(arena, try repeatText(arena, "[ -\u{ffff}]", 146));
+        try crafted.append(arena, try repeatText(arena, "[a-zA-Z0-9ſK]", 73));
+        {
+            // One class of 200 ranges outside ASCII (Greek and Cyrillic pairs: folds to add), then a repeat.
+            var class = std.ArrayList(u8).empty;
+            try class.append(arena, '[');
+            var cp: u21 = 0x391;
+            while (class.items.len + 16 < max_pattern_bytes) : (cp += 3) {
+                try appendUtf8(arena, &class, cp);
+                try class.append(arena, '-');
+                try appendUtf8(arena, &class, cp + 1);
+            }
+            try class.appendSlice(arena, "]{255}");
+            try crafted.append(arena, class.items);
+        }
+        {
+            var alternatives = std.ArrayList(u8).empty;
+            try alternatives.append(arena, 'a');
+            while (alternatives.items.len + 2 <= max_pattern_bytes) try alternatives.appendSlice(arena, "|a");
+            try crafted.append(arena, alternatives.items);
+        }
+        var drawn: usize = 0;
+        while (drawn < random_count) : (drawn += 1) {
+            var out = std.ArrayList(u8).empty;
+            if (drawn % 4 == 3) try randomClasses(random, &out, arena) else try randomPattern(random, &out, arena, if (drawn % 2 == 0) 6 else 9);
+            if (out.items.len == 0 or out.items.len > max_pattern_bytes) continue;
+            try crafted.append(arena, out.items);
+        }
+        return crafted.items;
+    }
+
+    pub fn repeatText(arena: std.mem.Allocator, text: []const u8, times: usize) ![]const u8 {
+        var out = std.ArrayList(u8).empty;
+        for (0..times) |_| try out.appendSlice(arena, text);
+        return out.items;
+    }
+
+    pub fn repeatCodepoints(arena: std.mem.Allocator, text: []const u8, total_bytes: usize) ![]u8 {
+        const out = try arena.alloc(u8, total_bytes - total_bytes % text.len);
+        var at: usize = 0;
+        while (at < out.len) : (at += text.len) @memcpy(out[at..][0..text.len], text);
+        return out;
+    }
+
+    pub const MeterCase = struct { pattern: []const u8, mode: Mode, case: Case, line: []const u8 };
+
+    /// The meter's heaviest units: the verifier's 1,024-byte classes over code points outside ASCII (Verdict 2,
+    /// finding 2), a class with every kind of member and folds, word boundaries and a fold at every position, the
+    /// heaviest ASCII program, a listing that restarts, and the two literal strategies, each over a long line.
+    pub fn meterCases(arena: std.mem.Allocator) ![]const MeterCase {
+        const ascii = try repeatCodepoints(arena, "abcdefghij x", 1 << 20);
+        const arrows = try repeatCodepoints(arena, "→", 3 << 16);
+        const accents = try repeatCodepoints(arena, "é", 2 << 16);
+        const mixed = try repeatCodepoints(arena, "Ωж→ 1ſK ", 1 << 18);
+        const cases = [_]MeterCase{
+            .{ .pattern = try std.fmt.allocPrint(arena, "[^{s}]{{255}}", .{try repeatText(arena, "\\w", 508)}), .mode = .regex, .case = .sensitive, .line = arrows },
+            .{ .pattern = try std.fmt.allocPrint(arena, "[^{s}]{{255}}", .{try repeatText(arena, "\\s", 508)}), .mode = .regex, .case = .sensitive, .line = arrows },
+            .{ .pattern = try std.fmt.allocPrint(arena, "[^{s}]{{255}}", .{try repeatText(arena, "\\W", 508)}), .mode = .regex, .case = .sensitive, .line = accents },
+            .{ .pattern = "(?:[\\d\\sα-ωа-яK]|\\b){1,255}(?:[^\\w\\d]|\\B){1,255}z", .mode = .regex, .case = .insensitive, .line = mixed },
+            .{ .pattern = "(?:\\w|\\W){1,255}(?:\\w|\\W){1,255}z", .mode = .regex, .case = .insensitive, .line = mixed },
+            .{ .pattern = "(?:[a-j ]{1,255}){15}z", .mode = .regex, .case = .sensitive, .line = ascii },
+            .{ .pattern = "(?:\\w|\\W){1,255}(?:\\w|\\W){1,255}z", .mode = .regex, .case = .insensitive, .line = ascii },
+            .{ .pattern = "a(.*z)?", .mode = .regex, .case = .sensitive, .line = ascii },
+            .{ .pattern = "abcdefghij z", .mode = .literal, .case = .sensitive, .line = ascii },
+            .{ .pattern = "ABCDEFGHIJ Z", .mode = .literal, .case = .insensitive, .line = ascii },
+            .{ .pattern = "ωж→ 1ſk ωж→ 1ſk z", .mode = .literal, .case = .insensitive, .line = mixed },
+        };
+        return try arena.dupe(MeterCase, &cases);
     }
 };
 
@@ -1521,91 +1832,41 @@ test "S6-T24 rework 1, ruling 1: the compile counts every expansion, emitting or
     _ = try compileOk(arena, &long, .literal, .insensitive, true);
 }
 
-/// Patterns of at most `max_len` bytes drawn from a grammar that favours what costs the compiler work: nested
-/// counted repeats, empty groups, assertions, classes with ranges, alternations.
-fn randomPattern(random: std.Random, out: *std.ArrayList(u8), arena: std.mem.Allocator, depth: u32) !void {
-    const atoms = [_][]const u8{ "a", "é", ".", "\\w", "\\d", "\\S", "[a-z]", "[^a-cK-Z0-9]", "[ſK\\d]", "(?:)", "^", "$", "\\b", "\\B", "K", "ß" };
-    const repeats = [_][]const u8{ "", "", "*", "+", "?", "{255}", "{0,255}", "{2,}", "{1,3}", "{200,255}" };
-    const pick = random.uintLessThan(u32, if (depth == 0) 1 else 4);
-    switch (pick) {
-        0 => try out.appendSlice(arena, atoms[random.uintLessThan(usize, atoms.len)]),
-        1 => {
-            try out.appendSlice(arena, "(?:");
-            try randomPattern(random, out, arena, depth - 1);
-            try out.appendSlice(arena, ")");
-        },
-        2 => {
-            try randomPattern(random, out, arena, depth - 1);
-            try randomPattern(random, out, arena, depth - 1);
-        },
-        else => {
-            try randomPattern(random, out, arena, depth - 1);
-            try out.append(arena, '|');
-            try randomPattern(random, out, arena, depth - 1);
-        },
-    }
-    if (out.items.len > 0 and out.items[out.items.len - 1] != '|' and out.items[out.items.len - 1] != '(') {
-        try out.appendSlice(arena, repeats[random.uintLessThan(usize, repeats.len)]);
-    }
-}
+/// The most work (counted, `work`) a compile of a pattern of up to 1,024 bytes may take: the bound the fuzz
+/// below holds every pattern to (rework 2, ruling 3: a count, not a clock).
+const max_compile_work: u64 = 500_000;
 
-test "S6-T24 rework 1, ruling 1: no pattern of up to 256 bytes takes longer than 25 ms to compile (time fuzz)" {
+test "S6-T24 rework 2, rulings 2 and 3: compiling any pattern of up to 1,024 bytes is bounded work (counted, fuzz)" {
     var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena_state.deinit();
-    var prng = std.Random.DefaultPrng.init(20261124);
-    const random = prng.random();
-    var worst_ns: u64 = 0;
-    var worst: []const u8 = "";
+    const patterns = try fuzz.patterns(arena_state.allocator(), 4000);
+    var worst: u64 = 0;
+    var worst_pattern: []const u8 = "";
     var compiled_count: usize = 0;
     var refused_count: usize = 0;
-    // Crafted ones first: empty repeats nested as deep as 256 bytes allow, the work cap's edge, many classes.
-    var crafted = std.ArrayList([]const u8).empty;
-    const a = arena_state.allocator();
-    {
-        var nest = std.ArrayList(u8).empty;
-        try nest.appendSlice(a, "(?:)(?:)");
-        while (nest.items.len + 9 <= 256) {
-            const inner = try a.dupe(u8, nest.items);
-            nest.clearRetainingCapacity();
-            try nest.appendSlice(a, "(?:");
-            try nest.appendSlice(a, inner);
-            try nest.appendSlice(a, "){255}");
-        }
-        try crafted.append(a, nest.items);
-        try crafted.append(a, "(?:a{255}){31}");
-        try crafted.append(a, "(?:(?:(?:)a){255}){32}");
-        try crafted.append(a, "\\w" ** 128);
-        try crafted.append(a, "[a-zA-Z0-9ſK]" ** 19);
-        try crafted.append(a, "(?:[a-z]{255}){31}");
-        try crafted.append(a, "(?:a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z){255}");
-    }
-    var drawn: usize = 0;
-    while (drawn < 4000) : (drawn += 1) {
-        var out = std.ArrayList(u8).empty;
-        try randomPattern(random, &out, a, 6);
-        if (out.items.len == 0 or out.items.len > 256) continue;
-        try crafted.append(a, out.items);
-    }
-    for (crafted.items) |pattern| {
+    var longest: usize = 0;
+    for (patterns) |pattern| {
+        longest = @max(longest, pattern.len);
         for ([_]Case{ .sensitive, .insensitive }) |case| {
             var one = std.heap.ArenaAllocator.init(testing.allocator);
             defer one.deinit();
-            const start = std.Io.Clock.awake.now(testing.io).nanoseconds;
+            const before = work_done;
             const outcome = try compile(one.allocator(), pattern, .regex, case, true);
-            const took: u64 = @intCast(std.Io.Clock.awake.now(testing.io).nanoseconds - start);
+            const took = work_done - before;
             switch (outcome) {
                 .ok => compiled_count += 1,
                 .refused => refused_count += 1,
             }
-            if (took > worst_ns) {
-                worst_ns = took;
-                worst = pattern;
+            if (took > worst) {
+                worst = took;
+                worst_pattern = pattern;
             }
         }
     }
-    std.debug.print("S6-T24 compile time fuzz: {d} compiled, {d} refused; slowest {d} ns ({d} bytes: {s})\n", .{ compiled_count, refused_count, worst_ns, worst.len, worst });
-    try testing.expect(compiled_count > 1000);
-    try testing.expect(worst_ns < 25 * std.time.ns_per_ms);
+    std.debug.print("S6-T24 compile fuzz: {d} patterns (longest {d} bytes), {d} compiled, {d} refused; most work {d} ({d} bytes: {s})\n", .{ patterns.len, longest, compiled_count, refused_count, worst, worst_pattern.len, worst_pattern[0..@min(worst_pattern.len, 80)] });
+    try testing.expect(compiled_count > 2000);
+    try testing.expectEqual(max_pattern_bytes, longest);
+    try testing.expect(worst <= max_compile_work);
 }
 
 fn lineMatch(arena: std.mem.Allocator, pattern: []const u8, mode: Mode, line: []const u8, offsets: *std.ArrayList([2]u32)) !Matcher.LineMatch {
@@ -1621,7 +1882,7 @@ fn textCutForTest(line: []const u8) usize {
     return @min(line.len, 512);
 }
 
-test "S6-T24 rework 1, ruling 2: regex mode looks for at most 16 matches per line and cuts the text at the 17th" {
+test "S6-T24 rework 1, ruling 2 and rework 2, ruling 4: regex mode lists at most 16 non-empty matches per line and cuts the text at the 17th" {
     var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();
@@ -1633,20 +1894,38 @@ test "S6-T24 rework 1, ruling 2: regex mode looks for at most 16 matches per lin
     try testing.expectEqual(@as(usize, 16), got.text_len);
     try testing.expectEqual(@as(usize, 16), offsets.items.len);
     try testing.expectEqualSlices(u32, &.{ 15, 16 }, &offsets.items[15]);
+    try testing.expect(got.matches_truncated);
     // Twenty words: sixteen listed, the text ends where the seventeenth starts.
     const words = "w0 w1 w2 w3 w4 w5 w6 w7 w8 w9 wa wb wc wd we wf wg wh wi wj";
     got = try lineMatch(arena, "\\w+", .regex, words, &offsets);
     try testing.expectEqual(@as(usize, 48), got.text_len);
     try testing.expectEqual(@as(usize, 16), offsets.items.len);
+    try testing.expect(got.matches_truncated);
     // Exactly sixteen: nothing is cut.
     got = try lineMatch(arena, "\\w+", .regex, words[0..47], &offsets);
     try testing.expectEqual(@as(usize, 47), got.text_len);
     try testing.expectEqual(@as(usize, 16), offsets.items.len);
-    // Empty matches count: x* over 25 b's is a hit with no offsets, its text cut after 16 code points.
+    try testing.expect(!got.matches_truncated);
+    // Empty matches are not listed and do not count (rework 2, ruling 4): x* over 25 b's is a hit with no
+    // offsets and its whole text; \b over twenty words lists nothing and cuts nothing.
     got = try lineMatch(arena, "x*", .regex, "b" ** 25, &offsets);
     try testing.expect(got.hit);
-    try testing.expectEqual(@as(usize, 16), got.text_len);
+    try testing.expectEqual(@as(usize, 25), got.text_len);
     try testing.expectEqual(@as(usize, 0), offsets.items.len);
+    try testing.expect(!got.matches_truncated);
+    got = try lineMatch(arena, "\\b", .regex, words, &offsets);
+    try testing.expectEqual(words.len, got.text_len);
+    try testing.expectEqual(@as(usize, 0), offsets.items.len);
+    // Empty matches between non-empty ones: x*a? over 20 a's lists 16 one-code-point matches, cut at the 17th.
+    got = try lineMatch(arena, "x*a?", .regex, "a" ** 20, &offsets);
+    try testing.expectEqual(@as(usize, 16), got.text_len);
+    try testing.expectEqual(@as(usize, 16), offsets.items.len);
+    try testing.expect(got.matches_truncated);
+    // Sixteen non-empty matches and empty ones after them: nothing cut.
+    got = try lineMatch(arena, "a*", .regex, "ab" ** 16, &offsets);
+    try testing.expectEqual(@as(usize, 32), got.text_len);
+    try testing.expectEqual(@as(usize, 16), offsets.items.len);
+    try testing.expect(!got.matches_truncated);
     // A code point boundary: the cut is a byte offset after whole code points.
     got = try lineMatch(arena, ".", .regex, "é" ** 20, &offsets);
     try testing.expectEqual(@as(usize, 32), got.text_len);
@@ -1654,8 +1933,10 @@ test "S6-T24 rework 1, ruling 2: regex mode looks for at most 16 matches per lin
     got = try lineMatch(arena, "a", .literal, as, &offsets);
     try testing.expectEqual(@as(usize, 100), got.text_len);
     try testing.expectEqual(@as(usize, 100), offsets.items.len);
+    try testing.expect(!got.matches_truncated);
     got = try lineMatch(arena, "a", .regex, as, &offsets);
     try testing.expectEqual(@as(usize, 16), got.text_len);
+    try testing.expect(got.matches_truncated);
 }
 
 fn timeMatch(arena: std.mem.Allocator, matcher: *Matcher, line: []const u8) !u64 {
@@ -1725,48 +2006,160 @@ test "S6-T24 rework 1, ruling 3: the literal search charges the budget inside a 
     try testing.expectEqual(@as(u64, 4 * std.time.ns_per_ms), clock.now_ns);
 }
 
-/// A real clock that keeps the longest time between two of its reads.
-const GapClock = struct {
-    last: u64 = 0,
-    widest: u64 = 0,
+/// A clock that, at each read, takes the work counted (`work`) and the units charged since the read before: one
+/// interval of the meter, counted (rework 2, ruling 3). It advances 1 ns a read, so a budget never runs out.
+const WorkClock = struct {
+    t: u64 = 0,
     reads: u64 = 0,
+    last_work: u64 = 0,
+    last_units: u64 = 0,
+    widest_work: u64 = 0,
+    widest_units: u64 = 0,
+    /// The most work per unit charged in one interval (intervals of at least `check_units` units).
+    worst_per_unit: f64 = 0,
 
     fn now(context: ?*anyopaque) u64 {
-        const self: *GapClock = @ptrCast(@alignCast(context.?));
-        const t: u64 = @intCast(std.Io.Clock.awake.now(testing.io).nanoseconds);
-        if (self.reads > 0) self.widest = @max(self.widest, t - self.last);
-        self.last = t;
+        const self: *WorkClock = @ptrCast(@alignCast(context.?));
+        const w = work_done - self.last_work;
+        const u = units_charged - self.last_units;
+        if (self.reads > 0) {
+            self.widest_work = @max(self.widest_work, w);
+            self.widest_units = @max(self.widest_units, u);
+            if (u >= check_units) self.worst_per_unit = @max(self.worst_per_unit, @as(f64, @floatFromInt(w)) / @as(f64, @floatFromInt(u)));
+        }
+        self.last_work = work_done;
+        self.last_units = units_charged;
         self.reads += 1;
-        return t;
+        self.t += 1;
+        return self.t;
     }
 };
 
-test "S6-T24 rework 1, ruling 1: the widest time between two reads of the clock (one meter interval) is under 10 ms" {
+/// The stated bounds of the meter (rework 2, ruling 2): at most this much work (`work`) per unit charged, and at
+/// most `check_units` plus one position's units (a program of 8,192 instructions: each followed at most three
+/// times and stepped once at a class's cost of at most 6, and the position's 4) between two reads of the clock.
+const max_work_per_unit: f64 = 12;
+const max_units_between_reads: u64 = check_units + 9 * max_program + 4;
+
+
+test "S6-T24 rework 2, rulings 2 and 3: one interval of the meter is bounded work, counted, on the heaviest units" {
     var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();
-    const line = try arena.alloc(u8, 1 << 20);
-    for (line, 0..) |*byte, i| byte.* = "abcdefghij x"[i % 12];
-    // The heaviest per-position work the caps allow (a program near 8,192 steps, every thread alive), a pattern
-    // whose listing restarts, and the two literal strategies.
-    const cases = [_]struct { []const u8, Mode, Case }{
-        .{ "(?:[a-j ]{1,255}){15}z", .regex, .sensitive },
-        .{ "(?:\\w|\\W){1,255}(?:\\w|\\W){1,255}z", .regex, .insensitive },
-        .{ "a(.*z)?", .regex, .sensitive },
-        .{ "abcdefghij z", .literal, .sensitive },
-        .{ "ABCDEFGHIJ Z", .literal, .insensitive },
-    };
-    var widest: u64 = 0;
+    const cases = try fuzz.meterCases(arena);
+    var worst_per_unit: f64 = 0;
+    var widest_units: u64 = 0;
     for (cases) |case| {
-        const compiled = try compileOk(arena, case[0], case[1], case[2], false);
-        var gap = GapClock{};
-        var budget = Budget.start(.{ .context = &gap, .now = GapClock.now }, 30_000);
+        const compiled = try compileOk(arena, case.pattern, case.mode, case.case, false);
+        var clock = WorkClock{};
+        var budget = Budget.start(.{ .context = &clock, .now = WorkClock.now }, 30_000);
         var matcher = try Matcher.init(arena, &compiled, &budget);
         var offsets = std.ArrayList([2]u32).empty;
-        _ = matcher.matchLine(arena, line, 512, 512, &offsets) catch {};
-        _ = budget.expired();
-        std.debug.print("S6-T24 meter: {s}: {d} reads of the clock, widest gap {d} ns\n", .{ case[0], gap.reads, gap.widest });
-        widest = @max(widest, gap.widest);
+        _ = try matcher.matchLine(arena, case.line, 512, 512, &offsets);
+        std.debug.print("S6-T24 meter: {s} ({d} bytes) over {d} bytes: {d} reads, widest {d} units and {d} work, at most {d:.2} work a unit\n", .{ case.pattern[0..@min(case.pattern.len, 40)], case.pattern.len, case.line.len, clock.reads, clock.widest_units, clock.widest_work, clock.worst_per_unit });
+        try testing.expect(clock.reads >= 3);
+        worst_per_unit = @max(worst_per_unit, clock.worst_per_unit);
+        widest_units = @max(widest_units, clock.widest_units);
+        try testing.expect(clock.widest_work <= @as(u64, @intFromFloat(max_work_per_unit * @as(f64, @floatFromInt(max_units_between_reads)))));
     }
-    try testing.expect(widest < 10 * std.time.ns_per_ms);
+    try testing.expect(worst_per_unit <= max_work_per_unit);
+    try testing.expect(widest_units <= max_units_between_reads);
+}
+
+test "S6-T24 rework 2, rulings 2 and 3: every pattern of the fuzz does bounded work per unit charged (counted)" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const patterns = try fuzz.patterns(arena, 1200);
+    const line = try fuzz.repeatCodepoints(arena, "Ωж→ 1ſKaé-x\tß", 600);
+    var worst: f64 = 0;
+    var worst_pattern: []const u8 = "";
+    var matched: usize = 0;
+    for (patterns) |pattern| {
+        for ([_]Case{ .sensitive, .insensitive }) |case| {
+            var one = std.heap.ArenaAllocator.init(testing.allocator);
+            defer one.deinit();
+            const compiled = try one.allocator().create(Compiled);
+            compiled.* = switch (try compile(one.allocator(), pattern, .regex, case, false)) {
+                .ok => |c| c,
+                .refused => continue,
+            };
+            var clock = WorkClock{};
+            var budget = Budget.start(.{ .context = &clock, .now = WorkClock.now }, 30_000);
+            var matcher = try Matcher.init(one.allocator(), compiled, &budget);
+            var offsets = std.ArrayList([2]u32).empty;
+            const work_before = work_done;
+            const units_before = units_charged;
+            _ = try matcher.matchLine(one.allocator(), line, @min(line.len, 512), codepointCount(line[0..@min(line.len, 512)]), &offsets);
+            try matcher.tick();
+            const w = work_done - work_before;
+            const u = units_charged - units_before;
+            matched += 1;
+            const per_unit = @as(f64, @floatFromInt(w)) / @as(f64, @floatFromInt(@max(u, 1)));
+            if (per_unit > worst) {
+                worst = per_unit;
+                worst_pattern = pattern;
+            }
+            try testing.expect(clock.widest_units <= max_units_between_reads);
+        }
+    }
+    std.debug.print("S6-T24 meter fuzz: {d} patterns matched, at most {d:.2} work a unit ({d} bytes: {s})\n", .{ matched, worst, worst_pattern.len, worst_pattern[0..@min(worst_pattern.len, 80)] });
+    try testing.expect(matched > 800);
+    try testing.expect(worst <= max_work_per_unit);
+}
+
+/// A class's items tested one by one, as before rework 2: the reference `Members` is checked against.
+fn memberReference(items: []const Item, cp: u21) bool {
+    for (items) |item| {
+        const in = switch (item) {
+            .range => |r| cp >= r[0] and cp <= r[1],
+            .word => |positive| isWord(cp) == positive,
+            .digit => |positive| isDigit(cp) == positive,
+            .space => |positive| chunker.isWhitespace(cp) == positive,
+        };
+        if (in) return true;
+    }
+    return false;
+}
+
+test "S6-T24 rework 2, ruling 2: a normalised class has exactly the members and folds its items give" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    // `\s` in one switch is the analyser's whitespace, at every code point up to past its last member.
+    for (0..0x3100) |c| try testing.expectEqual(chunker.isWhitespace(@intCast(c)), isSpace(@intCast(c)));
+    var prng = std.Random.DefaultPrng.init(20261124);
+    const random = prng.random();
+    const probes = [_]u21{ 0, '\t', ' ', '0', '9', 'A', 'K', 'Z', '_', 'a', 'k', 's', 'z', 0x7f, 0x85, 0xa0, 0xb5, 0xdf, 0xe9, 0x17f, 0x391, 0x3a9, 0x3c9, 0x410, 0x44f, 0x660, 0xb95, 0xbcd, 0x1680, 0x200c, 0x2028, 0x2126, 0x212a, 0x2192, 0x3000, 0xfffd, 0x10ffff };
+    for (0..500) |_| {
+        var items = std.ArrayList(Item).empty;
+        for (0..random.uintLessThan(usize, 8) + 1) |_| {
+            const item: Item = switch (random.uintLessThan(u8, 5)) {
+                0 => .{ .word = random.boolean() },
+                1 => .{ .digit = random.boolean() },
+                2 => .{ .space = random.boolean() },
+                else => blk: {
+                    const low = probes[random.uintLessThan(usize, probes.len)] +| random.uintLessThan(u21, 3);
+                    break :blk .{ .range = .{ @min(low, 0x10ffff), @min(low +| random.uintLessThan(u21, 40), 0x10ffff) } };
+                },
+            };
+            try items.append(arena, item);
+        }
+        const members = try Members.of(arena, items.items);
+        for (probes) |base| for ([_]u21{ base, base +| 1, base -| 1 }) |cp| {
+            try testing.expectEqual(memberReference(items.items, cp), members.contains(cp));
+        };
+        for (members.ranges) |r| for ([_]u21{ r[0], r[1], r[0] -| 1, r[1] +| 1 }) |cp| {
+            try testing.expectEqual(memberReference(items.items, cp), members.contains(cp));
+        };
+        // The folds the class adds: those of the whole table, as before rework 2.
+        var expected = std.ArrayList(u21).empty;
+        for (tables.casefold_pairs) |pair| {
+            if (memberReference(items.items, pair.from) and !memberReference(items.items, pair.to)) try expected.append(arena, pair.to);
+        }
+        std.mem.sort(u21, expected.items, {}, std.sort.asc(u21));
+        var unique = std.ArrayList(u21).empty;
+        for (expected.items) |cp| if (unique.items.len == 0 or unique.items[unique.items.len - 1] != cp) try unique.append(arena, cp);
+        try testing.expectEqualSlices(u21, unique.items, try foldExtras(arena, &members));
+    }
 }

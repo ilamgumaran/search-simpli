@@ -96,12 +96,22 @@ at most once: `(?:^$){255}` is `(?:^$)`, `(?:\b\b)*` is `(?:\b\b)?`. It matches 
 offsets, and nested repeats of it cost nothing to compile.
 
 The matcher runs in time proportional to the pattern's size times the line's length, whatever the pattern: there
-is no catastrophic backtracking. Deciding whether a line is a hit is one pass. Listing its matches is at most 17
-passes: in `regex` mode at most **16 matches a line** are looked for, empty ones included; when a 17th starts
-within `text`, `text` is cut where it starts (with `text_truncated: true`), so every match listed is whole and
-nothing the hit says is unchecked. In `literal` mode every match is listed (the search is one linear pass:
-Knuth-Morris-Pratt). Compiling is bounded too: no pattern of up to 256 bytes took over 25 ms in the test build
-(`pattern.zig`, "time fuzz"; the slowest measured, 3.4 ms).
+is no catastrophic backtracking. Deciding whether a line is a hit is one pass. In `regex` mode at most **16
+matches a line** are listed: when a 17th non-empty match starts within `text`, `text` is cut where it starts,
+with `text_truncated: true` and **`matches_truncated: true`**, so every match listed is whole, nothing the hit
+says is unchecked, and a caller can tell this cut from the 512-byte one (which sets `text_truncated` alone).
+Empty matches are not listed and do not count: `x*` over a line of 17 or more code points gives the whole line
+(up to 512 bytes) with no offsets and nothing cut. Listing a line's matches is so at most 17 passes plus one per
+code point of `text` where an empty match starts (at most 512), all of it metered. In `literal` mode every match
+is listed (the search is one linear pass: Knuth-Morris-Pratt) and `matches_truncated` is always false.
+
+A class costs a bounded amount to test whatever it says: when a pattern is compiled, a class's ranges are sorted
+and merged and each of `\w`, `\d` and `\s` is kept once (`[^\w\w…\w]` is `[^\w]`), so testing a code point is at
+most five binary searches (the ranges, the two tables of `\w`, the table of `\d`, the folds). Compiling is
+bounded too: every pattern of the fuzz, up to 1,024 bytes, class-heavy ones and the crafted ones at the caps
+included, compiles in at most 500,000 counted steps (`pattern.zig`, "compiling any pattern of up to 1,024 bytes
+is bounded work"); timed outside the tests (`scripts/prototypes/s6t24/rework2/meter_bench.zig`, ReleaseSmall),
+the slowest took at most 0.45 ms.
 
 ## Case
 
@@ -119,10 +129,10 @@ Knuth-Morris-Pratt). Compiling is bounded too: no pattern of up to 256 bytes too
 
 Hits come in order of `root_id` (bytes), then path (bytes), then line. **A hit is a line**: `root_id`, `path`,
 `line` (1-based, `read_span`'s numbering: CRLF is one break, a leading BOM is not part of line 1), `text` (the
-line without its break, at most 512 bytes, cut on a code point, with `text_truncated`; cut sooner after 16
-matches, above), `match_offsets` (every match starting within `text`, as `[start, end)` in code points, leftmost
-first, not overlapping), and `before` and `after` (`{line, text, text_truncated}`). Neighbouring hits each carry
-their own context, so a line can repeat.
+line without its break, at most 512 bytes, cut on a code point, with `text_truncated`; in `regex` mode cut sooner
+where a 17th non-empty match starts, with `matches_truncated`, above), `match_offsets` (every non-empty match
+starting within `text`, as `[start, end)` in code points, leftmost first, not overlapping), and `before` and
+`after` (`{line, text, text_truncated}`). Neighbouring hits each carry their own context, so a line can repeat.
 
 **What ends a line** (`read_span`'s breaks): LF, CR, CRLF (one break), VT (U+000B), FF (U+000C), the separators
 FS, GS and RS (U+001C to U+001E), NEL (U+0085), LS (U+2028) and PS (U+2029). `grep` ends a line at LF only, so
@@ -146,6 +156,10 @@ another pattern, case, scope or set of labels refuses it (`cursor does not belon
 
 - **Over an index** a cursor names its generation. After a new generation is published it is refused with
   `stale cursor`, as `find`'s is; start again from the first page.
+- **The file in a cursor** is an ordinal among all the files the caller may see, in scan order, before
+  `path_prefix` and `name_glob`: those are tested on each file's path as the scan reaches it, inside the budget,
+  so a page can stop with `stopped: "time"` while it is still passing over names that do not match, and the
+  next page carries on from there.
 - **Over a folder** there is no generation. The cursor names the list of paths the walk found, so a file added,
   removed or renamed between pages makes it `stale cursor`. **An edit to a file that keeps its path is not
   detected** (ruling O-4): every hit is a true match of the file as it was read for its page, but lines can shift
@@ -154,15 +168,37 @@ another pattern, case, scope or set of labels refuses it (`cursor does not belon
 ## Time
 
 `time_budget_ms` bounds one page. **A scan holds its caller for at most `time_budget_ms` plus 50 ms**, on every
-path, with two things outside the budget: the walk of a folder (a folder scan lists its files first) and the read
-of the one file in hand (at most `--max-file-bytes`, 10 MiB by default; finding a cursor's line in it is part of
-the read). The clock starts before the pattern is parsed. Work is metered, not sampled: the matcher, the literal
-search and the line reader charge what they do and read the clock once 65,536 units have built up (a unit is a
-thread step of the matcher or a byte read), and between files. The 50 ms is the first line's grace (10 ms, below),
-one meter interval (under 10 ms in the test build; the widest measured, 1.2 ms), the compile (under 25 ms;
-measured 3.4 ms at most) and the work of a hit outside the meter (its text and context, at most 41 lines of 512
-bytes). Shown by `tests/test_scan.py` (`BudgetTests`) and the `pattern.zig` and `scan_test.zig` tests named for
-rework 1.
+path, with these outside the budget, each stated here:
+
+- **The walk of a folder.** A folder scan lists every file under the folder first (`searchd index`'s walk) and
+  only then starts the clock; a folder of many files takes that long whatever the budget.
+- **Over an index, the list of files the caller may see**, built from the index before the clock starts, as
+  `find` builds its candidates; with it the counts of the scope's pending and skipped files (`pending_files`,
+  `not_scanned`), which are the same on every page, so every such file's path is tested against `path_prefix`
+  and `name_glob` there: the files the index recorded as pending or skipped, and the files of roots that keep no
+  source. That test is one step per byte of the path (3.1 ns a byte measured, ReleaseSmall: 16 ms for 20,000
+  names of 255 bytes); the files the scan reads are tested inside the budget instead.
+- **The read of the one file in hand** (at most `--max-file-bytes`, 10 MiB by default; finding a cursor's line
+  in it is part of the read).
+
+Everything else is inside it. The clock starts before the pattern is parsed. Work is metered, not sampled: the
+matcher, the literal search, the line reader and the scope filter charge what they do and read the clock once
+65,536 units have built up, and between files. **A unit is a bounded amount of work** (rework 2): a byte read
+or searched, a byte of a path tested against `path_prefix` and `name_glob`, a thread of the matcher followed or
+stepped, a position (one unit more when it folds, two when it tests a word boundary), and a step on a class over
+a code point outside ASCII one unit per binary search it may do (at most six). The tests count the work behind
+each unit (at most 12 elementary steps a unit; measured at most 5.24) and the units between two reads of the
+clock (at most 65,536 plus one position's, 139,268 in all), on the heaviest units and on every fuzz pattern;
+`pattern.zig` and `scan_test.zig`, the tests named for rework 2.
+
+The 50 ms is the first line's grace (10 ms, below), one meter interval (at most 139,268 units: 0.60 ms at the
+slowest unit measured, 4.3 ns; the widest gap measured, 0.25 ms), the compile (at most 500,000 counted steps;
+0.45 ms measured at most) and the work of a hit outside the meter (its text and context, at most 41 lines of 512
+bytes). The times are of this repository's ReleaseSmall build on the development Mac
+(`scripts/prototypes/s6t24/rework2/meter_bench.zig`); a slower machine scales them, and the counts hold on any.
+Timed end to end, through the command line and `searchd serve`, by
+`scripts/prototypes/s6t24/rework2/bound_probe.py` and the verifier's probes; no default test asserts a time
+(NFR-19).
 
 When the budget runs out the page ends with `stopped: "time"` and always a `next_cursor`; it may hold fewer hits
 than `page_size`, or none, but never a hit with missing offsets. Call again with the cursor.

@@ -339,7 +339,8 @@ The fields:
 
 - `<request>` is 16 hex digits of an XXH3-64 over the canonical request, without `cursor`, `page_size` and
   `time_budget_ms`, and with the effective roots and labels.
-- `<file>` is the file's ordinal in this request's scan order.
+- `<file>` is the file's ordinal in this request's scan order. *Since rework 2 (section 18):* among all the files
+  the caller may see, before `path_prefix` and `name_glob`, which are tested as the scan reaches each file.
 - `<line>` is the next line to search.
 - `<listed>` counts the hit lines already returned from that file, for `max_hits_per_file` and `files_matched`.
 
@@ -734,7 +735,7 @@ Messages follow `find`'s form: `page_size must be 1..100`, `context_lines must b
 | `generation` | The index generation; `null` for a folder. |
 | `scope`, `warnings` | As `find` (`writeCommon`, `ops.zig` 248–272). For a folder, `scope.roots` is `["r-legacy"]`. Warning codes: `pattern_matches_empty`, `line_over_budget`. |
 | `case_applied` | `"sensitive"` or `"insensitive"`: what `smart` resolved to. |
-| `hits[]` | `root_id`, `path` (root-relative), `line` (1-based), `text` (at most 512 bytes), `text_truncated`, `match_offsets` (`[start, end)` code points into `text`, non-empty matches only, at most those starting within `text`), `before[]` and `after[]` (`{line, text, text_truncated}`). |
+| `hits[]` | `root_id`, `path` (root-relative), `line` (1-based), `text` (at most 512 bytes), `text_truncated`, `matches_truncated` (section 18), `match_offsets` (`[start, end)` code points into `text`, non-empty matches only, at most those starting within `text`), `before[]` and `after[]` (`{line, text, text_truncated}`). |
 | `files_matched`, `files_scanned`, `files_capped`, `bytes_scanned` | Counted on the page where a file's scan finishes; the sums over pages are the totals (section 7). |
 | `pending_files` | As `find`: files in scope still waiting for their bytes (index only; 0 for a folder). |
 | `not_scanned` | Files in scope that `scan` could not search, by reason. Index: scope-wide, the same on every page (the manifest's skipped list and the files of roots without retention). Folder: counted on the page that reached the file. |
@@ -850,4 +851,28 @@ in the engine (`pattern.zig`, `scan.zig`, `source_v2.zig`) and the reference (`s
   the line or on reading before it.
 - **The stated bound:** budget plus 50 ms, the folder walk and the read of the file in hand excepted
   (`docs/scan.md`, "Time" and "Memory").
+
+## 18. After Verdict 2 (rework 2, 24 Nov 2026)
+
+Verdict 2 found two costs outside the meter's reach and two lows; the orchestrator ruled (`docs/tasks/S6-T24.md`,
+"Rulings after Verdict 2"). What changed, in the engine and the reference alike:
+
+- **The scope filter is inside the budget** (ruling 1). `path_prefix` and `name_glob` are tested on each file's
+  path as the scan reaches it, one unit a byte, so a page can stop on time among names that do not match and
+  resume through them. The cursor's `<file>` is therefore an ordinal among all the files the caller may see. A
+  glob match is linear: the glob's items (at most 255; a run of `*` is one) are the states of an automaton held as
+  one 256-bit set, and each unit of the name moves all of them at once (shift-and), so a name costs one step a
+  byte whatever the glob (`scan.Glob`). Outside the budget, stated: the folder walk, and over an index the list
+  of files the caller may see, whose pending and skipped files are tested against the scope there (linear).
+- **A unit of the meter is bounded work** (ruling 2). A class is normalised when compiled (its ranges sorted and
+  merged; `\w`, `\d`, `\s` each kept once), so a test is at most five binary searches; a step on a class over a
+  code point outside ASCII charges one unit per search it may do (`Class.cost`, at most 6); a position charges one
+  more unit when it folds and two when the program tests word boundaries, and the word test is done once per code
+  point instead of once per assertion followed. The folds a class adds are found per range, not over the whole
+  table. Test builds count the elementary steps behind the units (`pattern.work`); the tests hold them to at most
+  12 a unit and 139,268 units between two reads of the clock.
+- **No wall-clock threshold in a default test** (ruling 3). The meter-interval and compile-time tests count work;
+  the times are measured by `scripts/prototypes/s6t24/rework2/meter_bench.zig` and `bound_probe.py`.
+- **`matches_truncated`** (ruling 4). A hit says when its text was cut at the 17th non-empty match, apart from the
+  512-byte cut. Empty matches neither count towards the 16 nor cut the text.
 

@@ -1,0 +1,24 @@
+S6-T24 rework 2: existing answers through the C ABI, main's committed dylib (43a308d, the Part 2 capture, unchanged) against the head's (rework 2, native/macos-arm64, sha256 a823dbf36a466a91...), each run against the same --work (snapshots built by main's searchd, ReleaseSmall).
+
+== scripts/capture_query_outputs.py --filename-fields (ss_query)
+main: captured 16490 queries (0 error outputs, 52743 result rows) sha256=1a6af632e4439f119d61a6549dc5e917bbd68dcfe721b126b42cd38202922a0a
+head: captured 16490 queries (0 error outputs, 52743 result rows) sha256=1a6af632e4439f119d61a6549dc5e917bbd68dcfe721b126b42cd38202922a0a
+cmp main.jsonl head.jsonl: identical (16490 lines)
+
+== scripts/capture_find_pages.py (ss_find, every page)
+main: captured 829 cases, 1568 pages, 28813 hits, 0 error outputs, 2 capped at 200 pages; outputs sha256=0e368a628932df142a391b17b48e55cd5ff476726f80db530e8df0c42be42bba file sha256=4928c956fa1fd16cde5632fc2be3085f3e80387909adb809c95026b7474f1cb3
+head: captured 829 cases, 1568 pages, 28813 hits, 0 error outputs, 2 capped at 200 pages; outputs sha256=0e368a628932df142a391b17b48e55cd5ff476726f80db530e8df0c42be42bba file sha256=4928c956fa1fd16cde5632fc2be3085f3e80387909adb809c95026b7474f1cb3
+cmp main.jsonl head.jsonl: identical (1570 lines)
+
+== scripts/text_search_score.py (the judged set; direct and index, both and content, --engine-label X), main's searchd against the head's (ReleaseSmall)
+diff of run.json:
+4c4
+<   "searchd_sha256": "61a999e2b934cca55744fb445388548f886fd19517b08d46bf1d59237bf5981b",
+---
+>   "searchd_sha256": "6a6f754a5f6659d315433d315216056d3676fe5ecbe0e9780347eb3249433b42",
+diff of run.md:
+3c3
+< `searchd` sha256 `61a999e2b934cca55744fb445388548f886fd19517b08d46bf1d59237bf5981b` (X).
+---
+> `searchd` sha256 `6a6f754a5f6659d315433d315216056d3676fe5ecbe0e9780347eb3249433b42` (X).
+(only the searchd sha256 line differs)

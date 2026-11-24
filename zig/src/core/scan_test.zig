@@ -435,3 +435,161 @@ test "S6-T24 scan: a pattern that can match the empty string makes every line a 
     try testing.expectEqual(@as(usize, 3 + 4 + 1 + 10), answer.hits.len);
     for (answer.hits) |hit| try testing.expectEqual(@as(usize, 0), hit.match_offsets.len);
 }
+
+/// The glob matcher before rework 2 (backtracking to the last `*`), kept here as the reference the new one is
+/// checked against.
+fn globReference(glob: []const u8, name: []const u8) bool {
+    const cpLen = struct {
+        fn of(bytes: []const u8, at: usize) usize {
+            const len = std.unicode.utf8ByteSequenceLength(bytes[at]) catch return 1;
+            return @min(len, bytes.len - at);
+        }
+    }.of;
+    var g: usize = 0;
+    var n: usize = 0;
+    var star_g: ?usize = null;
+    var star_n: usize = 0;
+    while (n < name.len) {
+        if (g < glob.len and glob[g] == '*') {
+            star_g = g;
+            g += 1;
+            star_n = n;
+            continue;
+        }
+        if (g < glob.len) {
+            const gl = cpLen(glob, g);
+            const nl = cpLen(name, n);
+            if (glob[g] == '?' or (gl == nl and std.mem.eql(u8, glob[g .. g + gl], name[n .. n + nl]))) {
+                g += gl;
+                n += nl;
+                continue;
+            }
+        }
+        const sg = star_g orelse return false;
+        star_n += cpLen(name, star_n);
+        n = star_n;
+        g = sg + 1;
+    }
+    while (g < glob.len and glob[g] == '*') g += 1;
+    return g == glob.len;
+}
+
+test "S6-T24 rework 2, ruling 1: the glob matcher answers as the backtracking one did, in one step per byte of the name" {
+    var prng = std.Random.DefaultPrng.init(20261124);
+    const random = prng.random();
+    const glob_units = [_][]const u8{ "*", "*", "?", "a", "b", "é", "ப", "ட்", ".", "**" };
+    const name_units = [_][]const u8{ "a", "b", "é", "ப", "ட்", ".", "\xc3", "\xff", "\x80" };
+    var glob_buffer: [255]u8 = undefined;
+    var name_buffer: [300]u8 = undefined;
+    var agreed: usize = 0;
+    var matched: usize = 0;
+    for (0..20_000) |_| {
+        var glob_len: usize = 0;
+        for (0..random.uintLessThan(usize, 12) + 1) |_| {
+            const unit = glob_units[random.uintLessThan(usize, glob_units.len)];
+            if (glob_len + unit.len > glob_buffer.len) break;
+            @memcpy(glob_buffer[glob_len..][0..unit.len], unit);
+            glob_len += unit.len;
+        }
+        var name_len: usize = 0;
+        for (0..random.uintLessThan(usize, 16)) |_| {
+            const unit = name_units[random.uintLessThan(usize, name_units.len)];
+            if (name_len + unit.len > name_buffer.len) break;
+            @memcpy(name_buffer[name_len..][0..unit.len], unit);
+            name_len += unit.len;
+        }
+        const glob = glob_buffer[0..glob_len];
+        const name = name_buffer[0..name_len];
+        const expected = globReference(glob, name);
+        const g = scan.Glob.init(glob);
+        const before = pattern.work_done;
+        try testing.expectEqual(expected, g.matches(name));
+        // One step per unit of the name and at most one probe per bit of its sorted units' count: never more
+        // than 9 a unit (Glob holds at most 255 sorted units), so at most 5 a byte outside ASCII and 1 inside.
+        try testing.expect(pattern.work_done - before <= 9 * name.len);
+        agreed += 1;
+        if (expected) matched += 1;
+    }
+    try testing.expect(matched > 1000);
+    try testing.expectEqual(@as(usize, 20_000), agreed);
+    // The verifier's case (Verdict 2, finding 1): a name of 245 a's, 5 digits and .txt against * then 253 a's
+    // then b: 255 steps, where the backtracking matcher took about 255 x 253.
+    const name = "a" ** 245 ++ "00042.txt";
+    const glob = "*" ++ "a" ** 253 ++ "b";
+    const g = scan.Glob.init(glob);
+    const before = pattern.work_done;
+    try testing.expect(!g.matches(name));
+    try testing.expectEqual(@as(u64, name.len), pattern.work_done - before);
+    try testing.expect(scan.globMatches("*.txt", name));
+    try testing.expect(scan.globMatches("*" ++ "a" ** 240 ++ "*?.txt", name));
+}
+
+/// A clock whose time is the work counted (`pattern.work`), one nanosecond a step: a budget then bounds the
+/// work a page does, which a test can check by counting (rework 2, ruling 3).
+const WorkTimeClock = struct {
+    fn now(_: ?*anyopaque) u64 {
+        return pattern.work_done;
+    }
+
+    fn clock() pattern.Clock {
+        return .{ .now = now };
+    }
+};
+
+test "S6-T24 rework 2, ruling 1: name_glob is tested as the scan reaches each file, inside the budget, and pages resume through it" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    // The verifier's 20,000 files of 255-byte names, each holding the literal.
+    const count = 20_000;
+    const paths = try arena.alloc([]const u8, count);
+    const bytes = try arena.alloc([]const u8, count);
+    for (paths, bytes, 0..) |*path, *content, i| {
+        path.* = try std.fmt.allocPrint(arena, "{s}{d:0>5}.txt", .{ "a" ** 245, i });
+        content.* = "tide\n";
+    }
+    paths[count - 1] = try std.fmt.allocPrint(arena, "{s}b", .{"a" ** 254});
+    var fake = Fake{ .bytes = bytes };
+    const src = try sourceOf(arena, &fake, paths);
+    const glob = "*" ++ "a" ** 253 ++ "b";
+    const request = scan.Request{ .pattern = "tide", .name_glob = glob, .time_budget_ms = 1 };
+    // One page with a budget of 1 ms of work-time: it stops with a cursor after a bounded amount of work, not
+    // after testing every name.
+    const before = pattern.work_done;
+    const first = try ok(try scan.run(arena, request, src, WorkTimeClock.clock()));
+    const spent = pattern.work_done - before;
+    try testing.expectEqual(scan.Stopped.time, first.stopped);
+    try testing.expectEqual(@as(usize, 0), first.hits.len);
+    const resumed_at = first.next_cursor.?;
+    std.debug.print("S6-T24 glob page: 1 ms of work-time spent {d} steps; cursor {s}\n", .{ spent, resumed_at[std.mem.indexOfScalar(u8, resumed_at, ':').? + 18 ..] });
+    // The budget (10^6 steps) plus the most one interval of the meter can overrun (12 a unit, 139,268 units)
+    // and the compile (500,000 at most).
+    try testing.expect(spent <= 1_000_000 + 12 * 139_268 + 500_000);
+    // Every page to the end finds the one file, as one unhurried page does.
+    var unhurried = request;
+    unhurried.time_budget_ms = 30_000;
+    const whole = try ok(try scan.run(arena, unhurried, src, realClock()));
+    try testing.expectEqual(@as(usize, 1), whole.hits.len);
+    try testing.expectEqual(@as(usize, 1), whole.files_scanned);
+    var current = request;
+    var pages: usize = 0;
+    var found: usize = 0;
+    var scanned: usize = 0;
+    while (true) {
+        const page = try ok(try scan.run(arena, current, src, WorkTimeClock.clock()));
+        pages += 1;
+        found += page.hits.len;
+        scanned += page.files_scanned;
+        current.cursor = page.next_cursor orelse break;
+        try testing.expect(pages < 1000);
+    }
+    try testing.expect(pages > 1);
+    try testing.expectEqual(@as(usize, 1), found);
+    try testing.expectEqual(@as(usize, 1), scanned);
+    // The cursor's file is an ordinal among all the files: the hit's file is the last.
+    try testing.expectEqualStrings(paths[count - 1], whole.hits[0].path);
+    // A path_prefix that no file has: every path is still tested (cheaply) and the page completes.
+    const none = try ok(try scan.run(arena, .{ .pattern = "tide", .path_prefix = "zz" }, src, realClock()));
+    try testing.expectEqual(@as(usize, 0), none.files_scanned);
+    try testing.expect(none.next_cursor == null);
+}

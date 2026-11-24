@@ -301,9 +301,9 @@ pub const api = struct {
         /// arena of its own. A refused request is `.failed`, not an error.
         /// Errors: `OutOfMemory`.
         pub const run = internal.scan.run;
-        /// Whether a root-relative path is in the request's `path_prefix` and
-        /// `name_glob`.
-        pub const inScope = internal.scan.inScope;
+        /// The request's `path_prefix` and `name_glob`, built once; `contains`
+        /// tests one root-relative path in at most one step per byte of it.
+        pub const Scope = internal.scan.Scope;
         /// The monotonic clock of an `std.Io`, as the budget's clock.
         pub const IoClock = internal.scan.IoClock;
         /// Write the whole result object (envelope and answer) to `json`, with

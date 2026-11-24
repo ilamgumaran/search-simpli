@@ -1,0 +1,57 @@
+OK   ss_open (version 2.10.0)
+OK   {"pattern": "tide"}: schema errors []: 5 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "tide", "case": "sensitive", "whole_word": true}: schema errors []: 4 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "\\d+\\.\\d+", "mode": "regex"}: schema errors []: 1 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "TS-0142", "context_lines": 2}: schema errors []: 1 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "tide", "page_size": 1}: schema errors []: 1 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "tide", "max_hits_per_file": 1, "page_size": 100}: schema errors []: 3 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "^$", "mode": "regex"}: schema errors []: 1 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "மழை", "whole_word": true}: schema errors []: 1 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "tide", "path_prefix": "notes/", "name_glob": "*.md"}: schema errors []: 1 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "tide", "roots": ["r-legacy"]}: schema errors []: 5 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "tide", "roots": ["nope"]}: schema errors []: 0 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "a", "mode": "regex", "path_prefix": "d.txt"}: schema errors []: 5 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "a", "path_prefix": "d.txt"}: schema errors []: 5 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "ab", "mode": "regex", "path_prefix": "d.txt"}: schema errors []: 1 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "x*", "mode": "regex", "path_prefix": "d.txt"}: schema errors []: 6 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "\\b", "mode": "regex", "path_prefix": "d.txt"}: schema errors []: 6 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "a|x*", "mode": "regex", "path_prefix": "d.txt"}: schema errors []: 6 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "word", "mode": "regex", "whole_word": true, "path_prefix": "d.txt", "context_lines": 1}: schema errors []: 1 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+OK   {"pattern": "[aé]", "mode": "regex", "path_prefix": "d.txt"}: schema errors []: 5 hits; CLI = RPC = MCP = ABI byte-identical: True; reference hits equal: True
+     {"pattern": ""}: cli: ('SS_ERR_INVALID_ARGUMENT: pattern must be 1..1024 bytes', 1) | rpc: ('Invalid params: pattern must be 1..1024 bytes', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: pattern must be 1..1024 bytes"}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: pattern must be 1..1024 bytes',) | reference: ScanError: pattern must be 1..1024 bytes
+     {"pattern": "a(", "mode": "regex"}: cli: ('SS_ERR_INVALID_ARGUMENT: pattern not supported at byte 1: a group is not closed', 1) | rpc: ('Invalid params: pattern not supported at byte 1: a group is not closed', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: pattern not supported at byte 1: a group is not closed"}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: pattern not supported at byte 1: a group is not closed',) | reference: ScanError: pattern not supported at byte 1: a group is not closed
+     {"pattern": "x", "page_size": 0}: cli: ("invalid value for --page-size: '0' (expected a whole number 1-100)", 2) | rpc: ('Invalid params: page_size must be 1..100', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: page_size must be 1..100"}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: page_size must be 1..100',) | reference: ScanError: page_size must be 1..100
+     {"pattern": "x", "page_size": 101}: cli: ("invalid value for --page-size: '101' (expected a whole number 1-100)", 2) | rpc: ('Invalid params: page_size must be 1..100', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: page_size must be 1..100"}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: page_size must be 1..100',) | reference: ScanError: page_size must be 1..100
+     {"pattern": "x", "time_budget_ms": 0}: cli: ("invalid value for --time-ms: '0' (expected a whole number 1-30000)", 2) | rpc: ('Invalid params: time_budget_ms must be 1..30000', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: time_budget_ms must be 1..30000"}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: time_budget_ms must be 1..30000',) | reference: ScanError: time_budget_ms must be 1..30000
+     {"pattern": "x", "time_budget_ms": 30001}: cli: ("invalid value for --time-ms: '30001' (expected a whole number 1-30000)", 2) | rpc: ('Invalid params: time_budget_ms must be 1..30000', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: time_budget_ms must be 1..30000"}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: time_budget_ms must be 1..30000',) | reference: ScanError: time_budget_ms must be 1..30000
+     {"pattern": "x", "context_lines": 21}: cli: ("invalid value for --context: '21' (expected a whole number 0-20)", 2) | rpc: ('Invalid params: context_lines must be 0..20', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: context_lines must be 0..20"}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: context_lines must be 0..20',) | reference: ScanError: context_lines must be 0..20
+     {"pattern": "x", "max_hits_per_file": 1001}: cli: ("invalid value for --max-per-file: '1001' (expected a whole number 1-1000)", 2) | rpc: ('Invalid params: max_hits_per_file must be 1..1000', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: max_hits_per_file must be 1..1000"}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: max_hits_per_file must be 1..1000',) | reference: ScanError: max_hits_per_file must be 1..1000
+     {"pattern": "x", "name_glob": "a/b"}: cli: ('SS_ERR_INVALID_ARGUMENT: name_glob must be 1..255 bytes with no /', 1) | rpc: ('Invalid params: name_glob must be 1..255 bytes with no /', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: name_glob must be 1..255 bytes with no /"}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: name_glob must be 1..255 bytes with no /',) | reference: ScanError: name_glob must be 1..255 bytes with no /
+     {"pattern": "x", "cursor": "garbage"}: cli: ('SS_ERR_INVALID_ARGUMENT: malformed cursor', 1) | rpc: ('Invalid params: malformed cursor', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: malformed cursor"}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: malformed cursor',) | reference: ScanError: malformed cursor
+     {"pattern": "x", "cursor": ""}: cli: ('SS_ERR_INVALID_ARGUMENT: malformed cursor', 1) | rpc: ('Invalid params: malformed cursor', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: malformed cursor"}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: malformed cursor',) | reference: ScanError: malformed cursor
+     {"pattern": "x", "mode": "glob"}: rpc: ('Invalid params: mode must be literal or regex', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: mode must be literal or regex"}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: mode must be literal or regex',) | reference: ScanError: mode must be literal or regex
+     {"pattern": "x", "case": "upper"}: rpc: ('Invalid params: case must be sensitive, insensitive or smart', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: case must be sensitive, insensitive or smart"}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: case must be sensitive, insensitive or smart',) | reference: ScanError: case must be sensitive, insensitive or smart
+     {"pattern": "x", "whole_word": "yes"}: rpc: ('Invalid params: whole_word must be a boolean', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: whole_word must be a boolean"}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: whole_word must be a boolean',) | reference: ScanError: whole_word must be a boolean
+     {"pattern": "x", "bogus": 1}: rpc: ('Invalid params: unknown field "bogus"', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: unknown field \\"bogus\\""}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: unknown field "bogus"',) | reference: ScanError: unknown field "bogus"
+     {"pattern": 5}: rpc: ('Invalid params: pattern must be a string', -32602) | mcp: ('{"code":-32602,"message":"Invalid params: pattern must be a string"}',) | abi: ('ss_scan: SS_ERR_INVALID_ARGUMENT: pattern must be a string',) | reference: ScanError: pattern must be a string
+OK   stop by time on cli: stopped time, cursor 1:10e8347c2a94822e:2:8:0
+OK   stop by time on rpc: stopped time, cursor 1:10e8347c2a94822e:2:8:0
+OK   stop by time on mcp: stopped time, cursor 1:10e8347c2a94822e:2:8:0
+OK   stop by time on abi: stopped time, cursor 1:10e8347c2a94822e:2:8:0
+OK   the CLI's cursor resumed on CLI, RPC, MCP and ABI: byte-identical True; stopped none, 0 hits
+OK   Dart: 31 answers for 31 requests, 31 equal to ss_scan's (results as decoded objects, refusals by message); exit 0 
+OK   result schema on scan ['<scratch>/rw2/interfaces/if-folder', 'tide'] (folder, stopped none): []
+OK   result schema on scan ['<scratch>/rw2/interfaces/if-folder', 'tide', '--max-per-file', '1'] (folder, stopped none): []
+OK   result schema on scan ['<scratch>/rw2/interfaces/if-folder', 'x?', '--regex'] (folder, stopped none): []
+OK   result schema on scan ['\\w', '--regex', '--time-ms', '1'] (index, stopped none): []
+OK   ss_scan(NULL handle): ss_scan: SS_ERR_INVALID_ARGUMENT: null handle
+OK   ss_scan(handle, NULL): ss_scan: SS_ERR_INVALID_ARGUMENT: pattern is required
+OK   ss_scan(handle, b''): ss_scan: SS_ERR_INVALID_ARGUMENT: pattern is required
+OK   ss_scan(handle, b'{'): ss_scan: SS_ERR_INVALID_ARGUMENT: the request is not valid JSON
+OK   ss_scan(handle, b'[]'): ss_scan: SS_ERR_INVALID_ARGUMENT: the request must be a JSON object
+OK   ss_scan(handle, b'null'): ss_scan: SS_ERR_INVALID_ARGUMENT: the request must be a JSON object
+OK   ss_scan(handle, b'{"pattern":"tide"} trailing'): ss_scan: SS_ERR_INVALID_ARGUMENT: the request is not valid JSON
+OK   ss_scan(handle, b'\xff\xfe'): ss_scan: SS_ERR_INVALID_ARGUMENT: the request is not valid JSON
+OK   ss_scan with a 1 MiB path_prefix: answered, 0 hits
+OK   ss_scan with a 5,000-byte pattern: ss_scan: SS_ERR_INVALID_ARGUMENT: pattern must be 1..1024 bytes
+failures: 0

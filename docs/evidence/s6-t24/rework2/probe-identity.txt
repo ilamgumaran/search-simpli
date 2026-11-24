@@ -1,0 +1,20 @@
+judged: index folders, 7 files: same names True, byte-different []
+judged: drew 40 words and 10 phrases
+judged: 150 files for read-span and outline
+judged: 964 calls, 0 differ (stdout, stderr, exit)
+tamil-10k: index folders, 7 files: same names True, byte-different []
+tamil-10k: drew 40 words and 10 phrases
+tamil-10k: 150 files for read-span and outline
+tamil-10k: 964 calls, 0 differ (stdout, stderr, exit)
+timing-10k: index folders, 7 files: same names True, byte-different []
+timing-10k: drew 40 words and 10 phrases
+timing-10k: 150 files for read-span and outline
+timing-10k: 964 calls, 0 differ (stdout, stderr, exit)
+prose-10k: index folders, 7 files: same names True, byte-different []
+prose-10k: drew 40 words and 10 phrases
+prose-10k: 150 files for read-span and outline
+prose-10k: 964 calls, 0 differ (stdout, stderr, exit)
+update with caps: exit 0; report identical True; index files 11: same names True, byte-different []
+   head's report: {"generation":2,"analyzer_id":"analyzer-v2","added":5,"changed":0,"removed":2,"unchanged":0,"budget_exhausted":32,"too_large":1,"unreadable":0,"too_large_paths":["grow.txt"],"unreadable_paths":[],"not_read":{"binary":1},"documents":39,"terms":10,"postings":186}
+
+failures: 0

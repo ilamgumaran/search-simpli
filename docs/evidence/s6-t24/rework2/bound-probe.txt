@@ -1,0 +1,24 @@
+searchd head-rs; the bound is budget + 50 ms
+Finding 2: 1,024-byte classes over 2,000 lines of 254 →
+  [^\w x 508]{255} folder, --time-ms 1: 3 ms, baseline 2 ms, so 1 ms (budget + 0): within; stopped time, cursor yes
+  [^\w x 508]{255} index, --time-ms 1: 7 ms, baseline 3 ms, so 4 ms (budget + 3): within; stopped time, cursor yes
+  [^\w x 508]{255}, serve, time_budget_ms 1: scan and the index_status behind it 1 ms (budget + 0): within; stopped time; status answered
+  [^\w x 508]{255} folder, --time-ms 1000: 789 ms, baseline 2 ms, so 787 ms (budget + -213): within; stopped none, cursor no
+  [^\w x 508]{255} index, --time-ms 1000: 795 ms, baseline 3 ms, so 791 ms (budget + -209): within; stopped none, cursor no
+  [^\w x 508]{255}, serve, time_budget_ms 1000: scan and the index_status behind it 825 ms (budget + -175): within; stopped none; status answered
+  [^\s x 508]{255} folder, --time-ms 1: 4 ms, baseline 3 ms, so 1 ms (budget + -0): within; stopped time, cursor yes
+  [^\s x 508]{255} index, --time-ms 1: 7 ms, baseline 3 ms, so 4 ms (budget + 3): within; stopped time, cursor yes
+  [^\s x 508]{255}, serve, time_budget_ms 1: scan and the index_status behind it 1 ms (budget + 0): within; stopped time; status answered
+  [^\s x 508]{255} folder, --time-ms 1000: 404 ms, baseline 2 ms, so 402 ms (budget + -598): within; stopped none, cursor no
+  [^\s x 508]{255} index, --time-ms 1000: 408 ms, baseline 3 ms, so 405 ms (budget + -595): within; stopped none, cursor no
+  [^\s x 508]{255}, serve, time_budget_ms 1000: scan and the index_status behind it 402 ms (budget + -598): within; stopped none; status answered
+Finding 1: a 255-byte glob over 20,000 names of 255 bytes (the walk and the index's list are outside)
+  glob folder, --time-ms 1: 61 ms, baseline 60 ms, so 1 ms (budget + -0): within; stopped time, cursor yes
+  glob index, --time-ms 1: 33 ms, baseline 32 ms, so 1 ms (budget + -0): within; stopped time, cursor yes
+  glob, serve, time_budget_ms 1: scan and the index_status behind it 25 ms (budget + 24): within; stopped time; status answered
+Rework 1's cases, moved here from tests/test_scan.py
+  nested empty repeats (53 bytes) folder, --time-ms 1: 2 ms, baseline 2 ms, so -0 ms (budget + -1): within; stopped none, cursor no
+  nested empty repeats, serve, time_budget_ms 1: scan and the index_status behind it 0 ms (budget + -1): within; stopped none; status answered
+  a(.*b)? over 2^22 a's, --time-ms 5: 12 ms, baseline 2 ms, so 11 ms (budget + 6): within; refused: searchd: SS_ERR_CAPACITY: line 1 of r-legacy/x.txt outlasts time_budget_ms (5): raise it (
+  1,023 a's and b over 10 MiB, case sensitive, --time-ms 1: 3 ms, baseline 2 ms, so 1 ms (budget + 0): within; stopped time, cursor yes
+  1,023 a's and b over 10 MiB, case smart, --time-ms 1: 3 ms, baseline 2 ms, so 1 ms (budget + 0): within; stopped time, cursor yes

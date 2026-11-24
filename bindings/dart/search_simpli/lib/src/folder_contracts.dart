@@ -509,12 +509,24 @@ class ScanHit {
   /// 1-based, `readSpan`'s numbering.
   final int line;
 
-  /// The line without its terminator, at most 512 bytes (cut on a code point).
+  /// The line without its terminator, at most 512 bytes (cut on a code
+  /// point); in regex mode shorter when the line has more than 16 non-empty
+  /// matches starting within it, ending where the 17th starts
+  /// ([matchesTruncated]).
   final String text;
+
+  /// [text] is shorter than the line (either cut).
   final bool textTruncated;
 
-  /// Every match starting within [text], in code points; empty when the
-  /// pattern matched only the empty string.
+  /// Regex mode: [text] was cut where a 17th non-empty match starts, so the
+  /// line holds more matches than [matchOffsets] lists (empty matches are not
+  /// listed and do not count). False when only the 512-byte cut applies, and
+  /// always false in literal mode.
+  final bool matchesTruncated;
+
+  /// The non-empty matches starting within [text] (at most 16 in regex
+  /// mode), in code points; empty when the pattern matched only the empty
+  /// string.
   final List<CodepointRange> matchOffsets;
   final List<ScanContextLine> before;
   final List<ScanContextLine> after;
@@ -525,6 +537,7 @@ class ScanHit {
     required this.line,
     required this.text,
     required this.textTruncated,
+    required this.matchesTruncated,
     required this.matchOffsets,
     required this.before,
     required this.after,
@@ -539,6 +552,7 @@ class ScanHit {
         line: json['line']! as int,
         text: json['text']! as String,
         textTruncated: json['text_truncated']! as bool,
+        matchesTruncated: json['matches_truncated']! as bool,
         matchOffsets: (json['match_offsets']! as List<Object?>).map(CodepointRange.fromJson).toList(growable: false),
         before: _lines(json['before']),
         after: _lines(json['after']),

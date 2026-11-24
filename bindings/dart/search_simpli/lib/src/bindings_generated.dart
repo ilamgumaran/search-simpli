@@ -643,15 +643,18 @@ class SearchSimpliBindings {
   /// "page_size"    1-100 (20); "cursor"; "time_budget_ms" 1-30000 (2000)
   /// Result, after the envelope ("source": "index" follows "request"):
   /// "case_applied"; "hits" [{"root_id","path","line","text" (at most 512
-  /// bytes, no terminator),"text_truncated","match_offsets" (half-open
-  /// codepoint ranges into text),"before","after" [{"line","text",
+  /// bytes, no terminator; in regex mode cut where a 17th non-empty match
+  /// starts),"text_truncated","matches_truncated" (that cut: the line holds
+  /// more matches than listed),"match_offsets" (half-open codepoint ranges
+  /// into text, at most 16 in regex mode),"before","after" [{"line","text",
   /// "text_truncated"}]}]; "files_matched", "files_scanned", "files_capped",
   /// "bytes_scanned" (for the files whose scan ended on this page);
   /// "pending_files"; "not_scanned" {"too_large","unreadable",
   /// "budget_exhausted","not_retained"}; "not_read" (null); "truncated" (the
   /// corpus may be incomplete, as ss_find); "stopped" ("none" | "time", the
   /// page ran out of time_budget_ms); "next_cursor"
-  /// ("<generation>:<request>:<file>:<line>:<listed>"). Warning
+  /// ("<generation>:<request>:<file>:<line>:<listed>", <file> counting the
+  /// files the caller may see before path_prefix and name_glob). Warning
   /// "pattern_matches_empty". Refusals: SS_ERR_INVALID_ARGUMENT for a field
   /// out of range, a pattern outside the subset ("pattern not supported at
   /// byte N: <reason>"), a stale, foreign or malformed cursor; SS_ERR_CAPACITY

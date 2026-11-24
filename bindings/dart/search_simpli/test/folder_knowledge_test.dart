@@ -108,7 +108,15 @@ void main() {
       expect(hit.before.length + hit.after.length, inInclusiveRange(1, 2));
       if (hit.before.isNotEmpty) expect(hit.before.single.line, hit.line - 1);
     }
+    expect(result.hits.every((h) => !h.matchesTruncated), isTrue);
     expect(result.notScanned.keys, unorderedEquals(['too_large', 'unreadable', 'budget_exhausted', 'not_retained']));
+    // Regex mode lists at most 16 non-empty matches a line and says when it cut the text at a 17th; empty
+    // matches neither count nor cut (rework 2, ruling 4).
+    final letters = engine.scan(r'\w', mode: ScanMode.regex, pageSize: 100);
+    expect(letters.hits.every((h) => h.matchOffsets.length <= 16), isTrue);
+    expect(letters.hits.any((h) => h.matchesTruncated && h.textTruncated && h.matchOffsets.length == 16), isTrue);
+    final empties = engine.scan(r'\b', mode: ScanMode.regex, pageSize: 100);
+    expect(empties.hits.every((h) => !h.matchesTruncated && h.matchOffsets.isEmpty), isTrue);
     // Paging one line at a time gives the same lines.
     final paged = <String>[];
     String? cursor;

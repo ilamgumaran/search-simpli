@@ -1,0 +1,16 @@
+S6-T24 rework 2: zig build test --summary all (Debug), the rework's counted tests' prints and the summary
+S6-T24 compile fuzz: 3638 patterns (longest 1024 bytes), 2768 compiled, 4508 refused; most work 360772 (1022 bytes: [ -￿][ -￿][ -￿][ -￿][ -￿][ -￿][ -￿][ -￿][ -￿][ -￿][ -￿][ -)
+S6-T24 meter: [^\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w (1024 bytes) over 196608 bytes: 8 reads, widest 66066 units and 346072 work, at most 5.24 work a unit
+S6-T24 meter: [^\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s (1024 bytes) over 196608 bytes: 5 reads, widest 65541 units and 98175 work, at most 1.50 work a unit
+S6-T24 meter: [^\W\W\W\W\W\W\W\W\W\W\W\W\W\W\W\W\W\W\W (1024 bytes) over 131072 bytes: 8 reads, widest 66066 units and 214304 work, at most 3.24 work a unit
+S6-T24 meter: (?:[\d\sα-ωа-яK]|\b){1,255}(?:[^\w\d (53 bytes) over 262132 bytes: 5931 reads, widest 69806 units and 81360 work, at most 1.19 work a unit
+S6-T24 meter: (?:\w|\W){1,255}(?:\w|\W){1,255}z (33 bytes) over 262132 bytes: 10990 reads, widest 70890 units and 143778 work, at most 2.08 work a unit
+S6-T24 meter: (?:[a-j ]{1,255}){15}z (22 bytes) over 1048572 bytes: 1660 reads, widest 65761 units and 65760 work, at most 1.00 work a unit
+S6-T24 meter: (?:\w|\W){1,255}(?:\w|\W){1,255}z (33 bytes) over 1048572 bytes: 61674 reads, widest 68850 units and 68833 work, at most 1.00 work a unit
+S6-T24 meter: a(.*z)? (7 bytes) over 1048572 bytes: 1904 reads, widest 65542 units and 65541 work, at most 1.00 work a unit
+S6-T24 meter: abcdefghij z (12 bytes) over 1048572 bytes: 16 reads, widest 65536 units and 70998 work, at most 1.08 work a unit
+S6-T24 meter: ABCDEFGHIJ Z (12 bytes) over 1048572 bytes: 16 reads, widest 65536 units and 70998 work, at most 1.08 work a unit
+S6-T24 meter: ωж→ 1ſk ωж→ 1ſk z (27 bytes) over 262132 bytes: 20 reads, widest 65542 units and 96288 work, at most 1.47 work a unit
+S6-T24 meter fuzz: 886 patterns matched, at most 2.75 work a unit (2 bytes: \B)
+S6-T24 glob page: 1 ms of work-time spent 1000008 steps; cursor 3937:1:0
+Build Summary: 15/15 steps succeeded; 644/653 tests passed (9 skipped)

@@ -102,7 +102,7 @@ pub const tools = [_]Tool{
     tool("outline", "Outline", "The headings (level, text, line range) and front matter of one indexed file.", false),
     tool("read_span", "Read span", "The exact original text of lines start_line..end_line of one file (1-based, inclusive), with up to 20 lines of context and its sha256; at most 400 lines and 256 KiB.", false),
     tool("list_files", "List files", "A listing (not a search) of the indexed and pending files by root and path, with sizes, chunk counts and chunker; paged.", false),
-    tool("scan", "Scan", "Every line holding an exact string (literal) or matching a pattern (regex subset), in path then line order: path, line, text, code-point match offsets, optional context; per-file cap, a time budget and a cursor for the next page. Not ranked and not tokenized: use it for codes, amounts, punctuation and parts of words.", false),
+    tool("scan", "Scan", "Every line holding an exact string (literal) or matching a pattern (regex subset), in path then line order: path, line, text (at most 512 bytes; in regex mode at most 16 matches a line are listed and text ends where a 17th starts, matches_truncated), code-point match offsets, optional context; per-file cap, a time budget and a cursor for the next page. Not ranked and not tokenized: use it for codes, amounts, punctuation and parts of words.", false),
     tool("apply_changes", "Apply changes", "Host-fed changes: add, change, remove, move or mark pending files, publishing one new index generation. Present only when the server runs with --allow-write.", false),
 };
 

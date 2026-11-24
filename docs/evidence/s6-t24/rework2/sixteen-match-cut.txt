@@ -1,0 +1,10 @@
+S6-T24 rework 2, ruling 4: the head's searchd (ReleaseSmall) over one file: 40 a's, 17 b's, 'word' x 20 (99 code points).
+pattern, line, text code points, text_truncated, matches_truncated, offsets listed
+regex 'x*' 1 40 False False 0
+regex 'x*' 2 17 False False 0
+regex 'x*' 3 99 False False 0
+regex '\\b' 1 40 False False 0
+regex '\\b' 2 17 False False 0
+regex '\\b' 3 99 False False 0
+regex 'a' 1 16 True True 16
+literal 'a' 1 40 False False 40

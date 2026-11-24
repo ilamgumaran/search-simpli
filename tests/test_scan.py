@@ -79,6 +79,7 @@ PATTERNS = (
     ("a{256}", "regex"), ("(a", "regex"), ("[z-a]", "regex"), ("a**", "regex"), (".", "regex"), ("^$", "regex"),
     ("\\w_\\w", "regex"), ("_", "literal"), ("snake_case", "literal"), ("K", "literal"), ("k", "literal"),
     ("σ", "literal"), ("STRASSE", "literal"), ("ǆ", "literal"), ("(a|ab)(c|bcd)", "regex"), ("a|", "regex"),
+    ("x*", "regex"), ("x*\\w?", "regex"), ("\\b", "regex"),
 )
 
 
@@ -138,8 +139,8 @@ def comparable(answer: dict, lines_only: bool = False) -> object:
     if lines_only:
         hits = [(h["root_id"], h["path"], h["line"], h["before"], h["after"]) for h in answer["hits"]]
     else:
-        hits = [(h["root_id"], h["path"], h["line"], h["text"], h["text_truncated"], h["match_offsets"],
-                 h["before"], h["after"]) for h in answer["hits"]]
+        hits = [(h["root_id"], h["path"], h["line"], h["text"], h["text_truncated"], h["matches_truncated"],
+                 h["match_offsets"], h["before"], h["after"]) for h in answer["hits"]]
     return {"hits": hits,
             **{key: answer[key] for key in ("files_scanned", "files_matched", "files_capped", "bytes_scanned",
                                             "case_applied", "warnings")}}
@@ -197,6 +198,43 @@ class ReferenceTests(unittest.TestCase):
         self.assertEqual([h["match_offsets"] for h in answer["hits"]], [[], [], []])
         self.assertEqual(answer["warnings"], [{"code": "pattern_matches_empty", "message": scan.EMPTY_MATCH_MESSAGE}])
 
+    def test_rework_2_ruling_4_empty_matches_do_not_count_and_the_cut_is_flagged(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "a.txt").write_text("b" * 17 + "\n" + "a" * 20 + "\n" + " ".join("w%x" % i for i in range(20)) + "\n",
+                                          encoding="utf-8")
+            empty = scan.scan_folder(Path(tmp), {"pattern": "x*", "mode": "regex"})
+            ones = scan.scan_folder(Path(tmp), {"pattern": "x*a?", "mode": "regex"})
+            words = scan.scan_folder(Path(tmp), {"pattern": "\\w+", "mode": "regex"})
+            literal = scan.scan_folder(Path(tmp), {"pattern": "a"})
+        # x* over 17 code points: the whole line, no offsets, nothing cut.
+        first = empty["hits"][0]
+        self.assertEqual((first["text"], first["text_truncated"], first["matches_truncated"], first["match_offsets"]),
+                         ("b" * 17, False, False, []))
+        # Empty matches between the non-empty ones do not count: 16 listed, cut at the 17th, flagged.
+        second = ones["hits"][1]
+        self.assertEqual((second["text"], second["text_truncated"], second["matches_truncated"]), ("a" * 16, True, True))
+        self.assertEqual(second["match_offsets"], [[i, i + 1] for i in range(16)])
+        third = words["hits"][2]
+        self.assertEqual((len(third["match_offsets"]), third["text_truncated"], third["matches_truncated"]), (16, True, True))
+        # Literal mode lists every match: never cut by count.
+        self.assertEqual([(h["line"], h["matches_truncated"], len(h["match_offsets"])) for h in literal["hits"]][0], (2, False, 20))
+
+    def test_rework_2_ruling_1_the_cursor_counts_files_before_the_scope(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            for name in ("a.md", "b.txt", "c.md", "d.txt", "e.txt"):
+                Path(tmp, name).write_text("tide\ntide\n", encoding="utf-8")
+            pages, cursor = [], None
+            while True:
+                page = scan.scan_folder(Path(tmp), {"pattern": "tide", "name_glob": "*.txt", "page_size": 3, "cursor": cursor})
+                pages.append([(h["path"], h["line"]) for h in page["hits"]])
+                cursor = page["next_cursor"]
+                if cursor is None:
+                    break
+                pages[-1].append(cursor.split(":", 2)[2])
+        # b.txt is file 1 and d.txt file 3 of the five, whatever the glob keeps.
+        self.assertEqual(pages, [[("b.txt", 1), ("b.txt", 2), ("d.txt", 1), "3:2:1"],
+                                 [("d.txt", 2), ("e.txt", 1), ("e.txt", 2), "4:3:2"], []])
+
     def test_index_and_folder_give_the_same_hits(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "folder"
@@ -243,6 +281,8 @@ class EngineAgreementTests(unittest.TestCase):
                 args.append("--word")
             if params.get("context_lines"):
                 args += ["--context", str(params["context_lines"])]
+            if params.get("name_glob"):
+                args += ["--glob", params["name_glob"]]
             if cursor:
                 args += ["--cursor", cursor]
             done = subprocess.run(args, capture_output=True, stdin=subprocess.DEVNULL, timeout=120)
@@ -278,6 +318,33 @@ class EngineAgreementTests(unittest.TestCase):
         self.assertGreaterEqual(lines_only, 3)
         self.assertGreater(hits, 1000)
         self.assertGreater(refusals, 10)
+
+    def test_rework_2_ruling_1_pages_and_cursors_agree_under_a_glob(self) -> None:
+        def pages(page_of) -> list:
+            out, cursor = [], None
+            while True:
+                page = page_of(cursor)
+                tail = page["next_cursor"].split(":", 2)[2] if page["next_cursor"] else None
+                out.append(([(h["path"], h["line"], h["match_offsets"]) for h in page["hits"]], tail))
+                cursor = page["next_cursor"]
+                if cursor is None:
+                    return out
+
+        def engine(cursor):
+            args = [str(self.binary), "scan", "--folder", str(self.folder), "\\d", "--regex", "--json", "--page-size", "3",
+                    "--glob", "n0?.txt", "--time-ms", "30000"]
+            done = subprocess.run(args + (["--cursor", cursor] if cursor else []), capture_output=True,
+                                  stdin=subprocess.DEVNULL, timeout=60)
+            self.assertEqual(done.returncode, 0, done.stderr)
+            return json.loads(done.stdout)
+
+        def reference(cursor):
+            return scan.scan_folder(self.folder, {"pattern": "\\d", "mode": "regex", "page_size": 3, "name_glob": "n0?.txt",
+                                                  "time_budget_ms": 30_000, "cursor": cursor})
+
+        by_engine, by_reference = pages(engine), pages(reference)
+        self.assertEqual(by_engine, by_reference)
+        self.assertGreater(len(by_engine), 3)
 
     def test_known_divergences_still_diverge(self) -> None:
         for pattern, _line in DIVERGENT_EXAMPLES:
@@ -415,9 +482,10 @@ def nest(depth: int) -> str:
     return body
 
 
-# The stated constant (docs/scan.md, "Time"): a scan holds its caller at most time_budget_ms plus this, on every
-# path, the pattern's compiling included, the walk of a folder and the read of the one file in hand excepted.
-OVER_BUDGET_MS = 50
+# The stated constant (docs/scan.md, "Time") is measured by a script outside the default run
+# (`scripts/prototypes/s6t24/rework2/bound_probe.py`): NFR-19 allows no wall-clock threshold in a test (rework 2,
+# ruling 3). These tests check what a page does at a budget it cannot meet (stopped, cursor, refusal) and print
+# the time it took; the only timing they assert is a ratio (the slope of ruling 2).
 
 
 @unittest.skipIf(NO_ZIG, "SEARCH_SIMPLI_NO_ZIG=1: this environment deliberately has no Zig (CI)")
@@ -460,7 +528,6 @@ class BudgetTests(unittest.TestCase):
             took, done = self.timed("scan", "--folder", str(self.small), pattern, "--regex", "--json", "--time-ms", "1")
             self.assertEqual(done.returncode, 0, done.stderr)
             print(f"S6-T24 ruling 1: {len(pattern.encode())}-byte pattern at --time-ms 1: {took:.1f} ms (baseline {base:.1f} ms)", file=sys.stderr)
-            self.assertLess(took - base, 1 + OVER_BUDGET_MS, pattern)
         self.assertEqual([len(nest(depth).encode()) for depth in (4, 5)], [44, 53])
         # Over `searchd serve`: the scan with time_budget_ms 1 and a status call (`index_status`) queued behind it.
         server = subprocess.Popen([str(self.binary), "serve", str(self.index)], stdin=subprocess.PIPE,
@@ -481,7 +548,6 @@ class BudgetTests(unittest.TestCase):
                 self.assertIn("result", first)
                 self.assertIn("result", second)
                 print(f"S6-T24 ruling 1: serve, depth {depth}: scan and the status behind it answered in {took:.1f} ms", file=sys.stderr)
-                self.assertLess(took, 1 + OVER_BUDGET_MS)
         finally:
             server.stdin.close()
             server.wait(timeout=60)
@@ -510,6 +576,7 @@ class BudgetTests(unittest.TestCase):
             self.assertEqual(hit["match_offsets"], [[i, i + 1] for i in range(16)])
             self.assertEqual(hit["text"], "a" * 16)
             self.assertTrue(hit["text_truncated"])
+            self.assertTrue(hit["matches_truncated"])
             times[power] = took - base
             print(f"S6-T24 ruling 2: a(.*b)? over 2^{power} a's: {took:.0f} ms (baseline {base:.0f} ms)", file=sys.stderr)
         slope = times[22] / times[20]
@@ -522,7 +589,7 @@ class BudgetTests(unittest.TestCase):
         took, done = self.timed("scan", "--folder", str(folder), "a(.*b)?", "--regex", "--case", "sensitive", "--time-ms", "5")
         self.assertEqual(done.returncode, 1)
         self.assertIn("line 1 of r-legacy/x.txt outlasts time_budget_ms (5)", done.stderr.decode())
-        self.assertLess(took - base, 5 + OVER_BUDGET_MS)
+        print(f"S6-T24 ruling 2: refused at --time-ms 5 after {took:.0f} ms (baseline {base:.0f} ms)", file=sys.stderr)
 
     def test_ruling_3_a_literal_stops_on_time(self) -> None:
         folder = self.scratch / "lit"
@@ -537,7 +604,6 @@ class BudgetTests(unittest.TestCase):
                   f"(baseline {base:.1f} ms), stopped {answer['stopped']}", file=sys.stderr)
             self.assertEqual(answer["stopped"], "time")
             self.assertIsNotNone(answer["next_cursor"])
-            self.assertLess(took - base, 1 + OVER_BUDGET_MS)
 
     def test_ruling_5_the_refusal_names_its_cause(self) -> None:
         # The verifier's case: an 8 MiB file whose first line is 5,000 x's, x\d at --time-ms 1. The read used the

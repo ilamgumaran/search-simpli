@@ -581,11 +581,12 @@ pub const ScopedService = struct {
             try candidates.append(allocator, .{ .root_id = entry.root_id, .path = entry.path, .record = try scope.recordPath(allocator, entry.root_id, entry.path), .retained = root.retain_source });
         }
         var pending: usize = 0;
-        for (folder.pending) |entry| if (resolved.listedVisible(entry) and scan_module.inScope(request, entry.path)) {
+        const in_scope = scan_module.Scope.init(request);
+        for (folder.pending) |entry| if (resolved.listedVisible(entry) and in_scope.contains(entry.path)) {
             pending += 1;
         };
         var not_scanned = scan_module.NotScanned{};
-        for (folder.skipped) |entry| if (resolved.listedVisible(entry) and scan_module.inScope(request, entry.path)) {
+        for (folder.skipped) |entry| if (resolved.listedVisible(entry) and in_scope.contains(entry.path)) {
             const reason = entry.reason orelse "unreadable";
             if (std.mem.eql(u8, reason, "too_large")) not_scanned.too_large += 1 else if (std.mem.eql(u8, reason, "budget_exhausted")) not_scanned.budget_exhausted += 1 else not_scanned.unreadable += 1;
         };
