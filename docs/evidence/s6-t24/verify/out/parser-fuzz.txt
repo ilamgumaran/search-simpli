@@ -1,0 +1,2 @@
+seed 99: 20000 patterns: {'answered': 4680, 'refused': 15320, 'accept_mismatch': 0, 'message_mismatch': 0, 'slow': 0, 'lone_surrogate_json_parse_error': 3433}; slowest answer 0.021 s for 'a+sd\t255$மழைW|'
+seed 1234: 20000 patterns: {'answered': 4740, 'refused': 15260, 'accept_mismatch': 0, 'message_mismatch': 0, 'slow': 0, 'lone_surrogate_json_parse_error': 3388}; slowest answer 0.001 s for '-(^{?$2559[][ [^(?<'
