@@ -1,0 +1,85 @@
+Checks at a09c7b7 (run_checks.sh; the verifier's worktree)
+== zig build test --summary all (via check_test_counts --run)
+Build Summary: 15/15 steps succeeded; 644/653 tests passed (9 skipped)
+|  +- compile test core Debug native success 4s MaxRSS:884M
+|     +- WriteFile cached
+|     +- compile obj fastmem Debug native cached 52ms MaxRSS:31M
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test operations Debug native success 2s MaxRSS:596M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test interfaces Debug native success 3s MaxRSS:715M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options cached
+|     +- options success
+|  +- compile test tests Debug native success 5s MaxRSS:1G
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 302 | 302 (302 pass) | ok |
+| operations | `run test operations` | 9 | 9 (9 pass) | ok |
+| interfaces | `run test interfaces` | 25 | 25 (25 pass) | ok |
+| tests | `run test tests` | 311 | 311 (302 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 653 tests: every step ran the tests the listing has, and the static checker passes)
+exit 0
+
+== check_layers
+check_layers: OK (47 files in layers, 3 module roots, 6 allowed interface imports; 79 files hold 653 tests, each run by a step of `zig build test`; the public core API `api`: 101 names in 24 namespaces)
+exit 0
+== check_requirements
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+exit 0
+== check_no_home_paths
+exit 0
+== zig build test-abi
+PASS ss_version
+PASS ss_import_json publishes generation 1
+PASS ss_import_json rejects malformed JSON with a negative code
+PASS ss_last_error is non-empty after a failure
+PASS ss_open opens the published demo snapshot
+PASS ss_open on a missing directory returns NULL
+PASS ss_status matches the captured index_status result, plus the 2.0.0 and 2.1.0 fields
+PASS ss_query matches the captured search_knowledge result byte for byte, plus warnings and request
+PASS ss_query warns about an unmatched term
+PASS ss_query warns that the vector was ignored in lexical mode
+PASS ss_query adds profile only on request
+PASS ss_evidence matches the captured read_chunk result, plus root_id, section_path, neighbours
+PASS ss_evidence reports an unknown id as not found
+PASS ss_query rejects top_k=0
+PASS ss_query rejects a mismatched query_vector length
+PASS ss_query rejects query_text that is not valid UTF-8
+PASS ss_apply_changes publishes a host batch; stale generation, bad JSON, forged labels, unknown options, file reads off are refused
+PASS ss_find answers words, phrase and pages; stale/malformed cursor, empty query, page size, unknown field, missing query, NULL handle, absent positions are refused
+PASS ss_scan answers a literal, a regex with offsets and pages; an unsupported pattern, stale cursor, unknown field, missing pattern, NULL handle, absent source are refused
+PASS ss_outline gives headings and front matter; unknown path, unknown root, missing root_id, absent source are refused
+PASS ss_read_span is byte exact with context and clamping; over 400 lines, context 21, line 0, a pending file, absent source are refused
+PASS ss_list_files lists indexed and pending files with paging; stale cursor, bad status, page size 0, NULL handle are refused
+PASS ss_roots counts the visible roots; roots narrows ss_roots, ss_query and ss_evidence; a bad roots, a non-object, NULL handle are refused
+PASS a filename_index directory: ss_status ends with filename_policy_id; a filename query finds the file by name; filename without lexical, filename on a directory without the channel are refused
+PASS a handle opened before ss_apply_changes on the same directory answers its own generation after the write and the pruning (read_span, find, outline, query, list_files); a fresh handle answers the new one
+Build Summary: 8/8 steps succeeded
+exit 0
+== python suite
+Ran 658 tests in 271.583s
+OK
+exit 0
+== dart
+No issues found!
+00:03 +101: All tests passed!
+exit 0
+== check_native
+== check_native
+check_native: macos-arm64 memcpy at 0x740 (252 calls against 123): word-wise (8 q-register moves, no byte loop)
+check_native: android-arm64 memcpy at 0x62674 (550 calls against 174): word-wise (8 q-register moves, no byte loop)
+check_native: ios-arm64 memcpy at 0x587c (248 calls against 114): word-wise (8 q-register moves, no byte loop)
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+exit 0

@@ -1,0 +1,11 @@
+native/macos-arm64/libsearch_simpli.dylib: 1100488 B, a823dbf36a466a91…, against the committed file: identical
+native/android-arm64/libsearch_simpli.so: 1062904 B, 8375c8d2d46ee924…, against the committed file: identical
+native/ios-arm64/search_simpli.framework/search_simpli: 1080904 B, 98df691c73e9a717…, against the committed file: identical
+native/ios-arm64/search_simpli.framework/Info.plist: 749 B, 8fb8f2353652106e…, against the committed file: identical
+example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so: 1062904 B, 8375c8d2d46ee924…, against the committed file: identical
+native/SOURCE-SHA256: 65 B, cafb64aa444cbac6…, against the committed file: identical
+__text (size -m):
+	Section __text: 653912
+	Section __text: 652116
+exported symbols (macOS, nm -gU): 19 in all, 17 of them _ss_ functions
+?? docs/evidence/s6-t24/verify3/

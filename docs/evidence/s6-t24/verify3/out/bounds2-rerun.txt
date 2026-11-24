@@ -1,0 +1,86 @@
+process start (a literal over an empty folder)
+  baseline: 3 ms, exit 0, stopped none, hits 0, files_scanned 0, cursor no
+  baseline: 2 ms, exit 0, stopped none, hits 0, files_scanned 0, cursor no
+  baseline: 2 ms, exit 0, stopped none, hits 0, files_scanned 0, cursor no
+  (index of a-class: exit 0, 0.2 s)
+A. heavy class: 1024-byte pattern, 2,000 lines of 254 é
+  [^\W x 508]{255} folder --time-ms 1: 4 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\W x 508]{255} folder --time-ms 100: 102 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\W x 508]{255} folder --time-ms 1000: 604 ms, exit 0, stopped none, hits 0, files_scanned 1, cursor no
+  [^\W x 508]{255} index --time-ms 1: 5 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\W]{255} folder --time-ms 1: 3 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\W]{255} folder --time-ms 100: 102 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\W]{255} folder --time-ms 1000: 604 ms, exit 0, stopped none, hits 0, files_scanned 1, cursor no
+  [^\W]{255} index --time-ms 1: 4 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^a]{255} folder --time-ms 1: 4 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^a]{255} folder --time-ms 100: 103 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^a]{255} folder --time-ms 1000: 410 ms, exit 0, stopped none, hits 0, files_scanned 1, cursor no
+  [^a]{255} index --time-ms 1: 5 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  (index of a-arrow: exit 0, 0.1 s)
+A2. costlier items: 1024-byte patterns, 2,000 lines of 254 →
+  [^\w x 508]{255} folder --time-ms 1: 4 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\w x 508]{255} folder --time-ms 1: 3 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\w x 508]{255} folder --time-ms 1: 3 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\w x 508]{255} folder --time-ms 100: 102 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\w x 508]{255} folder --time-ms 100: 103 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\w x 508]{255} folder --time-ms 100: 103 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\w x 508]{255} folder --time-ms 1000: 826 ms, exit 0, stopped none, hits 0, files_scanned 1, cursor no
+  [^\w x 508]{255} folder --time-ms 1000: 846 ms, exit 0, stopped none, hits 0, files_scanned 1, cursor no
+  [^\w x 508]{255} folder --time-ms 1000: 830 ms, exit 0, stopped none, hits 0, files_scanned 1, cursor no
+  [^\w x 508]{255} index --time-ms 1: 8 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\w x 508]{255} index --time-ms 1: 8 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\w x 508]{255} index --time-ms 1: 8 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\s x 508]{255} folder --time-ms 1: 4 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\s x 508]{255} folder --time-ms 1: 4 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\s x 508]{255} folder --time-ms 1: 3 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\s x 508]{255} folder --time-ms 100: 103 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\s x 508]{255} folder --time-ms 100: 103 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\s x 508]{255} folder --time-ms 100: 103 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\s x 508]{255} folder --time-ms 1000: 416 ms, exit 0, stopped none, hits 0, files_scanned 1, cursor no
+  [^\s x 508]{255} folder --time-ms 1000: 416 ms, exit 0, stopped none, hits 0, files_scanned 1, cursor no
+  [^\s x 508]{255} folder --time-ms 1000: 416 ms, exit 0, stopped none, hits 0, files_scanned 1, cursor no
+  [^\s x 508]{255} index --time-ms 1: 9 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\s x 508]{255} index --time-ms 1: 8 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  [^\s x 508]{255} index --time-ms 1: 8 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  heavy class over one 10 MiB line of é, no terminator, --time-ms 1: 10 ms, exit 0, stopped none, hits 1, files_scanned 1, cursor no
+  (index of b-names: exit 0, 0.4 s)
+B. glob of 255 bytes over 20,000 names of 255 bytes
+  index, no glob, --time-ms 1: 35 ms, exit 0, stopped none, hits 20, files_scanned 19, cursor yes
+  folder, no glob, --time-ms 1: 65 ms, exit 0, stopped none, hits 20, files_scanned 19, cursor yes
+  index, *.txt, --time-ms 1: 34 ms, exit 0, stopped none, hits 20, files_scanned 19, cursor yes
+  folder, *.txt, --time-ms 1: 65 ms, exit 0, stopped none, hits 20, files_scanned 19, cursor yes
+  index, * + 253 a + b, --time-ms 1: 36 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  folder, * + 253 a + b, --time-ms 1: 66 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+C. 20,000 tiny files, a literal that never matches
+  index --time-ms 1: 36 ms, exit 0, stopped time, hits 0, files_scanned 2208, cursor yes
+  folder --time-ms 1: 66 ms, exit 0, stopped time, hits 0, files_scanned 62, cursor yes
+  index --time-ms 30000: 44 ms, exit 0, stopped none, hits 0, files_scanned 20000, cursor no
+  folder --time-ms 30000: 357 ms, exit 0, stopped none, hits 0, files_scanned 20000, cursor no
+D. the 10 MiB limit (lines of 4,095 x then LF)
+  at-limit (10485760 B) zzz --time-ms 1: 4 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  at-limit (10485760 B) zzz --time-ms 30000: 10 ms, exit 0, stopped none, hits 0, files_scanned 1, cursor no
+  at-limit (10485760 B) x\d --time-ms 1: 4 ms, exit 0, stopped time, hits 0, files_scanned 0, cursor yes
+  at-limit (10485760 B) x\d --time-ms 30000: 144 ms, exit 0, stopped none, hits 0, files_scanned 1, cursor no
+  over-limit (10485761 B) zzz --time-ms 1: 3 ms, exit 0, stopped none, hits 0, files_scanned 0, cursor no
+  over-limit (10485761 B) zzz --time-ms 30000: 3 ms, exit 0, stopped none, hits 0, files_scanned 0, cursor no
+  over-limit (10485761 B) x\d --time-ms 1: 3 ms, exit 0, stopped none, hits 0, files_scanned 0, cursor no
+  over-limit (10485761 B) x\d --time-ms 30000: 3 ms, exit 0, stopped none, hits 0, files_scanned 0, cursor no
+E. one 10 MiB line, no terminator
+  (index of e-one-line: exit 0, 0.5 s)
+  folder: needle 1,023 a + b, smart (ascii_ci), --time-ms 1: 14 ms, exit 1, searchd: SS_ERR_CAPACITY: time_budget_ms (1) ran out reading r-legacy/x.txt, and line 1 did not finish in the 10 ms after: raise it (at most 30000) or narrow the scope
+  folder: needle, sensitive (bytes), --time-ms 1: 14 ms, exit 1, searchd: SS_ERR_CAPACITY: time_budget_ms (1) ran out reading r-legacy/x.txt, and line 1 did not finish in the 10 ms after: raise it (at most 30000) or narrow the scope
+  folder: regex a(.*b)?, --time-ms 1: 14 ms, exit 1, searchd: SS_ERR_CAPACITY: line 1 of r-legacy/x.txt outlasts time_budget_ms (1): raise it (at most 30000) or narrow the scope
+  folder: regex a(.*b)?, --time-ms 30000: 2695 ms, exit 0, stopped none, hits 1, files_scanned 1, cursor no
+  index: needle 1,023 a + b, smart (ascii_ci), --time-ms 1: 23 ms, exit 1, searchd: SS_ERR_CAPACITY: time_budget_ms (1) ran out reading r-legacy/x.txt, and line 1 did not finish in the 10 ms after: raise it (at most 30000) or narrow the scope
+  index: needle, sensitive (bytes), --time-ms 1: 22 ms, exit 1, searchd: SS_ERR_CAPACITY: time_budget_ms (1) ran out reading r-legacy/x.txt, and line 1 did not finish in the 10 ms after: raise it (at most 30000) or narrow the scope
+  index: regex a(.*b)?, --time-ms 1: 22 ms, exit 1, searchd: SS_ERR_CAPACITY: time_budget_ms (1) ran out reading r-legacy/x.txt, and line 1 did not finish in the 10 ms after: raise it (at most 30000) or narrow the scope
+  index: regex a(.*b)?, --time-ms 30000: 2708 ms, exit 0, stopped none, hits 1, files_scanned 1, cursor no
+F. periodic insensitive literal (ab) x 512 over ABAB... broken every 1,023 bytes
+  --time-ms 1: 14 ms, exit 1, searchd: SS_ERR_CAPACITY: time_budget_ms (1) ran out reading r-legacy/x.txt, and line 1 did not finish in the 10 ms after: raise it (at most 30000) or narrow the scope
+  --time-ms 30000: 20 ms, exit 0, stopped none, hits 0, files_scanned 1, cursor no
+G. searchd serve, time_budget_ms 1, an index_status call queued behind
+  heavy class: scan answered after 3 ms (stopped time, files_scanned 0); index_status queued behind it after 3 ms (result)
+  heavy class [^\w x 508]{255} over →: scan answered after 7 ms (stopped time, files_scanned 0); index_status queued behind it after 7 ms (result)
+  heavy class [^\s x 508]{255} over →, time_budget_ms 100: scan answered after 102 ms (stopped time, files_scanned 0); index_status queued behind it after 102 ms (result)
+  glob * + 253 a + b: scan answered after 34 ms (stopped time, files_scanned 0); index_status queued behind it after 35 ms (result)
+  control: literal zzz: scan answered after 34 ms (stopped time, files_scanned 2174); index_status queued behind it after 35 ms (result)

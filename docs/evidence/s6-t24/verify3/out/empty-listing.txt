@@ -1,0 +1,42 @@
+load at start: { 5.97 6.32 5.08 }
+65536 a's, (?:a.*b)?
+  rework 1, --time-ms 30000: 37 ms, text 16 code points, offsets 0, text_truncated True, matches_truncated (absent)
+  head,     --time-ms 30000: 918 ms, text 512 code points, offsets 0, text_truncated True, matches_truncated False
+  head,     --time-ms  1000: 976 ms, text 512 code points, offsets 0, text_truncated True, matches_truncated False
+  head,     --time-ms     1: 15 ms, exit 1: searchd: SS_ERR_CAPACITY: line 1 of r-legacy/x.txt outlasts time_budget_ms (1): 
+65536 a's, a(.*b)?
+  rework 1, --time-ms 30000: 41 ms, text 16 code points, offsets 16, text_truncated True, matches_truncated (absent)
+  head,     --time-ms 30000: 41 ms, text 16 code points, offsets 16, text_truncated True, matches_truncated True
+  head,     --time-ms  1000: 41 ms, text 16 code points, offsets 16, text_truncated True, matches_truncated True
+  head,     --time-ms     1: 14 ms, exit 1: searchd: SS_ERR_CAPACITY: line 1 of r-legacy/x.txt outlasts time_budget_ms (1): 
+262144 a's, (?:a.*b)?
+  rework 1, --time-ms 30000: 157 ms, text 16 code points, offsets 0, text_truncated True, matches_truncated (absent)
+  head,     --time-ms 30000: 3931 ms, text 512 code points, offsets 0, text_truncated True, matches_truncated False
+  head,     --time-ms  1000: 1005 ms, exit 1: searchd: SS_ERR_CAPACITY: line 1 of r-legacy/x.txt outlasts time_budget_ms (1000
+  head,     --time-ms     1: 14 ms, exit 1: searchd: SS_ERR_CAPACITY: line 1 of r-legacy/x.txt outlasts time_budget_ms (1): 
+262144 a's, a(.*b)?
+  rework 1, --time-ms 30000: 120 ms, text 16 code points, offsets 16, text_truncated True, matches_truncated (absent)
+  head,     --time-ms 30000: 118 ms, text 16 code points, offsets 16, text_truncated True, matches_truncated True
+  head,     --time-ms  1000: 116 ms, text 16 code points, offsets 16, text_truncated True, matches_truncated True
+  head,     --time-ms     1: 14 ms, exit 1: searchd: SS_ERR_CAPACITY: line 1 of r-legacy/x.txt outlasts time_budget_ms (1): 
+1048576 a's, (?:a.*b)?
+  rework 1, --time-ms 30000: 472 ms, text 16 code points, offsets 0, text_truncated True, matches_truncated (absent)
+  head,     --time-ms 30000: 14392 ms, text 512 code points, offsets 0, text_truncated True, matches_truncated False
+  head,     --time-ms  1000: 1004 ms, exit 1: searchd: SS_ERR_CAPACITY: line 1 of r-legacy/x.txt outlasts time_budget_ms (1000
+  head,     --time-ms     1: 14 ms, exit 1: searchd: SS_ERR_CAPACITY: line 1 of r-legacy/x.txt outlasts time_budget_ms (1): 
+1048576 a's, a(.*b)?
+  rework 1, --time-ms 30000: 502 ms, text 16 code points, offsets 16, text_truncated True, matches_truncated (absent)
+  head,     --time-ms 30000: 483 ms, text 16 code points, offsets 16, text_truncated True, matches_truncated True
+  head,     --time-ms  1000: 476 ms, text 16 code points, offsets 16, text_truncated True, matches_truncated True
+  head,     --time-ms     1: 15 ms, exit 1: searchd: SS_ERR_CAPACITY: line 1 of r-legacy/x.txt outlasts time_budget_ms (1): 
+10485759 a's, (?:a.*b)?
+  rework 1, --time-ms 30000: 5482 ms, text 16 code points, offsets 0, text_truncated True, matches_truncated (absent)
+  head,     --time-ms 30000: 30005 ms, exit 1: searchd: SS_ERR_CAPACITY: line 1 of r-legacy/x.txt outlasts time_budget_ms (3000
+  head,     --time-ms  1000: 1005 ms, exit 1: searchd: SS_ERR_CAPACITY: line 1 of r-legacy/x.txt outlasts time_budget_ms (1000
+  head,     --time-ms     1: 17 ms, exit 1: searchd: SS_ERR_CAPACITY: time_budget_ms (1) ran out reading r-legacy/x.txt, and
+10485759 a's, a(.*b)?
+  rework 1, --time-ms 30000: 5078 ms, text 16 code points, offsets 16, text_truncated True, matches_truncated (absent)
+  head,     --time-ms 30000: 4970 ms, text 16 code points, offsets 16, text_truncated True, matches_truncated True
+  head,     --time-ms  1000: 1005 ms, exit 1: searchd: SS_ERR_CAPACITY: line 1 of r-legacy/x.txt outlasts time_budget_ms (1000
+  head,     --time-ms     1: 16 ms, exit 1: searchd: SS_ERR_CAPACITY: time_budget_ms (1) ran out reading r-legacy/x.txt, and
+exit 0; load at end: { 6.16 6.30 5.16 }

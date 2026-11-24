@@ -1,0 +1,89 @@
+load at start: { 4.68 5.90 5.07 } (run alongside load_tests.sh's Python runs)
+budget + 50 ms is the bound; CLI times include process start (2-4 ms)
+w508: 1024 B over arrow
+  --time-ms    1: folder 9 ms, stopped time, hits 0; index 10 ms, stopped time, hits 0
+  --time-ms 1000: folder 963 ms, stopped none, hits 0; index 1007 ms, stopped time, hits 0
+  serve, 1 ms: scan 6 ms (stopped time), queued call 6 ms
+s508: 1024 B over arrow
+  --time-ms    1: folder 5 ms, stopped time, hits 0; index 10 ms, stopped time, hits 0
+  --time-ms 1000: folder 548 ms, stopped none, hits 0; index 551 ms, stopped none, hits 0
+  serve, 1 ms: scan 6 ms (stopped time), queued call 6 ms
+fold: 610 B over deseret
+  --time-ms    1: folder 7 ms, stopped none, hits 20; index 6 ms, stopped none, hits 20
+  --time-ms 1000: folder 4 ms, stopped none, hits 20; index 5 ms, stopped none, hits 20
+  serve, 1 ms: scan 2 ms (stopped none), queued call 2 ms
+foldw: 12 B over deseret
+  --time-ms    1: folder 5 ms, stopped time, hits 0; index 6 ms, stopped time, hits 0
+  --time-ms 1000: folder 971 ms, stopped none, hits 0; index 1005 ms, stopped time, hits 0
+  serve, 1 ms: scan 2 ms (stopped time), queued call 2 ms
+bnd: 901 B over tamil
+  --time-ms    1: folder 7 ms, stopped time, hits 0; index 6 ms, stopped time, hits 0
+  --time-ms 1000: folder 360 ms, stopped none, hits 0; index 364 ms, stopped none, hits 0
+  serve, 1 ms: scan 2 ms (stopped time), queued call 2 ms
+bnd2: 1021 B over tamil
+  --time-ms    1: folder 5 ms, stopped time, hits 0; index 6 ms, stopped time, hits 0
+  --time-ms 1000: folder 29 ms, stopped none, hits 0; index 31 ms, stopped none, hits 0
+  serve, 1 ms: scan 2 ms (stopped time), queued call 2 ms
+alt: 145 B over tamil
+  --time-ms    1: folder 4 ms, stopped time, hits 0; index 5 ms, stopped time, hits 0
+  --time-ms 1000: folder 216 ms, stopped none, hits 0; index 221 ms, stopped none, hits 0
+  serve, 1 ms: scan 2 ms (stopped time), queued call 2 ms
+b2b: 1008 B over mixed
+  --time-ms    1: folder 7 ms, stopped time, hits 0; index 8 ms, stopped time, hits 0
+  --time-ms 1000: folder 35 ms, stopped none, hits 0; index 37 ms, stopped none, hits 0
+  serve, 1 ms: scan 2 ms (stopped time), queued call 2 ms
+rep: 35 B over mixed
+  --time-ms    1: folder 5 ms, stopped time, hits 0; index 7 ms, stopped time, hits 0
+  --time-ms 1000: folder 1004 ms, stopped time, hits 0; index 1006 ms, stopped time, hits 0
+  serve, 1 ms: scan 2 ms (stopped time), queued call 2 ms
+lit: 1022 B over ta
+  --time-ms    1: folder 8 ms, stopped time, hits 0; index 6 ms, stopped time, hits 0
+  --time-ms 1000: folder 769 ms, stopped none, hits 0; index 776 ms, stopped none, hits 0
+  serve, 1 ms: scan 2 ms (stopped time), queued call 2 ms
+litci: 1022 B over ta
+  --time-ms    1: folder 5 ms, stopped time, hits 0; index 5 ms, stopped time, hits 0
+  --time-ms 1000: folder 780 ms, stopped none, hits 0; index 797 ms, stopped none, hits 0
+  serve, 1 ms: scan 2 ms (stopped time), queued call 2 ms
+dot: 18 B over arrow
+  --time-ms    1: folder 7 ms, stopped time, hits 0; index 12 ms, stopped time, hits 0
+  --time-ms 1000: folder 1004 ms, stopped time, hits 0; index 1006 ms, stopped time, hits 0
+  serve, 1 ms: scan 7 ms (stopped time), queued call 7 ms
+wclass: 987 B over mixed
+  --time-ms    1: folder 4 ms, stopped time, hits 0; index 5 ms, stopped time, hits 0
+  --time-ms 1000: folder 567 ms, stopped none, hits 0; index 584 ms, stopped none, hits 0
+  serve, 1 ms: scan 1 ms (stopped time), queued call 1 ms
+Part 1: 404 names listed by the no-glob scan (None)
+Part 1: 600 globs; folder answers differing from the regular-expression oracle 0, from the reference's glob_matches 0; index differing from folder 0
+Part 2: 20,000 names; ms of one CLI call, process start included
+  ascii names, * + 253 a + b (255 B), folder: --time-ms 1: 86 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 111 ms, stopped none, hits 0, cursor no
+  ascii names, * + 253 a + b (255 B), index: --time-ms 1: 47 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 72 ms, stopped none, hits 0, cursor no
+  ascii names, *a x 127 + b (255 B), folder: --time-ms 1: 88 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 111 ms, stopped none, hits 0, cursor no
+  ascii names, *a x 127 + b (255 B), index: --time-ms 1: 47 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 72 ms, stopped none, hits 0, cursor no
+  ascii names, ? x 255 (255 B), folder: --time-ms 1: 87 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 111 ms, stopped none, hits 0, cursor no
+  ascii names, ? x 255 (255 B), index: --time-ms 1: 48 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 71 ms, stopped none, hits 0, cursor no
+  ascii names, * + த x 84 (253 B), folder: --time-ms 1: 86 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 110 ms, stopped none, hits 0, cursor no
+  ascii names, * + த x 84 (253 B), index: --time-ms 1: 47 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 70 ms, stopped none, hits 0, cursor no
+  ascii names, *? x 127 + b (255 B), folder: --time-ms 1: 88 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 112 ms, stopped none, hits 0, cursor no
+  ascii names, *? x 127 + b (255 B), index: --time-ms 1: 48 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 74 ms, stopped none, hits 0, cursor no
+  ascii names, control without a glob, folder --time-ms 1: 98 ms
+  ascii names, control without a glob, index --time-ms 1: 51 ms
+  multibyte names, * + 253 a + b (255 B), folder: --time-ms 1: 294 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 106 ms, stopped none, hits 0, cursor no
+  multibyte names, * + 253 a + b (255 B), index: --time-ms 1: 56 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 67 ms, stopped none, hits 0, cursor no
+  multibyte names, *a x 127 + b (255 B), folder: --time-ms 1: 91 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 107 ms, stopped none, hits 0, cursor no
+  multibyte names, *a x 127 + b (255 B), index: --time-ms 1: 51 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 68 ms, stopped none, hits 0, cursor no
+  multibyte names, ? x 255 (255 B), folder: --time-ms 1: 89 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 106 ms, stopped none, hits 0, cursor no
+  multibyte names, ? x 255 (255 B), index: --time-ms 1: 51 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 68 ms, stopped none, hits 0, cursor no
+  multibyte names, * + த x 84 (253 B), folder: --time-ms 1: 90 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 109 ms, stopped none, hits 0, cursor no
+  multibyte names, * + த x 84 (253 B), index: --time-ms 1: 51 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 68 ms, stopped none, hits 0, cursor no
+  multibyte names, *? x 127 + b (255 B), folder: --time-ms 1: 91 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 108 ms, stopped none, hits 0, cursor no
+  multibyte names, *? x 127 + b (255 B), index: --time-ms 1: 51 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 67 ms, stopped none, hits 0, cursor no
+  multibyte names, control without a glob, folder --time-ms 1: 92 ms
+  multibyte names, control without a glob, index --time-ms 1: 51 ms
+  serve, ascii names, * + 253 a + b: scan 50 ms (stopped time), index_status behind it 51 ms
+  serve, ascii names, *a x 127 + b: scan 50 ms (stopped time), index_status behind it 51 ms
+  serve, ascii names, ? x 255: scan 50 ms (stopped time), index_status behind it 52 ms
+  serve, ascii names, * + த x 84: scan 50 ms (stopped time), index_status behind it 51 ms
+  serve, ascii names, *? x 127 + b: scan 52 ms (stopped time), index_status behind it 54 ms
+  serve, multibyte names, * + த x 84: scan 54 ms (stopped time), index_status behind it 56 ms
+  serve, control, no glob: scan 54 ms (stopped none), index_status behind it 56 ms
+load at end: { 4.20 5.66 5.02 }

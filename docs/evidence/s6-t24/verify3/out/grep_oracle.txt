@@ -1,0 +1,70 @@
+DIFF 'tide' literal sensitive
+     grep C: only scan [('cr-only.txt', 2), ('nel.txt', 2), ('nel.txt', 3), ('vt-ff.txt', 2), ('vt-ff.txt', 3)] only grep C [('nel.txt', 1), ('vt-ff.txt', 1)]
+     grep UTF-8: only scan [('cr-only.txt', 2), ('nel.txt', 2), ('nel.txt', 3), ('vt-ff.txt', 2), ('vt-ff.txt', 3)] only grep UTF-8 [('nel.txt', 1), ('vt-ff.txt', 1)]
+DIFF 'tide' literal insensitive
+     grep C: only scan [('cr-only.txt', 2), ('nel.txt', 2), ('nel.txt', 3), ('vt-ff.txt', 2), ('vt-ff.txt', 3)] only grep C [('nel.txt', 1), ('vt-ff.txt', 1)]
+     grep UTF-8: only scan [('cr-only.txt', 2), ('nel.txt', 2), ('nel.txt', 3), ('vt-ff.txt', 2), ('vt-ff.txt', 3)] only grep UTF-8 [('nel.txt', 1), ('vt-ff.txt', 1)]
+same 'Tide' literal smart: scan [('crlf.txt', 2)]
+DIFF 'tide' literal smart
+     grep C: only scan [('cr-only.txt', 2), ('nel.txt', 2), ('nel.txt', 3), ('vt-ff.txt', 2), ('vt-ff.txt', 3)] only grep C [('nel.txt', 1), ('vt-ff.txt', 1)]
+     grep UTF-8: only scan [('cr-only.txt', 2), ('nel.txt', 2), ('nel.txt', 3), ('vt-ff.txt', 2), ('vt-ff.txt', 3)] only grep UTF-8 [('nel.txt', 1), ('vt-ff.txt', 1)]
+DIFF 'tide' literal sensitive word
+     grep C: only scan [('cr-only.txt', 2), ('nel.txt', 2), ('nel.txt', 3), ('vt-ff.txt', 2), ('vt-ff.txt', 3), ('words.txt', 1), ('words.txt', 4)] only grep C [('nel.txt', 1), ('vt-ff.txt', 1)]
+     grep UTF-8: only scan [('cr-only.txt', 2), ('nel.txt', 2), ('nel.txt', 3), ('vt-ff.txt', 2), ('vt-ff.txt', 3), ('words.txt', 1), ('words.txt', 4)] only grep UTF-8 [('nel.txt', 1), ('vt-ff.txt', 1)]
+     re: only scan [('words.txt', 1), ('words.txt', 4)] only re []
+DIFF '^tide' regex sensitive
+     grep C: only scan [('bom.txt', 1), ('cr-only.txt', 2), ('nel.txt', 2), ('vt-ff.txt', 2)] only grep C []
+     grep UTF-8: only scan [('bom.txt', 1), ('cr-only.txt', 2), ('nel.txt', 2), ('vt-ff.txt', 2)] only grep UTF-8 []
+DIFF 'tide$' regex sensitive
+     grep C: only scan [('nel.txt', 2), ('nel.txt', 3), ('vt-ff.txt', 2), ('vt-ff.txt', 3)] only grep C [('nel.txt', 1), ('vt-ff.txt', 1)]
+     grep UTF-8: only scan [('nel.txt', 2), ('nel.txt', 3), ('vt-ff.txt', 2), ('vt-ff.txt', 3)] only grep UTF-8 [('nel.txt', 1), ('vt-ff.txt', 1)]
+same '^$' regex sensitive: scan [('empty-lines.txt', 1), ('empty-lines.txt', 2), ('empty-lines.txt', 3), ('empty-lines.txt', 5)]
+DIFF 'end\\$$' regex sensitive
+     grep C: only scan [('crlf.txt', 3)] only grep C []
+     grep UTF-8: only scan [('crlf.txt', 3)] only grep UTF-8 []
+same 'abc$' regex sensitive: scan [('anchors.txt', 1), ('anchors.txt', 2)]
+same '^abc' regex sensitive: scan [('anchors.txt', 1), ('anchors.txt', 3)]
+DIFF 'pool' literal sensitive word
+     grep C: only scan [('words.txt', 1)] only grep C []
+     grep UTF-8: only scan [('words.txt', 1)] only grep UTF-8 []
+     re: only scan [('words.txt', 1)] only re []
+same 'மழை' literal sensitive word: scan [('tamil.txt', 1)]
+same 'மழை' literal sensitive: scan [('tamil.txt', 1)]
+DIFF '\\d+' regex sensitive
+     grep C: only scan [('tamil.txt', 3)] only grep C []
+same 'café' literal sensitive: scan [('marks.txt', 2)]
+DIFF 'cafe' literal sensitive word
+     grep C: only scan [] only grep C [('marks.txt', 1)]
+     grep UTF-8: only scan [] only grep UTF-8 [('marks.txt', 1)]
+     re: only scan [] only re [('marks.txt', 1)]
+same 'straße' literal insensitive: scan [('sharp-s.txt', 1)]
+same 'strasse' literal insensitive: scan [('sharp-s.txt', 2), ('sharp-s.txt', 3)]
+DIFF 'große' literal insensitive
+     re: only scan [] only re [('sharp-s.txt', 4)]
+DIFF 'istanbul' literal insensitive
+     re: only scan [] only re [('turkish.txt', 1)]
+DIFF 'ı' literal insensitive
+     grep UTF-8: only scan [] only grep UTF-8 [('turkish.txt', 3)]
+     re: only scan [] only re [('bom.txt', 1), ('cr-only.txt', 1), ('cr-only.txt', 2), ('crlf.txt', 1), ('crlf.txt', 2), ('empty-lines.txt', 4), ('marks.txt', 1), ('marks.txt', 2), ('nel.txt', 2), ('nel.txt', 3), ('no-final-newline.txt', 1), ('no-final-newline.txt', 2), ('turkish.txt', 1), ('turkish.txt', 2), ('turkish.txt', 3), ('vt-ff.txt', 2), ('vt-ff.txt', 3), ('words.txt', 1), ('words.txt', 2), ('words.txt', 3), ('words.txt', 4), ('words.txt', 5), ('words.txt', 6), ('words.txt', 7)]
+DIFF 'k' literal insensitive
+     grep C: only scan [('kelvin.txt', 1)] only grep C []
+     grep UTF-8: only scan [('kelvin.txt', 1)] only grep UTF-8 []
+DIFF 'K' literal insensitive
+     grep C: only scan [('kelvin.txt', 1)] only grep C []
+     grep UTF-8: only scan [('kelvin.txt', 1)] only grep UTF-8 []
+DIFF 'sun' literal insensitive
+     grep C: only scan [('kelvin.txt', 4)] only grep C []
+     grep UTF-8: only scan [('kelvin.txt', 4)] only grep UTF-8 []
+DIFF 's' literal sensitive
+     grep C: only scan [('cr-only.txt', 3)] only grep C [('cr-only.txt', 1)]
+     grep UTF-8: only scan [('cr-only.txt', 3)] only grep UTF-8 [('cr-only.txt', 1)]
+same 'ask' literal smart: scan [('kelvin.txt', 7), ('kelvin.txt', 8)]
+DIFF 'σίσυφος' literal insensitive
+     grep C: only scan [('sigma.txt', 1), ('sigma.txt', 3)] only grep C []
+     grep UTF-8: only scan [('sigma.txt', 3)] only grep UTF-8 []
+DIFF 'two' literal sensitive
+     grep C: only scan [('cr-only.txt', 2), ('nel.txt', 3)] only grep C [('cr-only.txt', 1), ('nel.txt', 1)]
+     grep UTF-8: only scan [('cr-only.txt', 2), ('nel.txt', 3)] only grep UTF-8 [('cr-only.txt', 1), ('nel.txt', 1)]
+DIFF 'b tide' literal sensitive
+     grep C: only scan [('vt-ff.txt', 3)] only grep C [('vt-ff.txt', 1)]
+     grep UTF-8: only scan [('vt-ff.txt', 3)] only grep UTF-8 [('vt-ff.txt', 1)]

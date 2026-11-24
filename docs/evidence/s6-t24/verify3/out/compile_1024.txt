@@ -1,0 +1,11 @@
+baseline literal x: 1 bytes, fastest of 5 3.7 ms, answered
+one class of 200 ranges, insensitive: 1002 bytes, fastest of 5 3.6 ms, answered
+two classes of 90 ranges, insensitive, {255} each: 914 bytes, fastest of 5 3.7 ms, answered
+170 nested optional groups: 851 bytes, fastest of 5 3.7 ms, answered
+nested groups 250 deep: 501 bytes, fastest of 5 3.6 ms, answered
+510 alternatives: 1019 bytes, fastest of 5 3.9 ms, answered
+alternation of 100 classes {16}: 999 bytes, fastest of 5 3.7 ms, answered
+[^\W x 508]{255}: 1024 bytes, fastest of 5 3.5 ms, answered
+(?:\b|\B|^|$){255} nested x 20: 189 bytes, fastest of 5 3.5 ms, answered
+(?:a?){1,255} x 32: 416 bytes, fastest of 5 3.7 ms, searchd: SS_ERR_INVALID_ARGUMENT: pattern not supported at byte 0: the pattern is too large (over 8,192 steps)
+whole word, insensitive, 1,000 \w: 1000 bytes, fastest of 5 3.9 ms, answered

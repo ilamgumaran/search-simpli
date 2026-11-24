@@ -1,0 +1,12 @@
+== in place: cp of different bytes over a loaded-before file
+225531325 inplace.dylib
+Non-fat file: inplace.dylib is architecture: arm64
+lipo exit 0
+loaded
+load exit 0
+== write and rename
+225531510 renamed.dylib
+Non-fat file: renamed.dylib is architecture: arm64
+lipo exit 0
+loaded
+load exit 0

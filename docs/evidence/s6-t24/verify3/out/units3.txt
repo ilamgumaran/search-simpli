@@ -1,0 +1,53 @@
+budget + 50 ms is the bound; CLI times include process start (2-4 ms)
+w508: 1024 B over arrow
+  --time-ms    1: folder 4 ms, stopped time, hits 0; index 8 ms, stopped time, hits 0
+  --time-ms 1000: folder 843 ms, stopped none, hits 0; index 853 ms, stopped none, hits 0
+  serve, 1 ms: scan 5 ms (stopped time), queued call 5 ms
+s508: 1024 B over arrow
+  --time-ms    1: folder 4 ms, stopped time, hits 0; index 8 ms, stopped time, hits 0
+  --time-ms 1000: folder 416 ms, stopped none, hits 0; index 421 ms, stopped none, hits 0
+  serve, 1 ms: scan 5 ms (stopped time), queued call 5 ms
+fold: 610 B over deseret
+  --time-ms    1: folder 4 ms, stopped none, hits 20; index 5 ms, stopped none, hits 20
+  --time-ms 1000: folder 4 ms, stopped none, hits 20; index 5 ms, stopped none, hits 20
+  serve, 1 ms: scan 1 ms (stopped none), queued call 1 ms
+foldw: 12 B over deseret
+  --time-ms    1: folder 4 ms, stopped time, hits 0; index 5 ms, stopped time, hits 0
+  --time-ms 1000: folder 753 ms, stopped none, hits 0; index 760 ms, stopped none, hits 0
+  serve, 1 ms: scan 2 ms (stopped time), queued call 2 ms
+bnd: 901 B over tamil
+  --time-ms    1: folder 4 ms, stopped time, hits 0; index 4 ms, stopped time, hits 0
+  --time-ms 1000: folder 242 ms, stopped none, hits 0; index 246 ms, stopped none, hits 0
+  serve, 1 ms: scan 1 ms (stopped time), queued call 1 ms
+bnd2: 1021 B over tamil
+  --time-ms    1: folder 4 ms, stopped time, hits 0; index 4 ms, stopped time, hits 0
+  --time-ms 1000: folder 20 ms, stopped none, hits 0; index 21 ms, stopped none, hits 0
+  serve, 1 ms: scan 1 ms (stopped time), queued call 1 ms
+alt: 145 B over tamil
+  --time-ms    1: folder 4 ms, stopped time, hits 0; index 4 ms, stopped time, hits 0
+  --time-ms 1000: folder 145 ms, stopped none, hits 0; index 147 ms, stopped none, hits 0
+  serve, 1 ms: scan 1 ms (stopped time), queued call 1 ms
+b2b: 1008 B over mixed
+  --time-ms    1: folder 4 ms, stopped time, hits 0; index 5 ms, stopped time, hits 0
+  --time-ms 1000: folder 22 ms, stopped none, hits 0; index 23 ms, stopped none, hits 0
+  serve, 1 ms: scan 1 ms (stopped time), queued call 1 ms
+rep: 35 B over mixed
+  --time-ms    1: folder 4 ms, stopped time, hits 0; index 5 ms, stopped time, hits 0
+  --time-ms 1000: folder 1003 ms, stopped time, hits 0; index 1006 ms, stopped time, hits 0
+  serve, 1 ms: scan 1 ms (stopped time), queued call 1 ms
+lit: 1022 B over ta
+  --time-ms    1: folder 4 ms, stopped time, hits 0; index 4 ms, stopped time, hits 0
+  --time-ms 1000: folder 557 ms, stopped none, hits 0; index 549 ms, stopped none, hits 0
+  serve, 1 ms: scan 1 ms (stopped time), queued call 1 ms
+litci: 1022 B over ta
+  --time-ms    1: folder 4 ms, stopped time, hits 0; index 4 ms, stopped time, hits 0
+  --time-ms 1000: folder 568 ms, stopped none, hits 0; index 580 ms, stopped none, hits 0
+  serve, 1 ms: scan 1 ms (stopped time), queued call 1 ms
+dot: 18 B over arrow
+  --time-ms    1: folder 5 ms, stopped time, hits 0; index 9 ms, stopped time, hits 0
+  --time-ms 1000: folder 1003 ms, stopped time, hits 0; index 1004 ms, stopped time, hits 0
+  serve, 1 ms: scan 6 ms (stopped time), queued call 6 ms
+wclass: 987 B over mixed
+  --time-ms    1: folder 4 ms, stopped time, hits 0; index 5 ms, stopped time, hits 0
+  --time-ms 1000: folder 482 ms, stopped none, hits 0; index 478 ms, stopped none, hits 0
+  serve, 1 ms: scan 1 ms (stopped time), queued call 1 ms

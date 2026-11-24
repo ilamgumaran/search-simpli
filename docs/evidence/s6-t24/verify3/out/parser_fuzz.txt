@@ -1,0 +1,1 @@
+seed 20261125: 40000 patterns: {'answered': 9408, 'refused': 30592, 'accept_mismatch': 0, 'message_mismatch': 0, 'slow': 0, 'lone_surrogate_json_parse_error': 6745}; slowest answer 0.002 s for 'd'

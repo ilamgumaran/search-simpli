@@ -1,0 +1,16 @@
+serve, time_budget_ms 1, ms from request to answer (index loaded first), three runs each
+  one-file index, no glob: 0.1, 0.0, 0.0; stopped none, hits 0, pending 0, not_scanned {"too_large": 0, "unreadable": 0, "budget_exhausted": 0, "not_retained": 0}
+  one-file index, glob * + 253 a + b: 0.0, 0.0, 0.0; stopped none, hits 0, pending 0, not_scanned {"too_large": 0, "unreadable": 0, "budget_exhausted": 0, "not_retained": 0}
+  one-file index, path_prefix z x 255: 0.0, 0.0, 0.0; stopped none, hits 0, pending 0, not_scanned {"too_large": 0, "unreadable": 0, "budget_exhausted": 0, "not_retained": 0}
+  10000 files, full, no glob: 14.0, 11.9, 11.9 (least 11.9 ms, 1189 ns an entry); stopped none, hits 20, pending 0, not_scanned {"too_large": 0, "unreadable": 0, "budget_exhausted": 0, "not_retained": 0}
+  10000 files, full, glob * + 253 a + b: 13.3, 12.9, 12.9 (least 12.9 ms, 1286 ns an entry); stopped time, hits 0, pending 0, not_scanned {"too_large": 0, "unreadable": 0, "budget_exhausted": 0, "not_retained": 0}
+  10000 files, full, path_prefix z x 255: 12.0, 12.0, 12.0 (least 12.0 ms, 1202 ns an entry); stopped none, hits 0, pending 0, not_scanned {"too_large": 0, "unreadable": 0, "budget_exhausted": 0, "not_retained": 0}
+  10000 files, skipped, no glob: 0.2, 0.2, 0.1 (least 0.1 ms, 15 ns an entry); stopped none, hits 0, pending 0, not_scanned {"too_large": 10000, "unreadable": 0, "budget_exhausted": 0, "not_retained": 0}
+  10000 files, skipped, glob * + 253 a + b: 9.2, 9.4, 9.1 (least 9.1 ms, 913 ns an entry); stopped none, hits 0, pending 0, not_scanned {"too_large": 0, "unreadable": 0, "budget_exhausted": 0, "not_retained": 0}
+  10000 files, skipped, path_prefix z x 255: 0.2, 0.1, 0.1 (least 0.1 ms, 14 ns an entry); stopped none, hits 0, pending 0, not_scanned {"too_large": 0, "unreadable": 0, "budget_exhausted": 0, "not_retained": 0}
+  100000 files, full, no glob: 168.3, 148.7, 147.6 (least 147.6 ms, 1476 ns an entry); stopped none, hits 20, pending 0, not_scanned {"too_large": 0, "unreadable": 0, "budget_exhausted": 0, "not_retained": 0}
+  100000 files, full, glob * + 253 a + b: 151.3, 150.1, 149.5 (least 149.5 ms, 1495 ns an entry); stopped time, hits 0, pending 0, not_scanned {"too_large": 0, "unreadable": 0, "budget_exhausted": 0, "not_retained": 0}
+  100000 files, full, path_prefix z x 255: 149.5, 148.7, 148.8 (least 148.7 ms, 1487 ns an entry); stopped time, hits 0, pending 0, not_scanned {"too_large": 0, "unreadable": 0, "budget_exhausted": 0, "not_retained": 0}
+  100000 files, skipped, no glob: 2.3, 2.2, 2.1 (least 2.1 ms, 21 ns an entry); stopped none, hits 0, pending 0, not_scanned {"too_large": 100000, "unreadable": 0, "budget_exhausted": 0, "not_retained": 0}
+  100000 files, skipped, glob * + 253 a + b: 98.3, 97.8, 97.7 (least 97.7 ms, 977 ns an entry); stopped none, hits 0, pending 0, not_scanned {"too_large": 0, "unreadable": 0, "budget_exhausted": 0, "not_retained": 0}
+  100000 files, skipped, path_prefix z x 255: 2.9, 2.6, 2.4 (least 2.4 ms, 24 ns an entry); stopped none, hits 0, pending 0, not_scanned {"too_large": 0, "unreadable": 0, "budget_exhausted": 0, "not_retained": 0}

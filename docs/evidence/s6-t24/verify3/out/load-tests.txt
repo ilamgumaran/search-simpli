@@ -1,0 +1,22 @@
+== zig build test --seed 0x5eed0001 (load: { 3.82 3.76 3.39 })
+Build Summary: 15/15 steps succeeded; 644/653 tests passed (9 skipped)
+exit 0
+== zig build test --seed 0x5eed0002 (load: { 6.21 5.15 4.07 })
+Build Summary: 15/15 steps succeeded; 644/653 tests passed (9 skipped)
+exit 0
+== zig build test --seed 0x5eed0003 (load: { 6.95 6.62 4.98 })
+Build Summary: 15/15 steps succeeded; 644/653 tests passed (9 skipped)
+exit 0
+== python -m unittest tests.test_scan, run 1 (load: { 4.68 5.90 5.07 })
+S6-T24 ruling 2: four times the line, 4.73 times the time
+Ran 24 tests in 47.355s
+OK
+== python -m unittest tests.test_scan, run 2 (load: { 3.79 5.50 4.97 })
+S6-T24 ruling 2: four times the line, 3.77 times the time
+Ran 24 tests in 51.592s
+OK
+== python -m unittest tests.test_scan, run 3 (load: { 3.90 5.25 4.91 })
+S6-T24 ruling 2: four times the line, 3.90 times the time
+Ran 24 tests in 40.352s
+OK
+finished

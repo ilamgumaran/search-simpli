@@ -1,0 +1,16 @@
+depth 1: pattern 17 bytes, 0.00 s, exit 0: {"request":{"pattern":"(?:(?:)(?:)){255}","mode":"regex","case":"smart","whole_word":false,"roots":null,"path_prefix":null,"name_glob":null,"context_lines":0,"m
+depth 2: pattern 26 bytes, 0.00 s, exit 0: {"request":{"pattern":"(?:(?:(?:)(?:)){255}){255}","mode":"regex","case":"smart","whole_word":false,"roots":null,"path_prefix":null,"name_glob":null,"context_li
+depth 3: pattern 35 bytes, 0.00 s, exit 0: {"request":{"pattern":"(?:(?:(?:(?:)(?:)){255}){255}){255}","mode":"regex","case":"smart","whole_word":false,"roots":null,"path_prefix":null,"name_glob":null,"c
+depth 4: pattern 44 bytes, 0.00 s, exit 0: {"request":{"pattern":"(?:(?:(?:(?:(?:)(?:)){255}){255}){255}){255}","mode":"regex","case":"smart","whole_word":false,"roots":null,"path_prefix":null,"name_glob
+depth 5: pattern 53 bytes, 0.00 s, exit 0: {"request":{"pattern":"(?:(?:(?:(?:(?:(?:)(?:)){255}){255}){255}){255}){255}","mode":"regex","case":"smart","whole_word":false,"roots":null,"path_prefix":null,"
+depth 6: pattern 62 bytes, 0.00 s, exit 0: {"request":{"pattern":"(?:(?:(?:(?:(?:(?:(?:)(?:)){255}){255}){255}){255}){255}){255}","mode":"regex","case":"smart","whole_word":false,"roots":null,"path_prefi
+depth 8: pattern 80 bytes, 0.00 s, exit 0: {"request":{"pattern":"(?:(?:(?:(?:(?:(?:(?:(?:(?:)(?:)){255}){255}){255}){255}){255}){255}){255}){255}","mode":"regex","case":"smart","whole_word":false,"roots
+alternated empties depth 4: pattern 46 bytes, 0.00 s, exit 0: {"request":{"pattern":"(?:(?:(?:(?:|(?:)|^|\\b){255}){255}){255}){255}","mode":"regex","case":"smart","whole_word":false,"roots":null,"path_prefix":null,"name_g
+empty-only alternation with a star depth 4: pattern 49 bytes, 0.00 s, exit 1: searchd: SS_ERR_INVALID_ARGUMENT: pattern not supported at byte 16: a repeat follows nothing it can repeat 
+counted repeat at the cap (?:a{255}){31}: pattern 14 bytes, 0.00 s, exit 0: {"request":{"pattern":"(?:a{255}){31}","mode":"regex","case":"smart","whole_word":false,"roots":null,"path_prefix":null,"name_glob":null,"context_lines":0,"max_
+counted repeat over the cap (?:a{255}){32}: pattern 14 bytes, 0.00 s, exit 1: searchd: SS_ERR_INVALID_ARGUMENT: pattern not supported at byte 0: the pattern is too large (over 8,192 steps) 
+counted near cap nested (?:(?:a{15}){16}){31}: pattern 21 bytes, 0.00 s, exit 0: {"request":{"pattern":"(?:(?:a{15}){16}){31}","mode":"regex","case":"smart","whole_word":false,"roots":null,"path_prefix":null,"name_glob":null,"context_lines":
+nullable body (?:a?){255} nested 2: pattern 20 bytes, 0.00 s, exit 1: searchd: SS_ERR_INVALID_ARGUMENT: pattern not supported at byte 0: the pattern is too large (over 8,192 steps) 
+anchors depth 3: pattern 29 bytes, 0.00 s, exit 0: {"request":{"pattern":"(?:(?:(?:^$){255}){255}){255}","mode":"regex","case":"smart","whole_word":false,"roots":null,"path_prefix":null,"name_glob":null,"context
+word-boundary depth 3: pattern 31 bytes, 0.00 s, exit 0: {"request":{"pattern":"(?:(?:(?:\\b\\B){255}){255}){255}","mode":"regex","case":"smart","whole_word":false,"roots":null,"path_prefix":null,"name_glob":null,"con
+serve: scan depth 4 with time_budget_ms 1 answered after 0.01 s ({"jsonrpc":"2.0","id":1,"result":{"request":{"pattern":"(?:(...); the status call queued behind it answered after 0.01 s

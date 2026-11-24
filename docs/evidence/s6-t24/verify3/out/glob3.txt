@@ -1,0 +1,34 @@
+Part 1: 404 names listed by the no-glob scan (None)
+Part 1: 600 globs; folder answers differing from the regular-expression oracle 0, from the reference's glob_matches 0; index differing from folder 0
+Part 2: 20,000 names; ms of one CLI call, process start included
+  ascii names, * + 253 a + b (255 B), folder: --time-ms 1: 65 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 83 ms, stopped none, hits 0, cursor no
+  ascii names, * + 253 a + b (255 B), index: --time-ms 1: 35 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 53 ms, stopped none, hits 0, cursor no
+  ascii names, *a x 127 + b (255 B), folder: --time-ms 1: 66 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 84 ms, stopped none, hits 0, cursor no
+  ascii names, *a x 127 + b (255 B), index: --time-ms 1: 36 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 53 ms, stopped none, hits 0, cursor no
+  ascii names, ? x 255 (255 B), folder: --time-ms 1: 66 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 83 ms, stopped none, hits 0, cursor no
+  ascii names, ? x 255 (255 B), index: --time-ms 1: 36 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 53 ms, stopped none, hits 0, cursor no
+  ascii names, * + த x 84 (253 B), folder: --time-ms 1: 65 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 83 ms, stopped none, hits 0, cursor no
+  ascii names, * + த x 84 (253 B), index: --time-ms 1: 36 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 53 ms, stopped none, hits 0, cursor no
+  ascii names, *? x 127 + b (255 B), folder: --time-ms 1: 65 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 82 ms, stopped none, hits 0, cursor no
+  ascii names, *? x 127 + b (255 B), index: --time-ms 1: 35 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 53 ms, stopped none, hits 0, cursor no
+  ascii names, control without a glob, folder --time-ms 1: 65 ms
+  ascii names, control without a glob, index --time-ms 1: 35 ms
+  multibyte names, * + 253 a + b (255 B), folder: --time-ms 1: 61 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 71 ms, stopped none, hits 0, cursor no
+  multibyte names, * + 253 a + b (255 B), index: --time-ms 1: 35 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 46 ms, stopped none, hits 0, cursor no
+  multibyte names, *a x 127 + b (255 B), folder: --time-ms 1: 61 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 71 ms, stopped none, hits 0, cursor no
+  multibyte names, *a x 127 + b (255 B), index: --time-ms 1: 35 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 46 ms, stopped none, hits 0, cursor no
+  multibyte names, ? x 255 (255 B), folder: --time-ms 1: 60 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 72 ms, stopped none, hits 0, cursor no
+  multibyte names, ? x 255 (255 B), index: --time-ms 1: 35 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 46 ms, stopped none, hits 0, cursor no
+  multibyte names, * + த x 84 (253 B), folder: --time-ms 1: 61 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 71 ms, stopped none, hits 0, cursor no
+  multibyte names, * + த x 84 (253 B), index: --time-ms 1: 36 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 46 ms, stopped none, hits 0, cursor no
+  multibyte names, *? x 127 + b (255 B), folder: --time-ms 1: 61 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 72 ms, stopped none, hits 0, cursor no
+  multibyte names, *? x 127 + b (255 B), index: --time-ms 1: 35 ms, stopped time, hits 0, cursor yes; --time-ms 30000: 46 ms, stopped none, hits 0, cursor no
+  multibyte names, control without a glob, folder --time-ms 1: 61 ms
+  multibyte names, control without a glob, index --time-ms 1: 34 ms
+  serve, ascii names, * + 253 a + b: scan 34 ms (stopped time), index_status behind it 35 ms
+  serve, ascii names, *a x 127 + b: scan 34 ms (stopped time), index_status behind it 35 ms
+  serve, ascii names, ? x 255: scan 34 ms (stopped time), index_status behind it 35 ms
+  serve, ascii names, * + த x 84: scan 34 ms (stopped time), index_status behind it 35 ms
+  serve, ascii names, *? x 127 + b: scan 34 ms (stopped time), index_status behind it 35 ms
+  serve, multibyte names, * + த x 84: scan 33 ms (stopped time), index_status behind it 34 ms
+  serve, control, no glob: scan 33 ms (stopped none), index_status behind it 34 ms

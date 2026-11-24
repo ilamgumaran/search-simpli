@@ -1,0 +1,47 @@
+OK   folder, prefix None glob '*.md': 574 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   folder, prefix None glob 'a*': 195 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   folder, prefix None glob '?.txt': 59 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   folder, prefix None glob '*é*': 592 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   folder, prefix None glob '*த*': 651 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   folder, prefix None glob '*0*.log': 224 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   folder, prefix 'beta/' glob None: 310 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   folder, prefix 'délta/' glob None: 250 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   folder, prefix 'தமிழ்/' glob None: 315 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   folder, prefix 'z/' glob '*.txt': 107 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   folder, prefix 'gamma/a' glob '*': 36 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   folder, prefix 'nope/' glob None: 0 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   index, prefix None glob '*.md': 574 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   index, prefix None glob 'a*': 195 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   index, prefix None glob '?.txt': 59 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   index, prefix None glob '*é*': 592 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   index, prefix None glob '*த*': 651 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   index, prefix None glob '*0*.log': 224 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   index, prefix 'beta/' glob None: 310 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   index, prefix 'délta/' glob None: 250 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   index, prefix 'தமிழ்/' glob None: 315 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   index, prefix 'z/' glob '*.txt': 107 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   index, prefix 'gamma/a' glob '*': 36 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   index, prefix 'nope/' glob None: 0 hits in scope; one page equal True; 18 pagings (sizes 1/3/100, per-file 1/2, 1 ms/30,000 ms) each list every hit once []
+OK   20,000 names, folder, glob *7.txt at --time-ms 1: 2000 files listed (want 2000, each once) in 1223 pages, 1222 stopped by time
+OK   20,000 names, folder, glob *19999.txt at --time-ms 1: 1 files listed (want 1, each once) in 35 pages, 34 stopped by time
+OK   20,000 names, index, glob *7.txt at --time-ms 1: 2000 files listed (want 2000, each once) in 37 pages, 36 stopped by time
+OK   20,000 names, index, glob *19999.txt at --time-ms 1: 1 files listed (want 1, each once) in 33 pages, 32 stopped by time
+OK   folder, a file added, matching between pages with glob *.md: searchd: SS_ERR_INVALID_ARGUMENT: stale cursor
+OK   folder, a file added, not matching between pages with glob *.md: searchd: SS_ERR_INVALID_ARGUMENT: stale cursor
+OK   folder, a file removed, not matching between pages with glob *.md: searchd: SS_ERR_INVALID_ARGUMENT: stale cursor
+OK   folder, a file renamed, matching between pages with glob *.md: searchd: SS_ERR_INVALID_ARGUMENT: stale cursor
+OK   index, a new generation between pages (update exit 0): searchd: SS_ERR_INVALID_ARGUMENT: stale cursor
+OK   glob *.md's cursor with glob *.txt: searchd: SS_ERR_INVALID_ARGUMENT: cursor does not belong to this request
+OK   glob *.md's cursor with no glob: searchd: SS_ERR_INVALID_ARGUMENT: cursor does not belong to this request
+OK   glob *.md's cursor with prefix beta/: searchd: SS_ERR_INVALID_ARGUMENT: cursor does not belong to this request
+OK   prefix beta/'s cursor with prefix gamma/: searchd: SS_ERR_INVALID_ARGUMENT: cursor does not belong to this request
+OK   prefix beta/'s cursor with prefix beta/ and glob *: searchd: SS_ERR_INVALID_ARGUMENT: cursor does not belong to this request
+     a glob cursor over the index: 1:4a3562ee351a35ca:1:4:1
+OK   glob *.md cursor edited to file ordinal 0, followed to the end: 574 hits, the *.md hits of files from that ordinal: True (want 574)
+OK   glob *.md cursor edited to file ordinal 1, followed to the end: 574 hits, the *.md hits of files from that ordinal: True (want 574)
+OK   glob *.md cursor edited to file ordinal 17, followed to the end: 555 hits, the *.md hits of files from that ordinal: True (want 555)
+OK   glob *.md cursor edited to file ordinal 599, followed to the end: 4 hits, the *.md hits of files from that ordinal: True (want 4)
+OK   glob *.md cursor edited to file ordinal 600, followed to the end: 0 hits, the *.md hits of files from that ordinal: True (want 0)
+OK   glob *.md cursor edited to file ordinal 601 (past the 600 files): searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor
+OK   glob *.md cursor edited to file ordinal 99999999 (past the 600 files): searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor
+failures: 0
