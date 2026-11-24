@@ -164,7 +164,8 @@ engine's offsets for those two are `[[1,4]]` and `[[0,1]]`.
   `a*b|a` over n `a`s matches n times, and each search runs to the end of the line before the `a*b` thread dies
   (*measured*, below).
 - **Wall-clock:** the time budget (section 8) is checked inside the VM every 4,096 code points, so no single line
-  can hold a call past its budget by more than one interval (*argued*).
+  can hold a call past its budget by more than one interval (*argued*). *Superseded by section 17:* the work is
+  metered (the clock read once 65,536 units of work have built up), and at most 16 matches are listed a line.
 
 *Measured* (`docs/evidence/s6-t24/part1/linear.txt`; prototype ReleaseSmall, best of 3). `(a+)+b`, which takes a
 backtracking matcher exponential time, compiles to a 12-instruction program. It was run over one line of n `a`s
@@ -364,7 +365,8 @@ cut by a page boundary. A full page stops the scan, so the last page may be empt
 ## 8. Budget and cancel
 
 - **The budget.** `time_budget_ms`: 1 to 30,000, default 2,000 (ruling 5). The clock is monotonic. It is checked
-  between files, every 256 lines, and inside the VM every 4,096 code points.
+  between files, every 256 lines, and inside the VM every 4,096 code points. *Superseded by section 17:* the clock
+  starts before the pattern is parsed and every path charges a meter; the stated bound is the budget plus 50 ms.
 - **When it runs out,** the page ends at once with `stopped: "time"` and a `next_cursor` at the resume point: the
   file, line and listed count. The page may hold fewer than `page_size` hits, or none. It never holds a hit
   whose offsets are incomplete. The line being searched is searched again from its start on the next page.
@@ -824,3 +826,28 @@ Then the timing orders are prepared and pushed, and the work stops before any ti
 - **Dart:** `scan` over a fixture index; the contract pin test at 2.10.0.
 - **Repository checks:** `check_requirements.py` (CAP-25), `check_layers.py`, `check_no_home_paths.py`,
   `check_test_counts.py`.
+
+## 17. After the Verdict (rework 1, 23 Nov 2026)
+
+The verifier's Verdict on Part 2 found the promise "a scan holds the caller for at most its budget" broken on four
+paths, and the orchestrator ruled (recorded in `docs/tasks/S6-T24.md`, "Ruling after the Verdict"). What changed,
+in the engine (`pattern.zig`, `scan.zig`, `source_v2.zig`) and the reference (`scan.py`) alike:
+
+- **Compiling is bounded by work, not by output.** The compiler counts every node it expands, emitting or not;
+  over 8,192 it refuses with `the pattern is too large (over 8,192 steps)`. A repeat whose body can only match
+  the empty string is kept at most once (`{0,1}` or `{1}`), so nested empty repeats cost nothing. The budget's
+  clock starts before the pattern is parsed.
+- **Every path is metered.** The VM charges one unit a thread step, the literal search and the line reader one a
+  byte; the clock is read once 65,536 units have built up. The literal search is Knuth-Morris-Pratt over each
+  line (the standard library's `findPos` and `findIgnoreCasePos` grew with the needle on the verifier's input:
+  `scripts/prototypes/s6t24/rework1/literal_search.zig`).
+- **Listing matches is linear.** In regex mode at most 16 matches a line are looked for; a 17th that starts
+  within `text` cuts `text` where it starts. No field was added: `text_truncated` already says the text is
+  shorter than the line.
+- **No per-line table.** `scan.zig` reads a file one line at a time and keeps a ring of `2 × context + 1` line
+  positions; `source_v2.rebuildChecked` reads a file kept whole straight into its one buffer.
+- **The first line of a page gets 10 ms of grace**, and the `capacity` refusal says whether the budget went on
+  the line or on reading before it.
+- **The stated bound:** budget plus 50 ms, the folder walk and the read of the file in hand excepted
+  (`docs/scan.md`, "Time" and "Memory").
+

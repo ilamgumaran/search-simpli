@@ -217,3 +217,92 @@ test "S6-T24 NFR-13: scan of a 10 MiB file, with the open, inside a 64 MiB cap" 
     try testing.expect(peak <= nfr13.cap_bytes);
     try testing.expectEqual(needles, total); // every needle line, page by page
 }
+
+/// One page of `pattern` over `folder` as `searchd scan --folder` runs it (`ops.scanFolder`), its peak live bytes
+/// from `capped`.
+fn folderPagePeak(capped: *nfr13.Capped, folder: std.Io.Dir, request: []const u8) !usize {
+    var op_arena = std.heap.ArenaAllocator.init(capped.allocator());
+    defer op_arena.deinit();
+    const before = capped.markPeak();
+    const params = (try ops.parseObject(op_arena.allocator(), request)).ok;
+    switch (try ops.scanFolder(op_arena.allocator(), io, folder, params, apply.default_max_file_bytes)) {
+        .ok => {},
+        .failed => |failure| {
+            std.debug.print("refused: {s}\n", .{failure.message});
+            return error.TestUnexpectedResult;
+        },
+    }
+    return capped.peak - before;
+}
+
+test "S6-T24 rework 1, ruling 4: a page's memory does not grow with the number of lines (10 MiB of line breaks, both sources)" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const size: usize = 10 * 1024 * 1024;
+    const shapes = [_]struct { name: []const u8, line: []const u8 }{
+        .{ .name = "lines of 67 bytes", .line = "tide pool and harbour tide pool and harbour tide pool and harbour \n" },
+        .{ .name = "line breaks only", .line = "\n" },
+    };
+    var peaks: [2][2]usize = undefined;
+    for (shapes, 0..) |shape, shape_index| {
+        var tmp = testing.tmpDir(.{ .iterate = true });
+        defer tmp.cleanup();
+        try tmp.dir.createDirPath(io, "folder");
+        var folder = try tmp.dir.openDir(io, "folder", .{ .iterate = true });
+        defer folder.close(io);
+        {
+            const bytes = try testing.allocator.alloc(u8, size - 1);
+            defer testing.allocator.free(bytes);
+            for (bytes, 0..) |*byte, i| byte.* = shape.line[i % shape.line.len];
+            try folder.writeFile(io, .{ .sub_path = "a.txt", .data = bytes });
+        }
+        try tmp.dir.createDirPath(io, "index");
+        var out = try tmp.dir.openDir(io, "index", .{ .iterate = true });
+        defer out.close(io);
+        _ = try indexer.indexFolder(a, io, folder, out, .v2, null, 1600, 3, .{});
+
+        const request = "{\"pattern\":\"zzz\",\"time_budget_ms\":30000,\"context_lines\":20}";
+        var folder_capped = nfr13.Capped{ .parent = std.heap.page_allocator, .cap = nfr13.cap_bytes };
+        peaks[shape_index][0] = try folderPagePeak(&folder_capped, folder, request);
+        try testing.expectEqual(@as(usize, 0), folder_capped.refused);
+
+        // The open is not the page: its own cap is wider (the line index of 10 million lines is the index's).
+        var capped = nfr13.Capped{ .parent = std.heap.page_allocator, .cap = 1 << 30 };
+        var engine_arena = std.heap.ArenaAllocator.init(capped.allocator());
+        defer engine_arena.deinit();
+        const opened = snapshot_open.openScopedWith(.{ .blocks = capped.allocator(), .arena = engine_arena.allocator() }, io, out) catch |err| {
+            std.debug.print("S6-T24 ruling 4: {s}: open failed {s}, live {d}, refused {d}\n", .{ shape.name, @errorName(err), capped.live, capped.refused });
+            return err;
+        };
+        defer snapshot_open.close(opened.engine, opened.folder);
+        const scoped = service_module.ScopedService{ .service = .{ .engine = opened.engine, .folder = opened.folder } };
+        // The first page loads the generation's source section (the index's own, as `read_span`'s first read
+        // does); the page measured is the next one.
+        const loading = capped.markPeak();
+        {
+            var first_arena = std.heap.ArenaAllocator.init(capped.allocator());
+            defer first_arena.deinit();
+            _ = try scoped.scan(first_arena.allocator(), .{ .pattern = "zzz", .time_budget_ms = 30_000 }, .{});
+        }
+        const first_peak = capped.peak - loading;
+        var op_arena = std.heap.ArenaAllocator.init(capped.allocator());
+        defer op_arena.deinit();
+        const before = capped.markPeak();
+        const result = try scoped.scan(op_arena.allocator(), .{ .pattern = "zzz", .context_lines = 20, .time_budget_ms = 30_000 }, .{});
+        try testing.expectEqual(@as(usize, 0), result.outcome.ok.hits.len);
+        try testing.expectEqual(scan.Stopped.none, result.outcome.ok.stopped);
+        peaks[shape_index][1] = capped.peak - before;
+        try testing.expectEqual(@as(usize, 0), capped.refused);
+        std.debug.print("S6-T24 ruling 4: {s}, {d} B: page peak live bytes over the folder {d}, over the index {d} (the first page, which also loads the source section, {d}; the open's own {d})\n", .{ shape.name, size - 1, peaks[shape_index][0], peaks[shape_index][1], first_peak, before });
+    }
+    // The stated bound (docs/scan.md): a page holds one copy of the file it is reading, in an arena inside the
+    // caller's arena (each grows by half again: 2.25 times the file), plus at most 1 MiB, whatever its lines.
+    for (peaks) |pair| {
+        try testing.expect(pair[0] <= size * 9 / 4 + (1 << 20));
+        try testing.expect(pair[1] <= size * 9 / 4 + (1 << 20));
+    }
+    // Line breaks only (10,485,759 lines) need no more than lines of 67 bytes (156,503 lines), to 64 KiB.
+    try testing.expect(peaks[1][0] <= peaks[0][0] + (64 << 10));
+    try testing.expect(peaks[1][1] <= peaks[0][1] + (64 << 10));
+}

@@ -5,12 +5,16 @@
   empty-match warning, and the index and folder sources giving the same hits.
 - `EngineAgreementTests`: the reference against `searchd scan --folder --json` over a seeded generated folder
   (Tamil, combining marks, the fold's special letters, digits of several scripts, CRLF, a BOM) with a fixed
-  list of patterns and seeded random literals taken from its lines. One divergence is recorded, with its
-  reason, in `KNOWN_DIVERGENCES`, and the test checks that it still diverges (so a fix is noticed).
+  list of patterns and seeded random literals taken from its lines. The stated divergence (docs/scan.md, "Known
+  differences"; rework 1, ruling 6) is a class, `scan.offsets_may_differ`: on those patterns only the hit lines
+  and the counts are compared, and the test checks that the class's examples still diverge (so a fix is noticed).
 - `GrepAgreementTests`: literal and ASCII-case-insensitive scans against `grep -n -F` on an ASCII folder,
   with the exclusions recorded in `GREP_EXCLUSIONS`.
 - `IndexAndFolderTests`: `searchd scan <index>` and `searchd scan --folder <folder>` over the same files give
   the same pages; the plain output, exit codes and refusals of the command line.
+- `BudgetTests`: rework 1's rulings 1-3 and 5 through the command line and `searchd serve`: nested empty repeats
+  at `--time-ms 1` (a `status` call queued behind), the listing of `a(.*b)?` linear in the line, a literal that
+  stops on time inside a 10 MiB file, the refusal naming its cause.
 - `RpcSurfaceTests`: `scan` over `searchd serve`: field messages, an unknown field, the labelled root
   hidden without labels, request labels taken by a server without `--labels` and refused by one with them.
 
@@ -26,6 +30,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -39,13 +44,16 @@ from test_folder_surfaces import ROOT_IDS, Rpc, build_searchd, fixture_request  
 NO_ZIG = os.environ.get("SEARCH_SIMPLI_NO_ZIG") == "1"
 SEED = 2024_11_23
 
-# Patterns on which the engine and the reference are known to differ, with the reason. Each is excluded from
-# the agreement check and checked to still differ on its line.
-KNOWN_DIVERGENCES = {
-    "(|a)*": ("aa", "an empty alternative first inside a repeat: Python's `re` lists [0,1],[1,2] (it retries the "
-                    "repeat after an empty iteration), the engine's Pike VM lists [0,2] (an empty iteration ends "
-                    "the repeat, then the next match starts at the same place and takes `a` twice)"),
-}
+# The stated divergence (docs/scan.md, "Known differences from the Python reference"): a regex holding a repeat
+# with no upper bound, or one above 1, whose body can match the empty string (`scan.offsets_may_differ`). The
+# engine and the reference agree on which lines match and on every count, and may differ on `match_offsets` and
+# so on where a cut `text` ends (the cap of 16 matches a line). Examples: the first is checked to still differ
+# on its line; the other two are the verifier's (S6-T24 Verdict, finding 6), from its generated folder.
+DIVERGENT_EXAMPLES = (
+    ("(|a)*", "aa"),
+    ("b [a-cßa-c]{1,3}|$.(?:s(?:ßé{0,2}|[ka]?.{0,2}|^)?İ)*|[ckk].{2}((?:1|Bé){0,2}(?:\\ds{1,3}){1,}|٣{0,2}|.*)+", None),
+    ("(|_.{1,3}(.{0,2}[^0-9a-ck] |(1B7){0,2}|.$$))+|é$|.", None),
+)
 
 # What `grep -n -F` and `scan` count differently, and how the grep folder avoids it.
 GREP_EXCLUSIONS = (
@@ -124,11 +132,15 @@ def _join(page_of) -> dict:
     return {"hits": hits, **counts, "case_applied": first["case_applied"], "warnings": first["warnings"]}
 
 
-def comparable(answer: dict) -> object:
+def comparable(answer: dict, lines_only: bool = False) -> object:
     if "refused" in answer:
         return answer["refused"]
-    return {"hits": [(h["root_id"], h["path"], h["line"], h["text"], h["text_truncated"], h["match_offsets"],
-                      h["before"], h["after"]) for h in answer["hits"]],
+    if lines_only:
+        hits = [(h["root_id"], h["path"], h["line"], h["before"], h["after"]) for h in answer["hits"]]
+    else:
+        hits = [(h["root_id"], h["path"], h["line"], h["text"], h["text_truncated"], h["match_offsets"],
+                 h["before"], h["after"]) for h in answer["hits"]]
+    return {"hits": hits,
             **{key: answer[key] for key in ("files_scanned", "files_matched", "files_capped", "bytes_scanned",
                                             "case_applied", "warnings")}}
 
@@ -165,6 +177,17 @@ class ReferenceTests(unittest.TestCase):
         # and matches neither ß nor ss (docs/scan.md).
         self.assertEqual(scan.compile_pattern("ẞ").case_applied, "insensitive")
         self.assertEqual(scan.match_line(scan.compile_pattern("ẞ"), "ß ss ẞ", 6)[1], [[5, 6]])
+
+    def test_the_fold_tables_exceptions_ruling_7(self) -> None:
+        # The schema and docs/scan.md name them: the code points that simple case folding changes (their lowercase
+        # is one other code point) but whose full folding is longer, so the one-to-one table leaves them alone.
+        exceptions = [cp for cp in range(0x110000) if len(chr(cp).casefold()) > 1
+                      and len(chr(cp).lower()) == 1 and chr(cp).lower() != chr(cp)]
+        expected = [0x1E9E, *range(0x1F88, 0x1F90), *range(0x1F98, 0x1FA0), *range(0x1FA8, 0x1FB0), 0x1FBC, 0x1FCC, 0x1FFC]
+        self.assertEqual(exceptions, expected)
+        for cp in expected:
+            self.assertEqual(scan.fold(cp), cp, hex(cp))
+        self.assertEqual(scan.match_line(scan.compile_pattern("ᾈ", case="insensitive"), "ᾀ ᾈ", 3)[1], [[2, 3]])
 
     def test_empty_match_warns_and_lists_no_offsets(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -241,28 +264,48 @@ class EngineAgreementTests(unittest.TestCase):
         cases = [{"pattern": p, "mode": m, "case": c} for p, m in PATTERNS for c in ("sensitive", "insensitive", "smart")]
         cases += [{"pattern": "tide", "whole_word": True, "context_lines": 2}, {"pattern": "\\w+", "mode": "regex", "whole_word": True}]
         cases += random_literals(self.folder, 60)
-        hits = refusals = 0
+        cases += [{"pattern": pattern, "mode": "regex"} for pattern, _line in DIVERGENT_EXAMPLES]
+        hits = refusals = lines_only = 0
         for params in cases:
-            if params["pattern"] in KNOWN_DIVERGENCES:
-                continue
+            divergent = params.get("mode") == "regex" and scan.offsets_may_differ(params["pattern"])
+            lines_only += divergent
             engine, reference = self.engine_all(params), self.reference(params)
-            self.assertEqual(comparable(engine), comparable(reference), json.dumps(params, ensure_ascii=False))
+            self.assertEqual(comparable(engine, divergent), comparable(reference, divergent), json.dumps(params, ensure_ascii=False))
             refusals += "refused" in engine
             hits += len(engine.get("hits", []))
-        print(f"S6-T24 agreement: {len(cases)} cases, {refusals} refused alike, {hits} hit lines identical", file=sys.stderr)
+        print(f"S6-T24 agreement: {len(cases)} cases ({lines_only} in the stated divergence, lines and counts only), "
+              f"{refusals} refused alike, {hits} hit lines identical", file=sys.stderr)
+        self.assertGreaterEqual(lines_only, 3)
         self.assertGreater(hits, 1000)
         self.assertGreater(refusals, 10)
 
     def test_known_divergences_still_diverge(self) -> None:
-        for pattern, (line, _reason) in KNOWN_DIVERGENCES.items():
-            with tempfile.TemporaryDirectory() as tmp:
-                Path(tmp, "a.txt").write_text(line + "\n", encoding="utf-8")
-                reference = scan.scan_folder(Path(tmp), {"pattern": pattern, "mode": "regex"})
-                done = subprocess.run([str(self.binary), "scan", "--folder", tmp, pattern, "--regex", "--json"],
+        for pattern, _line in DIVERGENT_EXAMPLES:
+            self.assertTrue(scan.offsets_may_differ(pattern), pattern)
+        for pattern in ("a*", "(ab)+", "x?", "(a?){1}", "(a?){0,1}", "(?:a|b)*c", "\\d+", "(a|)", "a{2,}", "(?:\\b\\b)*x"):
+            self.assertFalse(scan.offsets_may_differ(pattern), pattern)
+        for pattern in ("(a?)*", "(|a)+", "(?:a?\\b)*x", "(?:a*){2}", "(x|y?){3,}"):
+            self.assertTrue(scan.offsets_may_differ(pattern), pattern)
+        pattern, line = DIVERGENT_EXAMPLES[0]
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "a.txt").write_text(line + "\n", encoding="utf-8")
+            reference = scan.scan_folder(Path(tmp), {"pattern": pattern, "mode": "regex"})
+            done = subprocess.run([str(self.binary), "scan", "--folder", tmp, pattern, "--regex", "--json"],
+                                  capture_output=True, stdin=subprocess.DEVNULL, timeout=60)
+            engine = json.loads(done.stdout)
+        self.assertEqual(reference["hits"][0]["match_offsets"], [[0, 1], [1, 2]])
+        self.assertEqual(engine["hits"][0]["match_offsets"], [[0, 2]])
+
+
+    def test_the_fold_tables_exceptions_in_the_engine_ruling_7(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "a.txt").write_text("ᾀ ᾈ\nß ss ẞ\nk K \u212a\n", encoding="utf-8")
+            got = {}
+            for pattern in ("ᾈ", "ẞ", "k"):
+                done = subprocess.run([str(self.binary), "scan", "--folder", tmp, pattern, "--case", "insensitive", "--json"],
                                       capture_output=True, stdin=subprocess.DEVNULL, timeout=60)
-                engine = json.loads(done.stdout)
-            self.assertEqual(reference["hits"][0]["match_offsets"], [[0, 1], [1, 2]])
-            self.assertEqual(engine["hits"][0]["match_offsets"], [[0, 2]])
+                got[pattern] = [(h["line"], h["match_offsets"]) for h in json.loads(done.stdout)["hits"]]
+        self.assertEqual(got, {"ᾈ": [(1, [[2, 3]])], "ẞ": [(2, [[5, 6]])], "k": [(3, [[0, 1], [2, 3], [4, 5]])]})
 
 
 @unittest.skipIf(shutil.which("grep") is None, "no grep")
@@ -362,6 +405,160 @@ class IndexAndFolderTests(unittest.TestCase):
             Path(tmp, "b.txt").write_text("tide\n", encoding="utf-8")
             done = self.run_searchd("scan", "--folder", tmp, "tide", "--json", "--cursor", first["next_cursor"], code=1)
             self.assertIn("stale cursor", done.stderr)
+
+
+def nest(depth: int) -> str:
+    """The verifier's pattern (probe_compile_hang.py): two empty groups under `depth` repeats of {255}."""
+    body = "(?:)(?:)"
+    for _ in range(depth):
+        body = "(?:" + body + "){255}"
+    return body
+
+
+# The stated constant (docs/scan.md, "Time"): a scan holds its caller at most time_budget_ms plus this, on every
+# path, the pattern's compiling included, the walk of a folder and the read of the one file in hand excepted.
+OVER_BUDGET_MS = 50
+
+
+@unittest.skipIf(NO_ZIG, "SEARCH_SIMPLI_NO_ZIG=1: this environment deliberately has no Zig (CI)")
+class BudgetTests(unittest.TestCase):
+    """S6-T24 rework 1, rulings 1-3 and 5, through `searchd scan` and `searchd serve` (the test build)."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.scratch_dir = tempfile.TemporaryDirectory()
+        cls.scratch = Path(cls.scratch_dir.name)
+        cls.binary = build_searchd(cls.scratch)
+        cls.small = cls.scratch / "small"
+        cls.small.mkdir()
+        (cls.small / "a.txt").write_text("tide pool\nharbour 12\n", encoding="utf-8")
+        cls.index = cls.scratch / "small-index"
+        subprocess.run([str(cls.binary), "index", str(cls.small), "--out", str(cls.index)], check=True,
+                       capture_output=True, stdin=subprocess.DEVNULL, timeout=120)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.scratch_dir.cleanup()
+
+    def timed(self, *args: str, limit: float = 120.0) -> tuple[float, subprocess.CompletedProcess]:
+        """The fastest of three runs, in ms, and the last run's result."""
+        best, done = float("inf"), None
+        for _ in range(3):
+            start = time.monotonic()
+            done = subprocess.run([str(self.binary), *args], capture_output=True, stdin=subprocess.DEVNULL, timeout=limit)
+            best = min(best, (time.monotonic() - start) * 1000)
+        return best, done
+
+    def baseline_ms(self, folder: Path) -> float:
+        """The same command with a pattern that costs nothing: process start, the walk and the file's read."""
+        return self.timed("scan", "--folder", str(folder), "zq", "--json", "--case", "sensitive", "--time-ms", "30000")[0]
+
+    def test_ruling_1_nested_empty_repeats_cost_nothing(self) -> None:
+        base = self.baseline_ms(self.small)
+        for depth in (4, 5):
+            pattern = nest(depth)
+            took, done = self.timed("scan", "--folder", str(self.small), pattern, "--regex", "--json", "--time-ms", "1")
+            self.assertEqual(done.returncode, 0, done.stderr)
+            print(f"S6-T24 ruling 1: {len(pattern.encode())}-byte pattern at --time-ms 1: {took:.1f} ms (baseline {base:.1f} ms)", file=sys.stderr)
+            self.assertLess(took - base, 1 + OVER_BUDGET_MS, pattern)
+        self.assertEqual([len(nest(depth).encode()) for depth in (4, 5)], [44, 53])
+        # Over `searchd serve`: the scan with time_budget_ms 1 and a status call (`index_status`) queued behind it.
+        server = subprocess.Popen([str(self.binary), "serve", str(self.index)], stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        try:
+            server.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 0, "method": "index_status", "params": {}}) + "\n")
+            server.stdin.flush()
+            server.stdout.readline()  # the index open, outside the measure
+            for depth in (4, 5):
+                start = time.monotonic()
+                server.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "scan",
+                                               "params": {"pattern": nest(depth), "mode": "regex", "time_budget_ms": 1}}) + "\n")
+                server.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 2, "method": "index_status", "params": {}}) + "\n")
+                server.stdin.flush()
+                first = json.loads(server.stdout.readline())
+                second = json.loads(server.stdout.readline())
+                took = (time.monotonic() - start) * 1000
+                self.assertIn("result", first)
+                self.assertIn("result", second)
+                print(f"S6-T24 ruling 1: serve, depth {depth}: scan and the status behind it answered in {took:.1f} ms", file=sys.stderr)
+                self.assertLess(took, 1 + OVER_BUDGET_MS)
+        finally:
+            server.stdin.close()
+            server.wait(timeout=60)
+            server.stdout.close()
+            server.stderr.close()
+        # Over the cap of work: refused with the existing message.
+        done = subprocess.run([str(self.binary), "scan", "--folder", str(self.small), "(?:a{255}){32}", "--regex"],
+                              capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=60)
+        self.assertEqual(done.returncode, 1)
+        self.assertIn("the pattern is too large (over 8,192 steps)", done.stderr)
+
+    def test_ruling_2_listing_matches_is_linear(self) -> None:
+        times = {}
+        for power in (20, 22):
+            folder = self.scratch / f"a-{power}"
+            folder.mkdir()
+            (folder / "x.txt").write_bytes(b"a" * (1 << power) + b"\n")
+            base = self.baseline_ms(folder)
+            took, done = self.timed("scan", "--folder", str(folder), "a(.*b)?", "--regex", "--case", "sensitive",
+                                    "--json", "--time-ms", "30000")
+            self.assertEqual(done.returncode, 0, done.stderr)
+            answer = json.loads(done.stdout)
+            self.assertEqual(answer["stopped"], "none")
+            hit = answer["hits"][0]
+            # At most 16 matches a line: the 17th cuts the text where it starts.
+            self.assertEqual(hit["match_offsets"], [[i, i + 1] for i in range(16)])
+            self.assertEqual(hit["text"], "a" * 16)
+            self.assertTrue(hit["text_truncated"])
+            times[power] = took - base
+            print(f"S6-T24 ruling 2: a(.*b)? over 2^{power} a's: {took:.0f} ms (baseline {base:.0f} ms)", file=sys.stderr)
+        slope = times[22] / times[20]
+        print(f"S6-T24 ruling 2: four times the line, {slope:.2f} times the time", file=sys.stderr)
+        self.assertLess(slope, 6.0)
+        self.assertGreater(slope, 2.0)
+        # At a budget the line cannot meet: refused honestly (one line, nothing completed), within the constant.
+        folder = self.scratch / "a-22"
+        base = self.baseline_ms(folder)
+        took, done = self.timed("scan", "--folder", str(folder), "a(.*b)?", "--regex", "--case", "sensitive", "--time-ms", "5")
+        self.assertEqual(done.returncode, 1)
+        self.assertIn("line 1 of r-legacy/x.txt outlasts time_budget_ms (5)", done.stderr.decode())
+        self.assertLess(took - base, 5 + OVER_BUDGET_MS)
+
+    def test_ruling_3_a_literal_stops_on_time(self) -> None:
+        folder = self.scratch / "lit"
+        folder.mkdir()
+        (folder / "x.txt").write_bytes((b"a" * 4095 + b"\n") * (10 * (1 << 20) // 4096))
+        base = self.baseline_ms(self.small)  # process start only: stricter than this folder's walk and read
+        for case in ("sensitive", "smart"):
+            took, done = self.timed("scan", "--folder", str(folder), "a" * 1023 + "b", "--json", "--case", case, "--time-ms", "1")
+            self.assertEqual(done.returncode, 0, done.stderr)
+            answer = json.loads(done.stdout)
+            print(f"S6-T24 ruling 3: 1,023 a's and b over 10 MiB, case {case}, --time-ms 1: {took:.1f} ms "
+                  f"(baseline {base:.1f} ms), stopped {answer['stopped']}", file=sys.stderr)
+            self.assertEqual(answer["stopped"], "time")
+            self.assertIsNotNone(answer["next_cursor"])
+            self.assertLess(took - base, 1 + OVER_BUDGET_MS)
+
+    def test_ruling_5_the_refusal_names_its_cause(self) -> None:
+        # The verifier's case: an 8 MiB file whose first line is 5,000 x's, x\d at --time-ms 1. The read used the
+        # budget; the first line still gets its 10 ms and completes, so the page progresses.
+        folder = self.scratch / "slow"
+        folder.mkdir()
+        (folder / "a.txt").write_bytes(b"x" * 5000 + b"\n" + b"y\n" * (4 << 20))
+        done = subprocess.run([str(self.binary), "scan", "--folder", str(folder), "x\\d", "--regex", "--json", "--time-ms", "1"],
+                              capture_output=True, stdin=subprocess.DEVNULL, timeout=120)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn(json.loads(done.stdout)["stopped"], ("time", "none"))
+        # A line that cannot finish in the grace either: the message says what the budget went on.
+        long = self.scratch / "long"
+        long.mkdir()
+        (long / "a.txt").write_bytes(b"x" * (8 << 20) + b"\n")
+        done = subprocess.run([str(self.binary), "scan", "--folder", str(long), "(x|y)+z", "--regex", "--time-ms", "1"],
+                              capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=120)
+        self.assertEqual(done.returncode, 1)
+        self.assertRegex(done.stderr, r"time_budget_ms \(1\) ran out reading r-legacy/a\.txt, and line 1 did not finish in the "
+                                      r"10 ms after: raise it \(at most 30000\) or narrow the scope|line 1 of r-legacy/a\.txt "
+                                      r"outlasts time_budget_ms \(1\)")
 
 
 @unittest.skipIf(NO_ZIG, "SEARCH_SIMPLI_NO_ZIG=1: this environment deliberately has no Zig (CI)")

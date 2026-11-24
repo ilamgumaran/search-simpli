@@ -26,7 +26,7 @@
         "smart"
       ],
       "default": "smart",
-      "description": "smart is insensitive unless the pattern holds a code point that case folding changes. Folding is Unicode simple case folding."
+      "description": "smart is insensitive unless the pattern holds a code point that case folding changes. Folding is one code point to one, the analyser's table: Unicode simple case folding except where the full folding is more than one code point, where the code point is left as it is (U+1E9E LATIN CAPITAL LETTER SHARP S, and the 27 Greek capitals with prosgegrammeni U+1F88-U+1F8F, U+1F98-U+1F9F, U+1FA8-U+1FAF, U+1FBC, U+1FCC, U+1FFC)."
     },
     "whole_word": {
       "type": "boolean",

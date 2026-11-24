@@ -6,23 +6,29 @@
 //!   (`indexSource`, over the source section; the operations layer decides which files the caller may see) and
 //!   a folder with nothing prepared (`scanFolder`: `indexer.walkFolder` and `apply.readWalkedFile`, the same
 //!   walk and read rules as `searchd index`, root `r-legacy`). The loop never knows which one it reads.
-//! - **A hit is a line**, numbered as `read_span` numbers it (`source.lineStarts`: a leading BOM is not part of
-//!   line 1), without its terminator, cut to 512 bytes at a code-point boundary; `match_offsets` are code-point
-//!   pairs into that text, and `before`/`after` the context lines.
+//! - **A hit is a line**, numbered as `read_span` numbers it (`source.lineStarts`'s rule: a leading BOM is not
+//!   part of line 1), without its terminator, cut to 512 bytes at a code-point boundary (or shorter, where regex
+//!   mode stopped looking for matches: `pattern.Matcher.matchLine`); `match_offsets` are code-point pairs into
+//!   that text, and `before`/`after` the context lines.
 //! - **Paging**: `"<generation>:<request>:<file>:<line>:<listed>"` over an index and
 //!   `"f<walk>:<request>:<file>:<line>:<listed>"` over a folder, where `<request>` is an XXH3-64 of the request
 //!   without its cursor, page size and budget (`requestHash`), `<walk>` one of the walk's sorted paths, `<file>`
 //!   the file's ordinal in scan order, `<line>` the next line to search and `<listed>` the hit lines already
 //!   returned from that file. Resuming reads no earlier file. A file's counts go on the page where its scan ends.
-//! - **Budget**: checked between files, every 256 lines and inside the VM every 4,096 code points; a page that
-//!   runs out ends with `stopped: "time"` and a cursor strictly after the request's. A page that completed no
-//!   position past the request's cursor is refused with `capacity` instead (ruling O-7), so a caller can never
-//!   be handed the cursor it sent.
+//! - **Budget** (rework 1, rulings 1, 3 and 5): the clock starts before the pattern is parsed. Every loop charges
+//!   its work to `pattern.Budget.charge` (a byte read for line breaks, a byte searched for a literal, a step of
+//!   the VM), which reads the clock once per 65,536 units, and the clock is also read between files. A page that
+//!   runs out ends with `stopped: "time"` and a cursor strictly after the request's. The page's first line gets
+//!   at least `grace_ms` (10 ms) from when it starts, even when the budget went on compiling or reading the file;
+//!   a page that still completes no position past the request's cursor is refused with `capacity` instead
+//!   (ruling O-7), naming the cause, so a caller can never be handed the cursor it sent.
 //!
-//! Memory: the answer comes from `allocator` (an arena in every caller); one file's bytes and its line starts
-//! are held at a time, in an arena of their own that is reset before the next file (NFR-13).
+//! Memory (rework 1, ruling 4): the answer comes from `allocator` (an arena in every caller); one file's bytes
+//! are held at a time, with the spans of at most `2 x context_lines + 1` lines around the one being searched and
+//! nothing per line of the file, in an arena of their own that is reset before the next file (NFR-13).
 const std = @import("std");
 const apply = @import("apply.zig");
+const find = @import("find.zig");
 const indexer = @import("indexer.zig");
 const pattern = @import("pattern.zig");
 const scope = @import("scope.zig");
@@ -38,8 +44,8 @@ pub const max_context_lines: u64 = 20;
 pub const max_glob_bytes: usize = 255;
 /// A hit's and a context line's `text`: at most this many bytes of the line.
 pub const max_text_bytes: usize = 512;
-/// The budget is asked once per this many lines (and between files, and inside the VM).
-pub const lines_per_check: u32 = 256;
+/// The least time a page's first line gets, from when it starts, whatever is left of the budget.
+pub const grace_ms: u64 = 10;
 
 pub const stale_cursor_message = "stale cursor";
 pub const foreign_cursor_message = "cursor does not belong to this request";
@@ -245,8 +251,13 @@ pub const Position = struct { file: usize = 0, line: u32 = 1, listed: u32 = 0 };
 
 const CursorParse = union(enum) { position: Position, malformed, stale, foreign };
 
+/// Sixteen lowercase hexadecimal digits, as the schema's pattern says (rework 1, ruling 8).
 fn parseHex16(text: []const u8) ?u64 {
     if (text.len != 16) return null;
+    for (text) |byte| switch (byte) {
+        '0'...'9', 'a'...'f' => {},
+        else => return null,
+    };
     return std.fmt.parseInt(u64, text, 16) catch null;
 }
 
@@ -260,16 +271,16 @@ fn parseCursor(cursor: []const u8, src: Source, hash: u64) CursorParse {
     }
     if (count != 5) return .malformed;
     const request_hash = parseHex16(parts[1]) orelse return .malformed;
-    const file = std.fmt.parseInt(usize, parts[2], 10) catch return .malformed;
-    const line = std.fmt.parseInt(u32, parts[3], 10) catch return .malformed;
-    const listed = std.fmt.parseInt(u32, parts[4], 10) catch return .malformed;
+    const file = find.parseDigits(usize, parts[2]) orelse return .malformed;
+    const line = find.parseDigits(u32, parts[3]) orelse return .malformed;
+    const listed = find.parseDigits(u32, parts[4]) orelse return .malformed;
     if (line == 0) return .malformed;
     const folder_cursor = parts[0].len > 0 and parts[0][0] == 'f';
     if (folder_cursor) {
         const walk = parseHex16(parts[0][1..]) orelse return .malformed;
         if (src.kind != .folder or walk != src.walk) return .stale;
     } else {
-        const generation = std.fmt.parseInt(u64, parts[0], 10) catch return .malformed;
+        const generation = find.parseDigits(u64, parts[0]) orelse return .malformed;
         if (src.kind != .index or generation != src.generation) return .stale;
     }
     if (request_hash != hash) return .foreign;
@@ -306,16 +317,55 @@ pub fn textCut(line: []const u8) usize {
     return cut;
 }
 
-/// The 0-based line holding byte `at`, searching from line `first`.
-fn lineOf(starts: []const u64, at: usize, first: usize) usize {
-    var lo = first;
-    var hi = starts.len - 1; // the last entry is the end
-    while (hi - lo > 1) {
-        const mid = lo + (hi - lo) / 2;
-        if (starts[mid] <= at) lo = mid else hi = mid;
+/// One line of a file: its first byte, the end of its content (before its terminator) and where the next starts.
+pub const LineSpan = struct { start: usize, end: usize, next: usize };
+
+/// A file's lines one at a time, as `source.lineStarts` finds them (a leading BOM is not part of line 1; a line
+/// exists when a byte starts it), keeping nothing per line.
+pub const Lines = struct {
+    bytes: []const u8,
+    /// Where the next line starts.
+    at: usize,
+    /// The lines returned so far: the last one returned is line `number`.
+    number: u32 = 0,
+
+    pub fn init(bytes: []const u8) Lines {
+        return .{ .bytes = bytes, .at = if (std.mem.startsWith(u8, bytes, "\xef\xbb\xbf")) 3 else 0 };
     }
-    return lo;
-}
+
+    /// The next line, or null after the last. With a budget, every byte passed is charged, at least once per
+    /// `pattern.check_units` bytes; out of time, the reader is left where it was.
+    pub fn next(self: *Lines, budget: ?*pattern.Budget) error{OutOfTime}!?LineSpan {
+        const bytes = self.bytes;
+        if (self.at >= bytes.len) return null;
+        const start = self.at;
+        var at = start;
+        var charged = start;
+        const span: LineSpan = while (true) {
+            if (at - charged >= pattern.check_units) {
+                if (budget) |b| try b.charge(at - charged);
+                charged = at;
+            }
+            const window = @min(bytes.len, at + pattern.check_units);
+            const candidate = source.nextBreakCandidatePub(bytes[0..window], at);
+            if (candidate == bytes.len) break .{ .start = start, .end = candidate, .next = candidate };
+            if (candidate == window) {
+                at = window;
+                continue;
+            }
+            const width = source.breakWidthAt(bytes, candidate);
+            if (width == 0) {
+                at = candidate + 1;
+                continue;
+            }
+            break .{ .start = start, .end = candidate, .next = candidate + width };
+        };
+        if (budget) |b| try b.charge(span.next - charged + 1);
+        self.at = span.next;
+        self.number += 1;
+        return span;
+    }
+};
 
 // --------------------------------------------------------------------- run ---
 
@@ -331,26 +381,42 @@ fn validate(allocator: std.mem.Allocator, request: Request) !?Outcome {
     return null;
 }
 
-const Loop = struct {
-    allocator: std.mem.Allocator,
-    request: Request,
-    hits: std.ArrayList(Hit) = .empty,
+/// The spans of the lines around the one being searched, by line number modulo its length (`2 x context + 1`).
+const Ring = struct {
+    spans: []LineSpan,
 
-    fn contextLines(loop: *Loop, bytes: []const u8, starts: []const u64, first: usize, last: usize) ![]const ContextLine {
-        if (first > last) return &.{};
-        const lines = try loop.allocator.alloc(ContextLine, last - first + 1);
-        for (lines, first..) |*slot, index| {
-            const content = stripBreak(bytes[starts[index]..starts[index + 1]]);
-            const cut = textCut(content);
-            slot.* = .{ .line = @intCast(index + 1), .text = try loop.allocator.dupe(u8, content[0..cut]), .text_truncated = cut < content.len };
-        }
-        return lines;
+    fn at(ring: Ring, line: u32) LineSpan {
+        return ring.spans[line % ring.spans.len];
+    }
+
+    fn put(ring: Ring, line: u32, span: LineSpan) void {
+        ring.spans[line % ring.spans.len] = span;
     }
 };
+
+fn contextLines(allocator: std.mem.Allocator, bytes: []const u8, ring: Ring, first: u32, last: u32) ![]const ContextLine {
+    if (first > last) return &.{};
+    const lines = try allocator.alloc(ContextLine, last - first + 1);
+    for (lines, first..) |*slot, number| {
+        const span = ring.at(@intCast(number));
+        const content = bytes[span.start..span.end];
+        const cut = textCut(content);
+        slot.* = .{ .line = @intCast(number), .text = try allocator.dupe(u8, content[0..cut]), .text_truncated = cut < content.len };
+    }
+    return lines;
+}
+
+/// The refusal of a page that ran out of time before completing a position (ruling O-7), naming the cause.
+fn outOfTime(allocator: std.mem.Allocator, request: Request, file: File, line: u32, went_on_reading: bool) error{OutOfMemory}!Outcome {
+    if (went_on_reading) return fail(allocator, .capacity, "time_budget_ms ({d}) ran out reading {s}/{s}, and line {d} did not finish in the {d} ms after: raise it (at most {d}) or narrow the scope", .{ request.time_budget_ms, file.root_id, file.path, line, grace_ms, max_time_budget_ms });
+    return fail(allocator, .capacity, "line {d} of {s}/{s} outlasts time_budget_ms ({d}): raise it (at most {d}) or narrow the scope", .{ line, file.root_id, file.path, request.time_budget_ms, max_time_budget_ms });
+}
 
 /// Run one page of `request` over `src`. A refused request is `.failed`, not an error.
 pub fn run(allocator: std.mem.Allocator, request: Request, src: Source, clock: pattern.Clock) error{OutOfMemory}!Outcome {
     if (try validate(allocator, request)) |refused| return refused;
+    // The clock starts before the pattern is parsed (rework 1, ruling 1): compiling is part of the page.
+    var budget = pattern.Budget.start(clock, @intCast(request.time_budget_ms));
     const compiled = try allocator.create(pattern.Compiled);
     compiled.* = switch (try pattern.compile(allocator, request.pattern, request.mode, request.case, request.whole_word)) {
         .ok => |value| value,
@@ -368,11 +434,10 @@ pub fn run(allocator: std.mem.Allocator, request: Request, src: Source, clock: p
     for (src.files, 0..) |file, index| if (inScope(request, file.path)) try kept.append(allocator, index);
     if (start.file > kept.items.len or start.listed > request.max_hits_per_file) return fail(allocator, .invalid_argument, malformed_cursor_message, .{});
 
-    var budget = pattern.Budget.start(clock, @intCast(request.time_budget_ms));
     var matcher = try pattern.Matcher.init(allocator, compiled, &budget);
     var file_arena = std.heap.ArenaAllocator.init(allocator);
     defer file_arena.deinit();
-    var loop = Loop{ .allocator = allocator, .request = request };
+    var hits = std.ArrayList(Hit).empty;
     var answer = Answer{
         .request = request,
         .kind = src.kind,
@@ -388,7 +453,7 @@ pub fn run(allocator: std.mem.Allocator, request: Request, src: Source, clock: p
         .next_cursor = null,
     };
     const max_hits: u32 = @intCast(request.max_hits_per_file);
-    const context: usize = @intCast(request.context_lines);
+    const context: u32 = @intCast(request.context_lines);
     var position = start;
     var progress = false;
     var resume_at: ?Position = null;
@@ -419,58 +484,66 @@ pub fn run(allocator: std.mem.Allocator, request: Request, src: Source, clock: p
         } orelse {
             position = .{ .file = position.file + 1 };
             progress = true;
+            budget.endGrace();
             continue;
         };
-        var starts = std.ArrayList(u64).empty;
-        try source.lineStarts(fa, bytes, &starts);
-        const line_count: u32 = @intCast(starts.items.len - 1);
+        var lines = Lines.init(bytes);
+        const ring = Ring{ .spans = try fa.alloc(LineSpan, 2 * context + 1) };
+        // The lines before the cursor's are read as part of reading the file, without the budget.
+        while (lines.number + 1 < position.line) {
+            const span = (lines.next(null) catch unreachable) orelse break;
+            ring.put(lines.number, span);
+        }
+        // The page's first line gets its grace, from now.
+        const went_on_reading = if (!progress) budget.grace(grace_ms) else false;
         var offsets = std.ArrayList([2]u32).empty;
         var line = position.line;
         var listed = position.listed;
         var capped = false;
-        var visited: u32 = 0;
-        while (line <= line_count) {
-            if (matcher.searchesBytes()) {
-                const found = matcher.nextCandidate(bytes, @intCast(starts.items[line - 1])) orelse break;
-                line = @intCast(lineOf(starts.items, found, line - 1) + 1);
+        while (true) {
+            // The spans up to `line + context` (or the last line) are in the ring.
+            while (lines.number < line +| context) {
+                const span = (lines.next(&budget) catch {
+                    if (!progress) return outOfTime(allocator, request, file, line, went_on_reading);
+                    answer.stopped = .time;
+                    resume_at = .{ .file = position.file, .line = line, .listed = listed };
+                    break :files;
+                }) orelse break;
+                ring.put(lines.number, span);
             }
-            visited += 1;
-            if (visited % lines_per_check == 0 and progress and budget.expired()) {
-                answer.stopped = .time;
-                resume_at = .{ .file = position.file, .line = line, .listed = listed };
-                break :files;
-            }
-            const content = stripBreak(bytes[@intCast(starts.items[line - 1])..@intCast(starts.items[line])]);
+            if (line > lines.number) break;
+            const span = ring.at(line);
+            const content = bytes[span.start..span.end];
             const cut = textCut(content);
             offsets.clearRetainingCapacity();
-            const hit = matcher.matchLine(fa, content, pattern.codepointCount(content[0..cut]), &offsets) catch |err| switch (err) {
+            const result = matcher.matchLine(fa, content, cut, pattern.codepointCount(content[0..cut]), &offsets) catch |err| switch (err) {
                 error.OutOfMemory => return error.OutOfMemory,
                 error.OutOfTime => {
-                    if (!progress) return fail(allocator, .capacity, "line {d} of {s}/{s} outlasts time_budget_ms ({d}): raise it (at most {d}) or narrow the scope", .{ line, file.root_id, file.path, request.time_budget_ms, max_time_budget_ms });
+                    if (!progress) return outOfTime(allocator, request, file, line, went_on_reading);
                     answer.stopped = .time;
                     resume_at = .{ .file = position.file, .line = line, .listed = listed };
                     break :files;
                 },
             };
             progress = true;
-            if (hit) {
+            budget.endGrace();
+            if (result.hit) {
                 if (listed == max_hits) {
                     capped = true;
                     break;
                 }
-                const index: usize = line - 1;
-                try loop.hits.append(allocator, .{
+                try hits.append(allocator, .{
                     .root_id = file.root_id,
                     .path = file.path,
                     .line = line,
-                    .text = try allocator.dupe(u8, content[0..cut]),
-                    .text_truncated = cut < content.len,
+                    .text = try allocator.dupe(u8, content[0..result.text_len]),
+                    .text_truncated = result.text_len < content.len,
                     .match_offsets = try allocator.dupe([2]u32, offsets.items),
-                    .before = if (index == 0 or context == 0) &.{} else try loop.contextLines(bytes, starts.items, index -| context, index - 1),
-                    .after = try loop.contextLines(bytes, starts.items, index + 1, @min(index + context, line_count - 1)),
+                    .before = if (context == 0) &.{} else try contextLines(allocator, bytes, ring, @max(1, line -| context), line - 1),
+                    .after = try contextLines(allocator, bytes, ring, line + 1, @min(line +| context, lines.number)),
                 });
                 listed += 1;
-                if (loop.hits.items.len == request.page_size) {
+                if (hits.items.len == request.page_size) {
                     resume_at = .{ .file = position.file, .line = line + 1, .listed = listed };
                     break :files;
                 }
@@ -483,9 +556,10 @@ pub fn run(allocator: std.mem.Allocator, request: Request, src: Source, clock: p
         if (capped) answer.files_capped += 1;
         position = .{ .file = position.file + 1 };
         progress = true;
+        budget.endGrace();
     }
 
-    answer.hits = loop.hits.items;
+    answer.hits = hits.items;
     answer.truncated = answer.pending_files > 0 or answer.not_scanned.any();
     if (resume_at) |at| answer.next_cursor = try formatCursor(allocator, src, hash, at);
     return .{ .ok = answer };

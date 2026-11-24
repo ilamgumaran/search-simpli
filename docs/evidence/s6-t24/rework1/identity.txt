@@ -1,0 +1,8 @@
+judged: index folders: 9 files main, 9 head, same names True, byte-different []
+judged: 67 calls (query, evidence, find words/prefix/phrase, list-files, roots), 0 differ (stdout, stderr and exit code compared)
+tamil-10k: index folders: 9 files main, 9 head, same names True, byte-different []
+tamil-10k: 67 calls (query, evidence, find words/prefix/phrase, list-files, roots), 0 differ (stdout, stderr and exit code compared)
+timing-10k: index folders: 9 files main, 9 head, same names True, byte-different []
+timing-10k: 67 calls (query, evidence, find words/prefix/phrase, list-files, roots), 0 differ (stdout, stderr and exit code compared)
+prose-10k: index folders: 9 files main, 9 head, same names True, byte-different []
+prose-10k: 67 calls (query, evidence, find words/prefix/phrase, list-files, roots), 0 differ (stdout, stderr and exit code compared)

@@ -86,20 +86,32 @@ bytes from 0):
 | `*a`, `a**`, `^*` | `a repeat follows nothing it can repeat` |
 | `a{`, `a{,3}`, `a{2,`, `a{256}`, `a{3,2}` | the repeat's own reason |
 | `[z-a]`, `[abc`, `(a`, `a)`, a trailing `\` | the class's, the group's or the backslash's reason |
-| a program over 8,192 steps (`(a{255}){255}`) | `the pattern is too large (over 8,192 steps)` |
+| a program over 8,192 steps (`(a{255}){255}`), or a compile that would do over 8,192 steps of work, emitting or not (`(?:a{255}){32}`) | `the pattern is too large (over 8,192 steps)` |
 
 In both modes a pattern that is empty or over 1,024 bytes, not UTF-8, or holds a line break is refused. A real tab
 in a literal is accepted.
 
+A repeat of something that can only match the empty string (`(?:)`, `^$`, `\b\b`, and groups of them) is kept
+at most once: `(?:^$){255}` is `(?:^$)`, `(?:\b\b)*` is `(?:\b\b)?`. It matches the same lines and the same
+offsets, and nested repeats of it cost nothing to compile.
+
 The matcher runs in time proportional to the pattern's size times the line's length, whatever the pattern: there
-is no catastrophic backtracking.
+is no catastrophic backtracking. Deciding whether a line is a hit is one pass. Listing its matches is at most 17
+passes: in `regex` mode at most **16 matches a line** are looked for, empty ones included; when a 17th starts
+within `text`, `text` is cut where it starts (with `text_truncated: true`), so every match listed is whole and
+nothing the hit says is unchecked. In `literal` mode every match is listed (the search is one linear pass:
+Knuth-Morris-Pratt). Compiling is bounded too: no pattern of up to 256 bytes took over 25 ms in the test build
+(`pattern.zig`, "time fuzz"; the slowest measured, 3.4 ms).
 
 ## Case
 
 - `sensitive`: code points as written.
-- `insensitive`: the line and the pattern are folded one code point to one (the analyser's simple fold), so
-  offsets do not move. `K` matches `k` and the Kelvin sign; `Σ`, `σ` and `ς` match each other. A letter whose
-  fold is more than one code point does not change: `ẞ` and `ß` do not match each other, and neither matches `ss`.
+- `insensitive`: the line and the pattern are folded one code point to one (the analyser's fold table), so
+  offsets do not move. `K` matches `k` and the Kelvin sign; `Σ`, `σ` and `ς` match each other. The table is
+  Unicode simple case folding (Unicode 13.0.0) except for the 28 code points whose full folding is more than one
+  code point: they are left as they are. So `ẞ` (U+1E9E, full fold `ss`) and `ß` do not match each other, and
+  neither matches `ss`; and the 27 Greek capitals with prosgegrammeni (`ᾈ` to `ᾏ`, `ᾘ` to `ᾟ`, `ᾨ` to `ᾯ`, `ᾼ`,
+  `ῌ`, `ῼ`) do not match their lowercase forms (`ᾀ` and the rest).
 - `smart` (the default): insensitive, unless the pattern writes a code point that changes under the fold (`Tide`
   is sensitive, `tide` and `142.50` are insensitive). The answer's `case_applied` says which.
 
@@ -107,9 +119,14 @@ is no catastrophic backtracking.
 
 Hits come in order of `root_id` (bytes), then path (bytes), then line. **A hit is a line**: `root_id`, `path`,
 `line` (1-based, `read_span`'s numbering: CRLF is one break, a leading BOM is not part of line 1), `text` (the
-line without its break, at most 512 bytes, cut on a code point, with `text_truncated`), `match_offsets` (every
-match starting within `text`, as `[start, end)` in code points, leftmost first, not overlapping), and `before` and
-`after` (`{line, text, text_truncated}`). Neighbouring hits each carry their own context, so a line can repeat.
+line without its break, at most 512 bytes, cut on a code point, with `text_truncated`; cut sooner after 16
+matches, above), `match_offsets` (every match starting within `text`, as `[start, end)` in code points, leftmost
+first, not overlapping), and `before` and `after` (`{line, text, text_truncated}`). Neighbouring hits each carry
+their own context, so a line can repeat.
+
+**What ends a line** (`read_span`'s breaks): LF, CR, CRLF (one break), VT (U+000B), FF (U+000C), the separators
+FS, GS and RS (U+001C to U+001E), NEL (U+0085), LS (U+2028) and PS (U+2029). `grep` ends a line at LF only, so
+its line numbers and its lines differ from `scan`'s in a file holding any of the others.
 
 **A pattern that can match the empty string** (`x?`, `a|`, `^`) makes a line a hit even where it matches only
 the empty string; such a match is left out of `match_offsets`, so a hit can have none. The answer then carries
@@ -136,22 +153,54 @@ another pattern, case, scope or set of labels refuses it (`cursor does not belon
 
 ## Time
 
-`time_budget_ms` bounds one page. The clock is checked between files, every 256 lines, and inside the matcher
-every 4,096 code points. When the budget runs out the page ends with `stopped: "time"` and always a
-`next_cursor`; it may hold fewer hits than `page_size`, or none, but never a hit with missing offsets. Call again
-with the cursor.
+`time_budget_ms` bounds one page. **A scan holds its caller for at most `time_budget_ms` plus 50 ms**, on every
+path, with two things outside the budget: the walk of a folder (a folder scan lists its files first) and the read
+of the one file in hand (at most `--max-file-bytes`, 10 MiB by default; finding a cursor's line in it is part of
+the read). The clock starts before the pattern is parsed. Work is metered, not sampled: the matcher, the literal
+search and the line reader charge what they do and read the clock once 65,536 units have built up (a unit is a
+thread step of the matcher or a byte read), and between files. The 50 ms is the first line's grace (10 ms, below),
+one meter interval (under 10 ms in the test build; the widest measured, 1.2 ms), the compile (under 25 ms;
+measured 3.4 ms at most) and the work of a hit outside the meter (its text and context, at most 41 lines of 512
+bytes). Shown by `tests/test_scan.py` (`BudgetTests`) and the `pattern.zig` and `scan_test.zig` tests named for
+rework 1.
 
-A single line that alone takes longer than the whole budget would make no progress, so the request is refused
-with `capacity` (`SS_ERR_CAPACITY`) and the message `line <n> of <root>/<path> outlasts time_budget_ms (<b>): raise
-it (at most 30000) or narrow the scope` (ruling O-7). This is distinct from an ordinary `stopped: "time"`.
+When the budget runs out the page ends with `stopped: "time"` and always a `next_cursor`; it may hold fewer hits
+than `page_size`, or none, but never a hit with missing offsets. Call again with the cursor.
 
-There is no cancel yet; a scan holds the server for at most its budget.
+**The first line of a page gets 10 ms** even when the budget is spent (a tiny budget, or a long read), so a page
+always makes progress where a line can be searched in 10 ms. A single line that cannot be searched within the
+budget and that grace would make no progress, so the request is refused with `capacity` (`SS_ERR_CAPACITY`)
+(ruling O-7). The message names the cause:
+
+- `line <n> of <root>/<path> outlasts time_budget_ms (<b>): raise it (at most 30000) or narrow the scope` when
+  the line itself took the budget;
+- `time_budget_ms (<b>) ran out reading <root>/<path>, and line <n> did not finish in the 10 ms after: raise it
+  (at most 30000) or narrow the scope` when the budget had gone on reading the file (or compiling) before the
+  line started.
+
+This is distinct from an ordinary `stopped: "time"`. There is no cancel yet.
+
+## Memory
+
+A page holds **one file's bytes at a time**, plus what is bounded by the request: the page's hits (at most
+`page_size` lines of 512 bytes, each with its context) and a ring of `2 × context_lines + 1` line positions. No
+table grows with the number of lines in a file. Over an index the stored text is read straight into that one
+buffer when the file is kept whole, or rebuilt into it from its chunks. Measured
+(`scan_service_test.zig`, ruling 4, and the verifier's `probe_memory.py`), a 10 MiB file of 67-byte lines and a
+10 MiB file of nothing but line breaks (10,485,759 lines) give the same page: at most 2.25 times the file in live
+allocator bytes (the arena growing by half again twice) plus under 1 MiB, over the folder and the index alike;
+the process's peak memory footprint (ReleaseFast) 11.8 MB for both over the folder, 30.0 MB and 23.4 MB over the
+index, whose own open (the index's tables, not the page) makes the difference.
 
 ## Known differences from the Python reference
 
 The Python reference translates a pattern into Python's `re` with explicit classes. It and the engine agree on
-every generated case in `tests/test_scan.py` but one, recorded there with its reason: an empty alternative first
-inside a repeat, `(|a)*` over `aa`, gives `[[0,2]]` in the engine and `[[0,1],[1,2]]` in Python's `re`. The
-lines that match are the same; only the offsets differ. The reference's cursors use SHA-256 where the engine's use
-XXH3, so a cursor is only handed back to the implementation that made it; and the reference checks its budget
-between lines only, never inside one.
+the lines that match and on every count for every pattern. They **may differ on `match_offsets`**, and so on
+where a `text` cut after 16 matches ends, for one class of pattern: **a regex holding a repeat with no upper
+bound, or one above 1, whose body can match the empty string** (`(|a)*`, `(a?)+`, `(?:x|y?){3,}`; the
+reference's `offsets_may_differ`). Python's `re` retries such a repeat after an empty iteration; the engine's
+Pike VM ends the repeat there. For example `(|a)*` over `aa` gives `[[0,2]]` in the engine and `[[0,1],[1,2]]`
+in Python's `re`. `tests/test_scan.py` compares exactly that much on those patterns (lines and counts, not text
+or offsets) and everything on the others. The reference's cursors use SHA-256 where the engine's use XXH3, so a
+cursor is only handed back to the implementation that made it; and the reference checks its budget between lines
+only, never inside one.

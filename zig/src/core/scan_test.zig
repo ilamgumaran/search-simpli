@@ -1,8 +1,9 @@
 //! S6-T24: `scan.run` over a fake source (ADR 0006 section 16, "scan.zig unit tests"): every hit exactly once
 //! across pages for every page size from 1 to 7, `max_hits_per_file` across a page boundary, context at a
 //! file's edges, the 512-byte cut with offsets clipped, the BOM and CRLF, the three cursor refusals, an
-//! injected clock that stops pages between files, every 256 lines and inside a line with nothing lost or
-//! repeated on resume, and the `capacity` refusal of a line that alone outlasts the budget (ruling O-7).
+//! injected clock that stops pages between files, inside a file and inside a line with nothing lost or
+//! repeated on resume, and the `capacity` refusal of a page that completes nothing (ruling O-7), naming its
+//! cause (rework 1, ruling 5); the clock starting before the pattern is parsed (rework 1, ruling 1).
 const std = @import("std");
 const pattern = @import("pattern.zig");
 const scan = @import("scan.zig");
@@ -246,6 +247,12 @@ test "S6-T24 scan: cursors: stale across a publish, refused on another request, 
         try std.fmt.allocPrint(arena, "7:{s}:-1:1:0", .{hash_part}),
         try std.fmt.allocPrint(arena, "7:{s}:99:1:0", .{hash_part}),
         try std.fmt.allocPrint(arena, "7:{s}:0:1:51", .{hash_part}),
+        // Rework 1, ruling 8: the schema's digits only (no sign, no `_`, lowercase hexadecimal).
+        try std.fmt.allocPrint(arena, "7:{s}:+0:1:0", .{hash_part}),
+        try std.fmt.allocPrint(arena, "+7:{s}:0:1:0", .{hash_part}),
+        try std.fmt.allocPrint(arena, "7:{s}:0:1_0:0", .{hash_part}),
+        try std.fmt.allocPrint(arena, "7:{s}:-0:1:0", .{hash_part}),
+        try std.fmt.allocPrint(arena, "7:{s}:0:1:0", .{try std.ascii.allocUpperString(arena, hash_part)}),
     };
     for (bad) |text| {
         var malformed = request;
@@ -316,7 +323,7 @@ fn manyLines(arena: std.mem.Allocator, count: usize, long_every: usize, long_cps
     return out.items;
 }
 
-test "S6-T24 scan: an injected clock stops pages between files, every 256 lines and inside a line; resuming loses and repeats nothing" {
+test "S6-T24 scan: an injected clock stops pages between files, inside a file and inside a line; resuming loses and repeats nothing" {
     var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();
@@ -345,7 +352,7 @@ test "S6-T24 scan: a line that alone outlasts the budget is refused with capacit
     var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();
-    const bytes = [_][]const u8{ "short 1\n" ++ "a" ** 40_000 ++ "\n", "x\n" };
+    const bytes = [_][]const u8{ "short 1\n" ++ "a" ** 400_000 ++ "\n", "x\n" };
     var fake = Fake{ .bytes = &bytes };
     const src = try sourceOf(arena, &fake, &.{ "big.txt", "x.txt" });
     const request = scan.Request{ .pattern = "(a|b)+c", .mode = .regex, .time_budget_ms = 3 };
@@ -354,7 +361,8 @@ test "S6-T24 scan: a line that alone outlasts the budget is refused with capacit
     const first = try ok(try scan.run(arena, request, src, clock.clock()));
     try testing.expectEqual(scan.Stopped.time, first.stopped);
     try testing.expect(std.mem.endsWith(u8, first.next_cursor.?, ":0:2:0"));
-    // From that cursor no position can be completed: refused, not the same cursor handed back.
+    // From that cursor no position can be completed, even with the first line's 10 ms grace: refused, not the
+    // same cursor handed back, and the cause is the line (the budget was not spent when it started).
     var again = request;
     again.cursor = first.next_cursor;
     clock = .{};
@@ -371,6 +379,49 @@ test "S6-T24 scan: a line that alone outlasts the budget is refused with capacit
     const done = try ok(try scan.run(arena, again, src, realClock()));
     try testing.expectEqual(scan.Stopped.none, done.stopped);
     try testing.expect(done.next_cursor == null);
+}
+
+test "S6-T24 rework 1, ruling 5: a budget spent before the first line is named, and the first line still gets its grace" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    // Each read of this clock is 5 ms later: the budget of 3 ms has passed by the time the first line starts.
+    const long = [_][]const u8{"a" ** 400_000 ++ "\nx\n"};
+    var fake = Fake{ .bytes = &long };
+    const src = try sourceOf(arena, &fake, &.{"big.txt"});
+    var clock = CountingClock{ .step = 5 * std.time.ns_per_ms };
+    const refused = try scan.run(arena, .{ .pattern = "(a|b)+c", .mode = .regex, .time_budget_ms = 3 }, src, clock.clock());
+    switch (refused) {
+        .ok => return error.TestUnexpectedResult,
+        .failed => |failure| try testing.expectEqualStrings("time_budget_ms (3) ran out reading r-legacy/big.txt, and line 1 did not finish in the 10 ms after: raise it (at most 30000) or narrow the scope", failure.message),
+    }
+    // A first line that fits the grace is searched, and the page then stops with a cursor past it.
+    var lines = std.ArrayList(u8).empty;
+    for (0..20_000) |i| try lines.print(arena, "line {d} 42\n", .{i});
+    const many = [_][]const u8{lines.items};
+    var fake_many = Fake{ .bytes = &many };
+    const src_many = try sourceOf(arena, &fake_many, &.{"many.txt"});
+    clock = .{ .step = 5 * std.time.ns_per_ms };
+    const page = try ok(try scan.run(arena, .{ .pattern = "^line 0 ", .mode = .regex, .time_budget_ms = 3 }, src_many, clock.clock()));
+    try testing.expectEqual(scan.Stopped.time, page.stopped);
+    try testing.expectEqual(@as(usize, 1), page.hits.len);
+    try testing.expect(!std.mem.endsWith(u8, page.next_cursor.?, ":0:1:0"));
+}
+
+test "S6-T24 rework 1, ruling 1: the clock starts before the pattern is parsed" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var fake = Fake{ .bytes = &corpus_bytes };
+    const src = try sourceOf(arena, &fake, &corpus_paths);
+    // A pattern refused when it is parsed has already read the clock once: the budget's start.
+    var clock = CountingClock{};
+    _ = try refusal(try scan.run(arena, .{ .pattern = "a(", .mode = .regex }, src, clock.clock()));
+    try testing.expectEqual(@as(u64, std.time.ns_per_ms), clock.now_ns);
+    // A request refused before it (a field out of range) has not.
+    clock = .{};
+    _ = try refusal(try scan.run(arena, .{ .pattern = "a", .page_size = 0 }, src, clock.clock()));
+    try testing.expectEqual(@as(u64, 0), clock.now_ns);
 }
 
 test "S6-T24 scan: a pattern that can match the empty string makes every line a hit, with the warning flag" {

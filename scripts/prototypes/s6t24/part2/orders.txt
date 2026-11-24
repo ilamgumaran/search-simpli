@@ -5,19 +5,29 @@
 # (scripts/prototypes/s6t14/run_timing.sh, gate.sh, summarize.py) over scripts/prototypes/s6t9/bench.py bench,
 # unchanged; this file is its ORDERS.
 #
-# What changes on the measured paths. `scan` is new code (core/pattern.zig, core/scan.zig, ops.scan,
-# ScopedService.scan, ss_scan and the other interfaces); no open, query or find source line changes. Against main
-# (43a308d), zig/src also changes: core.zig (imports and `api` entries, no run-time code), unicode_tables.zig (one
-# more table, `digit_ranges`, read by `scan` only), apply.zig (ruling 8: read-and-caps moved out of applyParsed,
-# the writer's path only, no behaviour change, commit 540bb09), ops.zig, service.zig, abi.zig, rpc.zig, mcp.zig,
-# cli.zig and main.zig (a new method each). An index built by the head is byte-identical to main's (every file of
-# the three 10k corpora's and the judged folder's index folders, cmp; docs/tasks/S6-T24.md, Report (Part 2)). The
-# natives' compiled code moves with the rebuild: the dylib's __text grows by 44,500 B. So: five gated runs in the
-# Latin-square orders below, main, main2 and two placement controls matching the head's compiled-code delta, one
-# beside the open path and one on the writer's path, every open, query and find cell of the three 10k corpora,
-# judged by the rule.
+# Rework 1 (24 Nov 2026), before any timed run: the head is now the rework's (the Verdict's rulings 1-8 in
+# core/pattern.zig, core/scan.zig, core/source.zig, core/source_v2.zig and core/find.zig). Its library and size, the
+# two controls, the paragraph on what changes and the expectation were brought up to date below; the cells, the
+# rule and the orders are unchanged. Still no timed run has been taken.
 #
-# Expectation, stated before measuring: no open, query or find source changes, so every cell passes the rule; a
+# What changes on the measured paths. `scan` is new code (core/pattern.zig, core/scan.zig, ops.scan,
+# ScopedService.scan, ss_scan and the other interfaces); at Part 2 no open, query or find source line changed
+# (rework 1's two are below). Against main (43a308d), zig/src also changes: core.zig (imports and `api` entries, no
+# run-time code), unicode_tables.zig (one more table, `digit_ranges`, read by `scan` only), apply.zig (ruling 8:
+# read-and-caps moved out of applyParsed, the writer's path only, no behaviour change, commit 540bb09), ops.zig,
+# service.zig, abi.zig, rpc.zig, mcp.zig, cli.zig and main.zig (a new method each). An index built by the head is
+# byte-identical to main's (every file of the three 10k corpora's and the judged folder's index folders, cmp;
+# docs/tasks/S6-T24.md, Report (Part 2) and Report (Rework 1)). The natives' compiled code moves with the rebuild:
+# the dylib's __text grows by 47,864 B (rework 1; 44,500 B at Part 2). Rework 1 also changes two functions outside
+# `scan`: source_v2.rebuildChecked (a file kept whole is read straight into its buffer; read_span, outline and the
+# writer's update, not an open, a query or a find) and find.parseCursor (digits only; run once per request that
+# carries a cursor). read-span, outline and an update answer as main's (docs/evidence/s6-t24/rework1). So: five
+# gated runs in the Latin-square orders below, main, main2 and two placement controls matching the head's
+# compiled-code delta, one beside the open path and one on the writer's path, every open, query and find cell of
+# the three 10k corpora, judged by the rule.
+#
+# Expectation, stated before measuring: no open or query source changes and find's only change is the parse of a
+# cursor (bench.py's find cells send none), so every cell passes the rule; a
 # move from code placement alone is what the two controls, of the same __text delta, are there to bracket.
 #
 # Builds (macOS arm64 ReleaseSmall libsearch_simpli.dylib; __text from size -m):
@@ -26,15 +36,16 @@
 #           595,472 B
 #   main2 = 43a308d built again in another archive copy with its own caches: byte-identical to main
 #   head  = this branch's native/macos-arm64/libsearch_simpli.dylib as committed with this file
-#           (tool/build_native.sh): 1,064,152 B, sha256 005db2d25b615507..., __text 639,972 B (+44,500 B)
+#           (tool/build_native.sh): 1,065,304 B, sha256 f33e0bb5f0efa6f0..., __text 643,336 B (+47,864 B)
 #   Controls: main + one never-run function (scripts/prototypes/s6t20/make_control.py, unchanged), called under a
 #   branch never true at run time, each in its own archive of 43a308d with its own caches:
-#   cl = place l, 504 blocks + 0 steps: snapshot_open.loadEngine, after the MANIFEST read (every open)
-#        1,056,904 B, sha256 5d7c2a22bf3f68ae..., __text 639,956 B (+44,484 B)
-#   ci = place i, 516 blocks + 0 steps: indexer.walkAndApply (the writer's path; never on an open, a query or a find)
-#        1,057,464 B, sha256 4eb39aa12cdc3048..., __text 640,116 B (+44,644 B)
-#   The head's delta is +44,500 B; the controls bracket it (+44,484 and +44,644 B). Sized before any timed run by
-#   building l 459+0 (+40,512 B) and i 459+0 (+39,684 B), then scaling the block count to the head's delta.
+#   cl = place l, 542 blocks + 0 steps: snapshot_open.loadEngine, after the MANIFEST read (every open)
+#        1,056,904 B, sha256 10101ed83ebd39f8..., __text 643,312 B (+47,840 B)
+#   ci = place i, 554 blocks + 0 steps: indexer.walkAndApply (the writer's path; never on an open, a query or a find)
+#        1,057,464 B, sha256 ec4f4552620f8528..., __text 643,344 B (+47,872 B)
+#   The head's delta is +47,864 B; the controls bracket it (+47,840 and +47,872 B). Sized before any timed run from
+#   Part 2's per-block sizes (l: 504 blocks gave +44,484 B; i: 516 gave +44,644 B), each built once in a fresh
+#   archive of 43a308d. (Part 2's controls, l 504 and i 516, bracketed Part 2's +44,500 B; they are replaced.)
 #
 # Control set (fixed now): main2, cl, ci.
 # Cells, per corpus (timing-10k, prose-10k, tamil-10k, 10,000 files each, from scripts/gen_timing_corpus.py,
@@ -53,7 +64,7 @@
 # sets are cmp-identical, file by file. Each build opens its own copy: head a copy of the head's, the others copies
 # of main's. Answers (bench.py answers, every query under the three fields and every find; 55, 55 and 56):
 # identical between main and every other build (main2, head, cl, ci) on the three corpora, every field but the
-# library and index paths.
+# library and index paths (rework 1: checked again for the new head, cl and ci).
 #
 # Each run, from the worktree, only when the orchestrator says the machine is awake:
 #   bash scripts/prototypes/s6t14/run_timing.sh R scripts/prototypes/s6t24/part2/orders.txt \

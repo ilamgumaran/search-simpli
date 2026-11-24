@@ -306,10 +306,18 @@ fn fail(allocator: std.mem.Allocator, code: source.Code, comptime format: []cons
 
 const CursorParse = union(enum) { offset: usize, malformed, stale };
 
+/// S6-T24 rework 1 (ruling 8): a cursor's number is ASCII digits only, as the schema's pattern says
+/// (`std.fmt.parseInt` would also take a sign and `_` separators).
+pub fn parseDigits(comptime T: type, text: []const u8) ?T {
+    if (text.len == 0) return null;
+    for (text) |byte| if (!std.ascii.isDigit(byte)) return null;
+    return std.fmt.parseInt(T, text, 10) catch null;
+}
+
 fn parseCursor(cursor: []const u8, generation: u64) CursorParse {
     const colon = std.mem.indexOfScalar(u8, cursor, ':') orelse return .malformed;
-    const cursor_generation = std.fmt.parseInt(u64, cursor[0..colon], 10) catch return .malformed;
-    const value = std.fmt.parseInt(usize, cursor[colon + 1 ..], 10) catch return .malformed;
+    const cursor_generation = parseDigits(u64, cursor[0..colon]) orelse return .malformed;
+    const value = parseDigits(usize, cursor[colon + 1 ..]) orelse return .malformed;
     if (cursor_generation != generation) return .stale;
     return .{ .offset = value };
 }

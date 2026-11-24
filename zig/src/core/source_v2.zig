@@ -227,6 +227,17 @@ pub fn fileBytes(section: source.Section, allocator: std.mem.Allocator, file: so
 /// The rebuild and its length and SHA-256 checks, without the line map's
 /// (the writer, which carries a map as it is: `source.carriedRecord`).
 pub fn rebuildChecked(section: source.Section, allocator: std.mem.Allocator, file: source.FileEntry) error{OutOfMemory}!source.BytesResult {
+    // S6-T24 rework 1 (ruling 4): a streamed file kept whole is read straight into the answer, one buffer
+    // instead of a residual and its copy; the same checks in the same order as the path below takes.
+    if (file.v2_whole and file.v2_residual_length == file.text_length) if (section.text_file) |text| {
+        const out = try allocator.alloc(u8, file.text_length);
+        const read = text.file.readPositionalAll(text.io, out, text.offset + file.text_offset) catch |err| return source.unavailablePub(allocator, @errorName(err));
+        if (read != out.len) return source.unavailablePub(allocator, "SourceSectionSizeMismatch");
+        var digest: [32]u8 = undefined;
+        std.crypto.hash.sha2.Sha256.hash(out, &digest, .{});
+        if (!std.mem.eql(u8, &digest, &file.sha256)) return source.unavailablePub(allocator, source.sha256_mismatch_name);
+        return .{ .ok = out };
+    };
     const residual: []const u8 = if (section.text_file) |text| blk: {
         const buffer = try allocator.alloc(u8, file.v2_residual_length);
         const read = text.file.readPositionalAll(text.io, buffer, text.offset + file.text_offset) catch |err| return source.unavailablePub(allocator, @errorName(err));

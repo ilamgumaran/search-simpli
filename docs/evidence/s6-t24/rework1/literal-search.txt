@@ -1,0 +1,8 @@
+S6-T24 rework 1, ruling 3: scripts/prototypes/s6t24/rework1/literal_search.zig, zig run -OReleaseFast (Zig 0.16.0), 24 Nov 2026; not a timed run of the build (a machine not kept quiet), read as ratios.
+haystack 10485760 bytes; fastest of 3, ms
+m=  16 a's then b: findPos 11.1, findIgnoreCasePos 61.1, engine bytes 13.7, engine ascii_ci 11.7
+m=  16 b then a's: findPos 11.2, findIgnoreCasePos 7.0, engine bytes 0.2, engine ascii_ci 0.2
+m= 256 a's then b: findPos 44.1, findIgnoreCasePos 952.5, engine bytes 13.0, engine ascii_ci 12.7
+m= 256 b then a's: findPos 5.9, findIgnoreCasePos 6.5, engine bytes 0.2, engine ascii_ci 0.2
+m=1024 a's then b: findPos 136.9, findIgnoreCasePos 2934.6, engine bytes 12.9, engine ascii_ci 13.5
+m=1024 b then a's: findPos 7.3, findIgnoreCasePos 5.6, engine bytes 0.1, engine ascii_ci 0.2

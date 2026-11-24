@@ -423,6 +423,16 @@ fn nextBreakCandidate(bytes: []const u8, from: usize) usize {
     return at;
 }
 
+/// S6-T24 rework 1: `isBreakAt` and `nextBreakCandidate` for `scan`'s line reader, which walks a file one line
+/// at a time instead of holding its line starts.
+pub fn breakWidthAt(bytes: []const u8, index: usize) usize {
+    return isBreakAt(bytes, index);
+}
+
+pub fn nextBreakCandidatePub(bytes: []const u8, from: usize) usize {
+    return nextBreakCandidate(bytes, from);
+}
+
 /// Byte offset of each line start, then the end offset. Appends to `out`.
 pub fn lineStarts(allocator: std.mem.Allocator, bytes: []const u8, out: *std.ArrayList(u64)) !void {
     var index: usize = if (std.mem.startsWith(u8, bytes, "\xef\xbb\xbf")) 3 else 0;

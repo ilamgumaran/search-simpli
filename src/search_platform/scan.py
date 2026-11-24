@@ -5,8 +5,9 @@ cursor. The engine's `zig/src/core/pattern.zig` and `scan.zig` are the implement
 same rules a second time so the tests can compare them:
 
 - **The subset** (`compile`): the same grammar, refused with the same messages at the same byte offsets
-  (`pattern not supported at byte <n>: <reason>`), the same program-size cap (8,192 steps, counted as the engine
-  emits them).
+  (`pattern not supported at byte <n>: <reason>`), the same caps (8,192 steps: the instructions the engine emits
+  and the nodes it expands, `_size` and `_work`), and the same simplification of a repeat whose body can only
+  match the empty string (kept at most once).
 - **Matching**: the parsed pattern is translated to a Python `re` pattern in which every class is explicit:
   `\\w` is the analyser's word code points (letters and digits by category, marks Mn and Mc, ZWNJ and ZWJ;
   not `_`), `\\d` is Nd, `\\s` is `str.isspace`, `\\b` and `whole_word` are look-arounds on that word class.
@@ -16,14 +17,18 @@ same rules a second time so the tests can compare them:
   also matches the fold of a member. `smart` is insensitive unless a code point the pattern writes changes
   under the fold.
 - **Every match**: `re.finditer`'s matches; an empty match makes the line a hit and is left out of the
-  offsets; only matches starting within the hit's `text` (at most 512 bytes) are listed, ends clipped.
+  offsets; only matches starting within the hit's `text` (at most 512 bytes) are listed, ends clipped. In
+  regex mode at most 16 matches are looked for per line (empty ones included); a 17th starting within the text
+  cuts the text where it starts.
 - **Lines** are `core.line_starts`'s (`read_span`'s numbering), without their terminator.
 
 Two sources: `scan(index, request)` over a `core.build_index` index (root `r-legacy`, the bytes read again and
 checked against their recorded sha256, as `read_span` reads them) and `scan_folder(root, request)` over a
 folder walked by `core`'s walk. The cursor has the engine's shape, but its request and walk parts are
 SHA-256 prefixes here, not XXH3: a cursor is only ever handed back to the implementation that made it.
-The budget is checked between files and every 256 lines; a single line is never interrupted here.
+The budget is checked between files and every 256 lines; a single line is never interrupted here, and the
+reference holds a file's line starts. The engine meters its work inside a line and holds no per-line table
+(docs/scan.md, "Time" and "Memory"); the reference is the oracle for answers, not for time or memory.
 """
 
 from __future__ import annotations
@@ -42,6 +47,7 @@ from . import core
 MAX_PATTERN_BYTES = 1024
 MAX_PROGRAM = 8192
 MAX_REPEAT = 255
+MAX_MATCHES_PER_LINE = 16
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
 DEFAULT_MAX_HITS_PER_FILE = 50
@@ -294,6 +300,9 @@ class _Parser:
                     raise _Refused(q_at, "a repeat {m,n} has n below m")
             if self.peek() in (ord("?"), ord("+")):
                 raise _Refused(self.at, "lazy and possessive repeats are not supported")
+            if _zero_width(node):
+                # Its body can only match the empty string: once is the same as any number of times.
+                low, high = min(low, 1), 1 if high is None else min(high, 1)
             node = ("rep", node, low, high)
             repeated = True
         return node
@@ -442,6 +451,52 @@ def _size(node) -> int:
     return low * inner + (high - low) * (inner + 1)
 
 
+def _work(node) -> int:
+    """Nodes the engine's compiler expands for `node` (each expansion of a repeat's body counts)."""
+    kind = node[0]
+    if kind in ("empty", "char", "any", "class", "assert"):
+        return 1
+    if kind in ("cat", "alt"):
+        return 1 + sum(_work(item) for item in node[1])
+    _, sub, low, high = node
+    return 1 + (low + 1 if high is None else high) * _work(sub)
+
+
+def _zero_width(node) -> bool:
+    """Whether `node` can only match the empty string."""
+    kind = node[0]
+    if kind in ("empty", "assert"):
+        return True
+    if kind in ("char", "any", "class"):
+        return False
+    if kind in ("cat", "alt"):
+        return all(_zero_width(item) for item in node[1])
+    return node[3] == 0 or _zero_width(node[1])
+
+
+def _nullable_repeat(node) -> bool:
+    """Whether `node` holds a repeat with no upper bound or one above 1 whose body can match the empty string."""
+    kind = node[0]
+    if kind in ("cat", "alt"):
+        return any(_nullable_repeat(item) for item in node[1])
+    if kind != "rep":
+        return False
+    _, sub, _low, high = node
+    return ((high is None or high > 1) and _nullable(sub)) or _nullable_repeat(sub)
+
+
+def offsets_may_differ(pattern: str) -> bool:
+    """docs/scan.md's stated divergence: a regex holding a repeat with no upper bound, or one above 1, whose body
+    can match the empty string. On such a pattern the engine and this reference (and Python's `re`) agree on
+    which lines match but may differ on `match_offsets`, and so on where a cut `text` ends."""
+    parser = _Parser(pattern.encode("utf-8", "surrogatepass"))
+    try:
+        root = parser.alternation()
+    except _Refused:
+        return False
+    return _nullable_repeat(root)
+
+
 def _nullable(node) -> bool:
     kind = node[0]
     if kind in ("empty", "assert"):
@@ -460,10 +515,11 @@ def _nullable(node) -> bool:
 class Compiled:
     """A checked pattern: `regex` (a compiled `re` pattern over the folded line when insensitive)."""
 
-    def __init__(self, regex: re.Pattern, case_applied: str, matches_empty: bool):
+    def __init__(self, regex: re.Pattern, case_applied: str, matches_empty: bool, mode: str = "regex"):
         self.regex = regex
         self.case_applied = case_applied
         self.matches_empty = matches_empty
+        self.mode = mode
 
     def prepare(self, line: str) -> str:
         if self.case_applied == "insensitive":
@@ -543,7 +599,7 @@ def compile_pattern(pattern: str, mode: str = "literal", case: str = "smart", wh
         applied = "sensitive" if any(fold(cp) != cp for cp in written) else "insensitive"
     else:
         applied = case
-    if _size(root) + (2 if whole_word else 0) + 1 > MAX_PROGRAM:
+    if _size(root) + (2 if whole_word else 0) + 1 > MAX_PROGRAM or _work(root) > MAX_PROGRAM:
         raise _invalid("pattern not supported at byte 0: the pattern is too large (over 8,192 steps)")
     insensitive = applied == "insensitive"
     word = _class_text(_tables()["word"])
@@ -551,21 +607,31 @@ def compile_pattern(pattern: str, mode: str = "literal", case: str = "smart", wh
     body = _translate(root, classes, word, insensitive)
     if whole_word:
         body = f"(?<!{word})(?:{body})(?!{word})"
-    return Compiled(re.compile(body, re.DOTALL), applied, mode == "regex" and _nullable(root))
+    return Compiled(re.compile(body, re.DOTALL), applied, mode == "regex" and _nullable(root), mode)
 
 
 def match_line(compiled: Compiled, line: str, text_cps: int) -> tuple[bool, list[list[int]]]:
     """Whether `line` is a hit, and its non-empty matches starting within `text_cps` code points."""
-    hit, offsets = False, []
+    hit, offsets, _cut = match_line_cut(compiled, line, text_cps)
+    return hit, offsets
+
+
+def match_line_cut(compiled: Compiled, line: str, text_cps: int) -> tuple[bool, list[list[int]], int]:
+    """`match_line`, and the code points the hit's text keeps: `text_cps`, or fewer when regex mode found more
+    than `MAX_MATCHES_PER_LINE` matches starting within it (the text then ends where the next one starts)."""
+    hit, offsets, looked = False, [], 0
     for match in compiled.regex.finditer(compiled.prepare(line)):
         hit = True
         start, end = match.span()
         if start >= text_cps:
             break
+        looked += 1
+        if compiled.mode == "regex" and looked > MAX_MATCHES_PER_LINE:
+            return True, offsets, start
         if start == end:
             continue
         offsets.append([start, min(end, text_cps)])
-    return hit, offsets
+    return hit, offsets, text_cps
 
 
 # --------------------------------------------------------------------- scope ---
@@ -728,6 +794,25 @@ def strip_break(line: bytes) -> bytes:
     return line
 
 
+def _byte_of(data: bytes, cps: int) -> int:
+    """The byte `cps` code points into `data`, as `decode` steps (one byte for an invalid sequence)."""
+    at = 0
+    for _ in range(cps):
+        at += _step(data, at)
+    return at
+
+
+def _step(data: bytes, at: int) -> int:
+    length = _sequence_length(data[at])
+    if length > 1 and at + length <= len(data):
+        try:
+            data[at:at + length].decode("utf-8")
+            return length
+        except UnicodeDecodeError:
+            pass
+    return 1
+
+
 def text_cut(line: bytes) -> int:
     if len(line) <= MAX_TEXT_BYTES:
         return len(line)
@@ -797,7 +882,10 @@ def _run(request: dict, *, kind: str, stamp: str, generation: int | None, files:
                 break
             content = strip_break(data[starts[line - 1]:starts[line]])
             cut = text_cut(content)
-            hit, offsets = match_line(compiled, decode(content), len(decode(content[:cut])))
+            text_cps = len(decode(content[:cut]))
+            hit, offsets, kept_cps = match_line_cut(compiled, decode(content), text_cps)
+            if kept_cps < text_cps:
+                cut = _byte_of(content, kept_cps)
             progress = True
             if hit:
                 if listed == max_hits:

@@ -1,0 +1,18 @@
+S6-T24 rework 1: the measured lines that zig build test --summary all (Debug, Zig 0.16.0) prints for scan, 24 Nov 2026, at the commit with this file; a machine not kept quiet, so the times are ratios and bounds, not a timing of the build.
+S6-T24 linear: (a+)+b over 2^16 a's 18538292 ns, 2^20 a's 299282125 ns, ratio 16.14 (bar 32)
+S6-T24 compile time fuzz: 2030 compiled, 5730 refused; slowest 3450125 ns (19 bytes: (?:(?:\d?){0,255})+)
+S6-T24 listing: a(.*b)? over 2^16 a's 116934375 ns, 2^18 a's 468893875 ns, ratio 4.01 (bar 8)
+S6-T24 literal bytes: 1,023 a's and b over 2^18 a's 1679250 ns, 2^20 a's 6675750 ns, ratio 3.98 (bar 8)
+S6-T24 literal ascii_ci: 1,023 a's and b over 2^18 a's 2012250 ns, 2^20 a's 7745833 ns, ratio 3.85 (bar 8)
+S6-T24 meter: (?:[a-j ]{1,255}){15}z: 1661 reads of the clock, widest gap 1036792 ns
+S6-T24 meter: (?:\w|\W){1,255}(?:\w|\W){1,255}z: 32416 reads of the clock, widest gap 1176167 ns
+S6-T24 meter: a(.*z)?: 1905 reads of the clock, widest gap 1156292 ns
+S6-T24 meter: abcdefghij z: 18 reads of the clock, widest gap 583667 ns
+S6-T24 meter: ABCDEFGHIJ Z: 18 reads of the clock, widest gap 676875 ns
+S6-T24 budget: \d+: 41 pages, 28 stopped by time, 2306 hits
+S6-T24 budget: 4: 31 pages, 27 stopped by time, 1082 hits
+S6-T24 budget: (a|b)+ 4: 296 pages, 295 stopped by time, 291 hits
+S6-T24 NFR-13 scan of a 10 MiB file under a 67108864 B cap: peak live bytes 40897539, 403 hit lines
+S6-T24 ruling 4: lines of 67 bytes, 10485759 B: page peak live bytes over the folder 23623186, over the index 23603596 (the first page, which also loads the source section, 23775840; the open's own 18240537)
+S6-T24 ruling 4: line breaks only, 10485759 B: page peak live bytes over the folder 23623186, over the index 23602426 (the first page, which also loads the source section, 34088275; the open's own 10527605)
+Build Summary: 15/15 steps succeeded; 640/649 tests passed (9 skipped)

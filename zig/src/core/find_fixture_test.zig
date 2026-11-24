@@ -468,6 +468,10 @@ test "S3-T2: empty queries, a stray star, page size and cursors are INVALID_ARGU
     for ([_][]const u8{ "", "1", "1:", ":2", "x:2", "1:-1", "1:2:3" }) |cursor| {
         try expectFailure(try find.find(arena, engine, .{ .query = "alpha", .cursor = cursor }), .invalid_argument, "malformed cursor");
     }
+    // S6-T24 rework 1 (ruling 8): the schema's digits only; these were taken before.
+    for ([_][]const u8{ "+1:2", "1:+2", "1:0_2", "1_0:2", "-1:2", "1:-0" }) |cursor| {
+        try expectFailure(try find.find(arena, engine, .{ .query = "alpha", .cursor = cursor }), .invalid_argument, "malformed cursor");
+    }
 }
 
 test "S3-T2: prefix expands over the visible vocabulary only, at most 1,000 terms, else CAPACITY" {

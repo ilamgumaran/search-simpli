@@ -4,13 +4,17 @@
 //! - **Grammar** (`compile`): the subset of ADR 0006 section 2 plus `\t` (ruling O-8). Everything else is refused
 //!   with `pattern not supported at byte <n>: <reason>`; the Python reference (`src/search_platform/scan.py`)
 //!   refuses the same patterns with the same messages.
+//! - **Compiling** is bounded by a count of work, not of output (rework 1, ruling 1): every node the compiler
+//!   expands counts one step, whether or not it emits, and so does every instruction; over 8,192 of either is
+//!   refused as too large. A repeat whose body can only match the empty string is simplified to its body at
+//!   most once (`X{m,n}` to `X{min(m,1),min(n,1)}`: the same spans), so nested empty repeats cost nothing.
 //! - **Matching** (`Matcher`): a Pike VM over code points, at most one thread per instruction per position, so a
-//!   line costs O(instructions x code points) whatever the pattern; leftmost-first (the earlier alternative and
-//!   the greedier repeat win), as Python's `re`. A program holds at most 8,192 instructions, a repeat bound is
-//!   at most 255, and all of the VM's memory is set up once (`Matcher.init`), none per line.
-//! - **Literals** skip the VM: a byte search (`std.mem.findPos`), or `std.ascii.findIgnoreCasePos` for an
-//!   insensitive ASCII needle with no `s` and no `k` (exact: the only code points outside ASCII that fold into
-//!   ASCII fold to `s` and `k`). A regex with no special character is a literal.
+//!   pass over a line costs O(instructions x code points) whatever the pattern; leftmost-first (the earlier
+//!   alternative and the greedier repeat win), as Python's `re`. A program holds at most 8,192 instructions, a
+//!   repeat bound is at most 255, and all of the VM's memory is set up once (`Matcher.init`), none per line.
+//! - **Literals** skip the VM: Knuth-Morris-Pratt over bytes (linear whatever the needle), exact or, for an
+//!   insensitive ASCII needle with no `s` and no `k`, over ASCII-lowered bytes (exact: the only code points
+//!   outside ASCII that fold into ASCII fold to `s` and `k`). A regex with no special character is a literal.
 //! - **Case**: `insensitive` applies the analyser's simple fold (`casefold_pairs`, one code point to one) to the
 //!   line and to the pattern's code points; a class matches a folded code point `f` when `f` is in the class or is
 //!   the fold of a member (`Class.extras`). `smart` is `insensitive` unless a code point the pattern writes
@@ -18,17 +22,24 @@
 //! - **Classes**: `\w` is the analyser's word code points (letters, digits, marks Mn and Mc, ZWNJ, ZWJ; not `_`),
 //!   `\d` is Unicode Nd (`digit_ranges`), `\s` the analyser's whitespace (`chunker.isWhitespace`).
 //! - **Every match** (`Matcher.matchLine`): Python's `finditer`; empty matches make the line a hit but are left
-//!   out of the offsets, and only matches starting within the hit's `text` are listed.
-//! - **Budget**: the VM asks `Budget.expired` every 4,096 code points and stops the line with `error.OutOfTime`.
+//!   out of the offsets, and only matches starting within the hit's `text` are listed. Deciding the hit is one
+//!   pass; in regex mode at most 16 matches are looked for per line (empty ones included), and a line with a
+//!   17th starting within its text has its text cut where that one starts (`text_truncated`), so a line costs at
+//!   most 17 passes (rework 1, ruling 2). A literal's matches are found in one pass, all of them.
+//! - **Budget**: every loop charges its work to `Budget.charge` (a VM thread step, a byte searched), which reads
+//!   the clock once per 65,536 units and stops the line with `error.OutOfTime`.
 const std = @import("std");
 const chunker = @import("chunker.zig");
 const tables = @import("unicode_tables.zig");
 
 pub const max_pattern_bytes: usize = 1024;
+/// The compile's cap, on instructions emitted and on nodes expanded alike.
 pub const max_program: usize = 8192;
 pub const max_repeat: u32 = 255;
-/// The VM asks the budget once per this many code points.
-pub const budget_interval: u32 = 4096;
+/// Regex mode: the matches looked for in one line (empty ones included) before its text is cut.
+pub const max_matches_per_line: u32 = 16;
+/// The budget reads the clock once per this many units of work.
+pub const check_units: u64 = 1 << 16;
 
 pub const Mode = enum {
     literal,
@@ -253,6 +264,11 @@ const Parser = struct {
                 },
             }
             if (p.peek() == '?' or p.peek() == '+') return p.fail(p.at, "lazy and possessive repeats are not supported");
+            if (zeroWidth(node)) {
+                // Its body can only match the empty string: once is the same as any number of times.
+                min = @min(min, 1);
+                max = @min(max orelse 1, 1);
+            }
             const sub = try p.allocator.create(Node);
             sub.* = node;
             node = .{ .rep = .{ .sub = sub, .min = min, .max = max } };
@@ -411,6 +427,21 @@ fn nullable(node: Node) bool {
     };
 }
 
+/// Whether `node` can only match the empty string (it consumes no code point on any path).
+fn zeroWidth(node: Node) bool {
+    return switch (node) {
+        .empty, .assert => true,
+        .char, .any, .class => false,
+        .cat => |items| for (items) |item| {
+            if (!zeroWidth(item)) break false;
+        } else true,
+        .alt => |branches| for (branches) |branch| {
+            if (!zeroWidth(branch)) break false;
+        } else true,
+        .rep => |r| r.max == 0 or zeroWidth(r.sub.*),
+    };
+}
+
 /// The pattern's text when the tree is only characters (a regex with no special character is a literal).
 fn literalOf(allocator: std.mem.Allocator, node: Node) !?[]const u8 {
     var out = std.ArrayList(u8).empty;
@@ -435,6 +466,8 @@ const Compiler = struct {
     allocator: std.mem.Allocator,
     program: std.ArrayList(Inst) = .empty,
     fold_chars: bool,
+    /// Nodes expanded so far (every expansion of a repeat's body counts, whether or not it emits).
+    work: usize = 0,
 
     fn emit(c: *Compiler, inst: Inst) error{ TooLarge, OutOfMemory }!u32 {
         if (c.program.items.len >= max_program) return error.TooLarge;
@@ -455,6 +488,8 @@ const Compiler = struct {
     }
 
     fn node(c: *Compiler, n: Node) error{ TooLarge, OutOfMemory }!void {
+        c.work += 1;
+        if (c.work > max_program) return error.TooLarge;
         switch (n) {
             .empty => {},
             .char => |cp| _ = try c.emit(.{ .char = if (c.fold_chars) fold(cp) else cp }),
@@ -499,9 +534,9 @@ const Compiler = struct {
 };
 
 pub const Strategy = enum {
-    /// A byte search for `needle`.
+    /// A byte search for `needle` (Knuth-Morris-Pratt).
     bytes,
-    /// `std.ascii.indexOfIgnoreCase` for `needle` (ASCII, no s and no k).
+    /// The same over ASCII-lowered bytes, for `needle` (ASCII, no s and no k).
     ascii_ci,
     /// The Pike VM over `program`.
     vm,
@@ -630,6 +665,11 @@ fn asciiFoldExact(needle: []const u8) bool {
 
 /// The folds of a class's members that are not members themselves, sorted and unique.
 fn foldExtras(allocator: std.mem.Allocator, items: []const Item) ![]const u21 {
+    // `\w`, `\d`, `\s` and their negations are closed under the fold (a test below checks the whole table), so
+    // only a range can add a fold that is not a member.
+    for (items) |item| {
+        if (item == .range) break;
+    } else return &.{};
     var extras = std.ArrayList(u21).empty;
     for (tables.casefold_pairs) |pair| {
         if (Class.member(items, pair.from) and !Class.member(items, pair.to)) try extras.append(allocator, pair.to);
@@ -667,6 +707,28 @@ fn decodeBefore(bytes: []const u8, at: usize) ?u21 {
     return d.cp;
 }
 
+/// The byte `n` code points after byte `at` (as `decodeAt` steps).
+fn advance(bytes: []const u8, at: usize, n: u32) usize {
+    var i = at;
+    for (0..n) |_| i += decodeAt(bytes, i).len;
+    return i;
+}
+
+/// The first index at or after `from` holding `a` or `b`, or `bytes.len`.
+fn indexOfEither(bytes: []const u8, from: usize, a: u8, b: u8) usize {
+    const lanes = 16;
+    const Block = @Vector(lanes, u8);
+    var at = from;
+    while (bytes.len - at >= lanes) : (at += lanes) {
+        const block: Block = bytes[at..][0..lanes].*;
+        const hits_a: u16 = @bitCast(block == @as(Block, @splat(a)));
+        const hits_b: u16 = @bitCast(block == @as(Block, @splat(b)));
+        if (hits_a | hits_b != 0) return at + @ctz(hits_a | hits_b);
+    }
+    while (at < bytes.len) : (at += 1) if (bytes[at] == a or bytes[at] == b) return at;
+    return at;
+}
+
 /// The number of code points in `bytes` (as `decodeAt` steps).
 pub fn codepointCount(bytes: []const u8) u32 {
     var at: usize = 0;
@@ -686,15 +748,40 @@ pub const Clock = struct {
 pub const Budget = struct {
     clock: Clock,
     deadline: u64,
+    /// While a grace runs (`grace`), the clock it runs to; 0 for none.
+    floor: u64 = 0,
     spent: bool = false,
+    /// Work charged since the clock was last read.
+    units: u64 = 0,
 
     pub fn start(clock: Clock, budget_ms: u32) Budget {
         return .{ .clock = clock, .deadline = clock.now(clock.context) +| @as(u64, budget_ms) * std.time.ns_per_ms };
     }
 
     pub fn expired(budget: *Budget) bool {
-        if (!budget.spent and budget.clock.now(budget.clock.context) >= budget.deadline) budget.spent = true;
+        if (!budget.spent and budget.clock.now(budget.clock.context) >= @max(budget.deadline, budget.floor)) budget.spent = true;
         return budget.spent;
+    }
+
+    /// Charge `units` of work; the clock is read once `check_units` have built up.
+    pub fn charge(budget: *Budget, units: u64) error{OutOfTime}!void {
+        budget.units += units;
+        if (budget.units < check_units) return;
+        budget.units = 0;
+        if (budget.expired()) return error.OutOfTime;
+    }
+
+    /// Keep going until at least `grace_ms` from now, whatever the deadline (`scan`: a page's first line). True
+    /// when the deadline had already passed.
+    pub fn grace(budget: *Budget, grace_ms: u64) bool {
+        const now = budget.clock.now(budget.clock.context);
+        budget.floor = now +| grace_ms * std.time.ns_per_ms;
+        budget.spent = false;
+        return now >= budget.deadline;
+    }
+
+    pub fn endGrace(budget: *Budget) void {
+        budget.floor = 0;
     }
 };
 
@@ -715,11 +802,33 @@ pub const Matcher = struct {
     marks: usize = 0,
     stack: []u32 = &.{},
     stack_starts: []u32 = &.{},
-    steps: u32 = 0,
+    /// VM work since the last charge.
+    units: u64 = 0,
+    /// The literal strategies: the needle as compared (ASCII-lowered for `ascii_ci`), its Knuth-Morris-Pratt
+    /// prefix table and its length in code points.
+    key: []const u8 = "",
+    prefix: []const u32 = &.{},
+    key_cps: u32 = 0,
 
     pub fn init(allocator: std.mem.Allocator, compiled: *const Compiled, budget: ?*Budget) !Matcher {
         var m = Matcher{ .compiled = compiled, .budget = budget };
-        if (compiled.strategy != .vm) return m;
+        if (compiled.strategy != .vm) {
+            const needle = compiled.needle;
+            const key = try allocator.alloc(u8, needle.len);
+            for (key, needle) |*k, byte| k.* = if (compiled.strategy == .ascii_ci) std.ascii.toLower(byte) else byte;
+            const prefix = try allocator.alloc(u32, needle.len);
+            prefix[0] = 0;
+            var k: u32 = 0;
+            for (1..key.len) |i| {
+                while (k > 0 and key[i] != key[k]) k = prefix[k - 1];
+                if (key[i] == key[k]) k += 1;
+                prefix[i] = k;
+            }
+            m.key = key;
+            m.prefix = prefix;
+            m.key_cps = codepointCount(needle);
+            return m;
+        }
         const n = compiled.program.len;
         m.pcs = .{ try allocator.alloc(u32, n), try allocator.alloc(u32, n) };
         m.starts = .{ try allocator.alloc(u32, n), try allocator.alloc(u32, n) };
@@ -731,31 +840,30 @@ pub const Matcher = struct {
         return m;
     }
 
-    /// The byte offset of the next place at or after `from` in `bytes` where a literal occurs (the strategies
-    /// that search bytes); null for the VM, which reads every line.
-    pub fn nextCandidate(m: *const Matcher, bytes: []const u8, from: usize) ?usize {
-        return switch (m.compiled.strategy) {
-            .bytes => std.mem.findPos(u8, bytes, from, m.compiled.needle),
-            .ascii_ci => std.ascii.findIgnoreCasePos(bytes, from, m.compiled.needle),
-            .vm => null,
-        };
-    }
+    pub const LineMatch = struct {
+        hit: bool,
+        /// The bytes of the line the hit's `text` keeps: the `text_len` given, or less when regex mode found more
+        /// than `max_matches_per_line` matches starting within it (the text then ends where the next one starts).
+        text_len: usize,
+    };
 
-    pub fn searchesBytes(m: *const Matcher) bool {
-        return m.compiled.strategy != .vm;
-    }
-
-    /// Whether `line` (no terminator) is a hit, and its matches starting within its first `text_cps` code points,
-    /// non-empty ones only, ends clipped to `text_cps`, appended to `offsets` (Python's `finditer` order).
-    pub fn matchLine(m: *Matcher, allocator: std.mem.Allocator, line: []const u8, text_cps: u32, offsets: *std.ArrayList([2]u32)) error{ OutOfMemory, OutOfTime }!bool {
+    /// Whether `line` (no terminator) is a hit, and its matches starting within its text (the first `text_len`
+    /// bytes, `text_cps` code points), non-empty ones only, ends clipped to the text, appended to `offsets`
+    /// (Python's `finditer` order).
+    pub fn matchLine(m: *Matcher, allocator: std.mem.Allocator, line: []const u8, text_len: usize, text_cps: u32, offsets: *std.ArrayList([2]u32)) error{ OutOfMemory, OutOfTime }!LineMatch {
         var hit = false;
         var from: usize = 0;
         var from_cp: u32 = 0;
         var forbid: ?u32 = null;
+        var looked: u32 = 0;
         while (from <= line.len) {
             const span = (try m.search(line, from, from_cp, forbid)) orelse break;
             hit = true;
             if (span.start >= text_cps) break;
+            looked += 1;
+            if (m.compiled.mode == .regex and looked > max_matches_per_line) {
+                return .{ .hit = true, .text_len = advance(line, from, span.start - from_cp) };
+            }
             if (span.start == span.end) {
                 forbid = span.end;
                 from = span.end_byte;
@@ -767,7 +875,7 @@ pub const Matcher = struct {
             from = span.end_byte;
             from_cp = span.end;
         }
-        return hit;
+        return .{ .hit = hit, .text_len = text_len };
     }
 
     /// The leftmost-first match at or after byte `from` (code point `from_cp`), not an empty one at `forbid`.
@@ -778,25 +886,73 @@ pub const Matcher = struct {
         };
     }
 
-    fn searchLiteral(m: *Matcher, line: []const u8, from: usize, from_cp: u32) ?Span {
-        const needle = m.compiled.needle;
+    fn charge(m: *Matcher, units: u64) error{OutOfTime}!void {
+        if (m.budget) |budget| try budget.charge(units);
+    }
+
+    /// Knuth-Morris-Pratt's state over one line: the next byte to read, the needle's bytes matched before it and
+    /// the first byte not yet charged to the budget.
+    const Kmp = struct { at: usize, matched: u32 = 0, charged: usize };
+
+    /// The next occurrence of the needle in `line` from `state`, as the byte where it starts; `state` then
+    /// continues after it, overlapping occurrences included. Each byte is read once (a mismatch falls back
+    /// along the prefix table without rereading), so the search is linear in the line whatever the needle; the
+    /// budget is charged at least once per `check_units` bytes passed.
+    fn nextOccurrence(m: *Matcher, line: []const u8, state: *Kmp) error{OutOfTime}!?usize {
+        const key = m.key;
+        const lower = m.compiled.strategy == .ascii_ci;
+        var at = state.at;
+        var matched = state.matched;
+        defer {
+            state.at = at;
+            state.matched = matched;
+        }
+        while (at < line.len) {
+            if (at - state.charged >= check_units) {
+                try m.charge(at - state.charged);
+                state.charged = at;
+            }
+            if (matched == 0) {
+                // Skip to the next byte that can start the needle, a bounded window at a time.
+                const window = line[0..@min(line.len, at + check_units)];
+                at = if (lower and std.ascii.isAlphabetic(key[0]))
+                    indexOfEither(window, at, key[0], std.ascii.toUpper(key[0]))
+                else
+                    std.mem.indexOfScalarPos(u8, window, at, key[0]) orelse window.len;
+                if (at == window.len) continue;
+            }
+            const byte = if (lower) std.ascii.toLower(line[at]) else line[at];
+            while (matched > 0 and key[matched] != byte) matched = m.prefix[matched - 1];
+            if (key[matched] == byte) matched += 1;
+            at += 1;
+            if (matched == key.len) {
+                matched = m.prefix[matched - 1];
+                try m.charge(at - state.charged);
+                state.charged = at;
+                return at - key.len;
+            }
+        }
+        try m.charge(at - state.charged);
+        state.charged = at;
+        return null;
+    }
+
+    fn searchLiteral(m: *Matcher, line: []const u8, from: usize, from_cp: u32) error{OutOfTime}!?Span {
+        var state = Kmp{ .at = from, .charged = from };
         var at = from;
         var at_cp = from_cp;
-        while (m.nextCandidate(line, at)) |found| {
+        while (try m.nextOccurrence(line, &state)) |found| {
             const start_cp = at_cp + codepointCount(line[at..found]);
-            const end = found + needle.len;
+            at = found;
+            at_cp = start_cp;
+            const end = found + m.key.len;
             if (m.compiled.whole_word) {
                 const before = decodeBefore(line, found);
                 const after: ?u21 = if (end < line.len) decodeAt(line, end).cp else null;
-                if ((before != null and isWord(before.?)) or (after != null and isWord(after.?))) {
-                    // Not a whole word here: try one code point further on.
-                    const step = decodeAt(line, found).len;
-                    at = found + step;
-                    at_cp = start_cp + 1;
-                    continue;
-                }
+                // Not a whole word here: the next occurrence, overlapping this one or not.
+                if ((before != null and isWord(before.?)) or (after != null and isWord(after.?))) continue;
             }
-            return .{ .start = start_cp, .end = start_cp + codepointCount(needle), .end_byte = end };
+            return .{ .start = start_cp, .end = start_cp + m.key_cps, .end_byte = end };
         }
         return null;
     }
@@ -821,6 +977,7 @@ pub const Matcher = struct {
         var top: usize = 1;
         while (top > 0) {
             top -= 1;
+            m.units += 1;
             const pc = m.stack[top];
             const s = m.stack_starts[top];
             if (m.onList(pc)) continue;
@@ -864,9 +1021,11 @@ pub const Matcher = struct {
         }
     }
 
+    /// Charge the VM's work since the last position (each thread followed or stepped, and the position).
     fn tick(m: *Matcher) error{OutOfTime}!void {
-        m.steps +%= 1;
-        if (m.steps % budget_interval == 0) if (m.budget) |budget| if (budget.expired()) return error.OutOfTime;
+        const units = m.units + 1;
+        m.units = 0;
+        try m.charge(units);
     }
 
     fn searchVm(m: *Matcher, line: []const u8, from: usize, from_cp: u32, forbid: ?u32) error{OutOfTime}!?Span {
@@ -905,6 +1064,7 @@ pub const Matcher = struct {
             }
             // Step: consume `next`, in priority order; a `match` cuts every thread after it.
             const list_len = m.lens[current];
+            m.units += list_len;
             const out = 1 - current;
             m.lens[out] = 0;
             for (0..list_len) |i| {
@@ -957,8 +1117,8 @@ fn offsetsOf(arena: std.mem.Allocator, pattern: []const u8, mode: Mode, case: Ca
     compiled.* = try compileOk(arena, pattern, mode, case, whole_word);
     var matcher = try Matcher.init(arena, compiled, null);
     var offsets = std.ArrayList([2]u32).empty;
-    const hit = try matcher.matchLine(arena, line, codepointCount(line), &offsets);
-    if (!hit) return null;
+    const result = try matcher.matchLine(arena, line, line.len, codepointCount(line), &offsets);
+    if (!result.hit) return null;
     return offsets.items;
 }
 
@@ -1217,11 +1377,11 @@ test "S6-T24 pattern: offsets only for matches starting within text, clipped at 
     const compiled = try compileOk(arena, "ab+", .regex, .sensitive, false);
     var matcher = try Matcher.init(arena, &compiled, null);
     var offsets = std.ArrayList([2]u32).empty;
-    try testing.expect(try matcher.matchLine(arena, "ab abbbb ab", 6, &offsets));
+    try testing.expect((try matcher.matchLine(arena, "ab abbbb ab", 6, 6, &offsets)).hit);
     try testing.expectEqualSlices([2]u32, &.{ .{ 0, 2 }, .{ 3, 6 } }, offsets.items);
     // A match wholly past the text still makes the line a hit.
     offsets.clearRetainingCapacity();
-    try testing.expect(try matcher.matchLine(arena, "xxxxxx ab", 3, &offsets));
+    try testing.expect((try matcher.matchLine(arena, "xxxxxx ab", 3, 3, &offsets)).hit);
     try testing.expectEqual(@as(usize, 0), offsets.items.len);
 }
 
@@ -1243,7 +1403,7 @@ test "S6-T24 pattern: a 1 MiB line without a newline" {
     const compiled = try compileOk(arena, "a+b$", .regex, .sensitive, false);
     var matcher = try Matcher.init(arena, &compiled, null);
     var offsets = std.ArrayList([2]u32).empty;
-    try testing.expect(try matcher.matchLine(arena, line, 512, &offsets));
+    try testing.expect((try matcher.matchLine(arena, line, 512, 512, &offsets)).hit);
     try testing.expectEqualSlices([2]u32, &.{.{ 0, 512 }}, offsets.items);
 }
 
@@ -1258,7 +1418,7 @@ const CountingClock = struct {
     }
 };
 
-test "S6-T24 pattern: the VM asks the budget every 4,096 code points and stops the line" {
+test "S6-T24 pattern: the VM charges its work and reads the clock once per 65,536 units, then stops the line" {
     var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();
@@ -1266,12 +1426,12 @@ test "S6-T24 pattern: the VM asks the budget every 4,096 code points and stops t
     var clock = CountingClock{ .step = std.time.ns_per_ms };
     var budget = Budget.start(.{ .context = &clock, .now = CountingClock.now }, 3);
     var matcher = try Matcher.init(arena, &compiled, &budget);
-    const line = try arena.alloc(u8, 64 * 1024);
+    const line = try arena.alloc(u8, 256 * 1024);
     @memset(line, 'a');
     var offsets = std.ArrayList([2]u32).empty;
-    try testing.expectError(error.OutOfTime, matcher.matchLine(arena, line, 512, &offsets));
+    try testing.expectError(error.OutOfTime, matcher.matchLine(arena, line, 512, 512, &offsets));
     try testing.expect(budget.spent);
-    // Each ask advanced the clock 1 ms: the start, then one ask per 4,096 code points until 3 ms had passed.
+    // Each read advanced the clock 1 ms: the start, then one read per 65,536 units until 3 ms had passed.
     try testing.expectEqual(@as(u64, 4 * std.time.ns_per_ms), clock.now_ns);
 }
 
@@ -1280,7 +1440,7 @@ fn timeLine(arena: std.mem.Allocator, matcher: *Matcher, line: []const u8) !u64 
     for (0..3) |_| {
         var offsets = std.ArrayList([2]u32).empty;
         const start = std.Io.Clock.awake.now(testing.io).nanoseconds;
-        _ = try matcher.matchLine(arena, line, 512, &offsets);
+        _ = try matcher.matchLine(arena, line, 512, 512, &offsets);
         best = @min(best, @as(u64, @intCast(std.Io.Clock.awake.now(testing.io).nanoseconds - start)));
     }
     return best;
@@ -1309,4 +1469,304 @@ test "S6-T24 pattern: the fold keeps \\w, \\d and \\s and is idempotent over the
         try testing.expectEqual(pair.to, fold(pair.to));
         try testing.expectEqual(pair.to, fold(pair.from));
     }
+}
+
+// ------------------------------------------------------------- rework 1 tests ---
+
+fn programOf(arena: std.mem.Allocator, pattern: []const u8) !Compiled {
+    return compileOk(arena, pattern, .regex, .sensitive, false);
+}
+
+test "S6-T24 rework 1, ruling 1: a repeat of a body that only matches the empty string is kept once" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    // The verifier's 44-byte pattern, one level deeper (53 bytes), and two that were refused as too large.
+    const nested = [_][]const u8{
+        "(?:(?:(?:(?:(?:)(?:)){255}){255}){255}){255}",
+        "(?:(?:(?:(?:(?:(?:)(?:)){255}){255}){255}){255}){255}",
+        "(?:(?:(?:^$){255}){255}){255}",
+        "(?:(?:(?:\\b\\B){255}){255}){255}",
+    };
+    for (nested) |pattern| {
+        const compiled = try programOf(arena, pattern);
+        try testing.expect(compiled.program.len <= 8);
+        try testing.expect(compiled.matches_empty);
+    }
+    // The same spans as the unsimplified repeats.
+    const R = Mode.regex;
+    const S = Case.sensitive;
+    try expectOffsets("(?:^$){3}", R, S, false, "", &.{});
+    try expectOffsets("(?:^$){3}", R, S, false, "a", null);
+    try expectOffsets("(?:\\b\\b)*x", R, S, false, "a x", &.{.{ 2, 3 }});
+    try expectOffsets("(?:\\b\\b){2,5}x", R, S, false, "ax x", &.{.{ 3, 4 }});
+    try expectOffsets("(?:\\B\\B){0}x", R, S, false, "ax", &.{.{ 1, 2 }});
+    try expectOffsets("(?:(?:)|^)+a", R, S, false, "aa", &.{ .{ 0, 1 }, .{ 1, 2 } });
+}
+
+test "S6-T24 rework 1, ruling 1: the compile counts every expansion, emitting or not" {
+    const too_large = "pattern not supported at byte 0: the pattern is too large (over 8,192 steps)";
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    // 1 + 31 x 256 = 7,937 expansions and 7,906 instructions: accepted.
+    _ = try programOf(arena, "(?:a{255}){31}");
+    // 1 + 32 x 256 = 8,193 expansions (8,161 instructions would fit): refused.
+    try expectRefused("(?:a{255}){32}", .regex, too_large);
+    // An empty group in a body that also consumes is expanded each time: 24,513 expansions, 8,161 instructions.
+    try expectRefused("(?:(?:(?:)a){255}){32}", .regex, too_large);
+    // A literal of 1,024 code points: 1,025 expansions.
+    var long: [1024]u8 = undefined;
+    @memset(&long, 'x');
+    _ = try compileOk(arena, &long, .literal, .insensitive, true);
+}
+
+/// Patterns of at most `max_len` bytes drawn from a grammar that favours what costs the compiler work: nested
+/// counted repeats, empty groups, assertions, classes with ranges, alternations.
+fn randomPattern(random: std.Random, out: *std.ArrayList(u8), arena: std.mem.Allocator, depth: u32) !void {
+    const atoms = [_][]const u8{ "a", "é", ".", "\\w", "\\d", "\\S", "[a-z]", "[^a-cK-Z0-9]", "[ſK\\d]", "(?:)", "^", "$", "\\b", "\\B", "K", "ß" };
+    const repeats = [_][]const u8{ "", "", "*", "+", "?", "{255}", "{0,255}", "{2,}", "{1,3}", "{200,255}" };
+    const pick = random.uintLessThan(u32, if (depth == 0) 1 else 4);
+    switch (pick) {
+        0 => try out.appendSlice(arena, atoms[random.uintLessThan(usize, atoms.len)]),
+        1 => {
+            try out.appendSlice(arena, "(?:");
+            try randomPattern(random, out, arena, depth - 1);
+            try out.appendSlice(arena, ")");
+        },
+        2 => {
+            try randomPattern(random, out, arena, depth - 1);
+            try randomPattern(random, out, arena, depth - 1);
+        },
+        else => {
+            try randomPattern(random, out, arena, depth - 1);
+            try out.append(arena, '|');
+            try randomPattern(random, out, arena, depth - 1);
+        },
+    }
+    if (out.items.len > 0 and out.items[out.items.len - 1] != '|' and out.items[out.items.len - 1] != '(') {
+        try out.appendSlice(arena, repeats[random.uintLessThan(usize, repeats.len)]);
+    }
+}
+
+test "S6-T24 rework 1, ruling 1: no pattern of up to 256 bytes takes longer than 25 ms to compile (time fuzz)" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    var prng = std.Random.DefaultPrng.init(20261124);
+    const random = prng.random();
+    var worst_ns: u64 = 0;
+    var worst: []const u8 = "";
+    var compiled_count: usize = 0;
+    var refused_count: usize = 0;
+    // Crafted ones first: empty repeats nested as deep as 256 bytes allow, the work cap's edge, many classes.
+    var crafted = std.ArrayList([]const u8).empty;
+    const a = arena_state.allocator();
+    {
+        var nest = std.ArrayList(u8).empty;
+        try nest.appendSlice(a, "(?:)(?:)");
+        while (nest.items.len + 9 <= 256) {
+            const inner = try a.dupe(u8, nest.items);
+            nest.clearRetainingCapacity();
+            try nest.appendSlice(a, "(?:");
+            try nest.appendSlice(a, inner);
+            try nest.appendSlice(a, "){255}");
+        }
+        try crafted.append(a, nest.items);
+        try crafted.append(a, "(?:a{255}){31}");
+        try crafted.append(a, "(?:(?:(?:)a){255}){32}");
+        try crafted.append(a, "\\w" ** 128);
+        try crafted.append(a, "[a-zA-Z0-9ſK]" ** 19);
+        try crafted.append(a, "(?:[a-z]{255}){31}");
+        try crafted.append(a, "(?:a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z){255}");
+    }
+    var drawn: usize = 0;
+    while (drawn < 4000) : (drawn += 1) {
+        var out = std.ArrayList(u8).empty;
+        try randomPattern(random, &out, a, 6);
+        if (out.items.len == 0 or out.items.len > 256) continue;
+        try crafted.append(a, out.items);
+    }
+    for (crafted.items) |pattern| {
+        for ([_]Case{ .sensitive, .insensitive }) |case| {
+            var one = std.heap.ArenaAllocator.init(testing.allocator);
+            defer one.deinit();
+            const start = std.Io.Clock.awake.now(testing.io).nanoseconds;
+            const outcome = try compile(one.allocator(), pattern, .regex, case, true);
+            const took: u64 = @intCast(std.Io.Clock.awake.now(testing.io).nanoseconds - start);
+            switch (outcome) {
+                .ok => compiled_count += 1,
+                .refused => refused_count += 1,
+            }
+            if (took > worst_ns) {
+                worst_ns = took;
+                worst = pattern;
+            }
+        }
+    }
+    std.debug.print("S6-T24 compile time fuzz: {d} compiled, {d} refused; slowest {d} ns ({d} bytes: {s})\n", .{ compiled_count, refused_count, worst_ns, worst.len, worst });
+    try testing.expect(compiled_count > 1000);
+    try testing.expect(worst_ns < 25 * std.time.ns_per_ms);
+}
+
+fn lineMatch(arena: std.mem.Allocator, pattern: []const u8, mode: Mode, line: []const u8, offsets: *std.ArrayList([2]u32)) !Matcher.LineMatch {
+    const compiled = try arena.create(Compiled);
+    compiled.* = try compileOk(arena, pattern, mode, .sensitive, false);
+    var matcher = try Matcher.init(arena, compiled, null);
+    offsets.clearRetainingCapacity();
+    const cut = textCutForTest(line);
+    return matcher.matchLine(arena, line, cut, codepointCount(line[0..cut]), offsets);
+}
+
+fn textCutForTest(line: []const u8) usize {
+    return @min(line.len, 512);
+}
+
+test "S6-T24 rework 1, ruling 2: regex mode looks for at most 16 matches per line and cuts the text at the 17th" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var offsets = std.ArrayList([2]u32).empty;
+    const as = "a" ** 100;
+    // The verifier's pattern: every match is one `a`, but each search runs `.*b` to the line's end.
+    var got = try lineMatch(arena, "a(.*b)?", .regex, as, &offsets);
+    try testing.expect(got.hit);
+    try testing.expectEqual(@as(usize, 16), got.text_len);
+    try testing.expectEqual(@as(usize, 16), offsets.items.len);
+    try testing.expectEqualSlices(u32, &.{ 15, 16 }, &offsets.items[15]);
+    // Twenty words: sixteen listed, the text ends where the seventeenth starts.
+    const words = "w0 w1 w2 w3 w4 w5 w6 w7 w8 w9 wa wb wc wd we wf wg wh wi wj";
+    got = try lineMatch(arena, "\\w+", .regex, words, &offsets);
+    try testing.expectEqual(@as(usize, 48), got.text_len);
+    try testing.expectEqual(@as(usize, 16), offsets.items.len);
+    // Exactly sixteen: nothing is cut.
+    got = try lineMatch(arena, "\\w+", .regex, words[0..47], &offsets);
+    try testing.expectEqual(@as(usize, 47), got.text_len);
+    try testing.expectEqual(@as(usize, 16), offsets.items.len);
+    // Empty matches count: x* over 25 b's is a hit with no offsets, its text cut after 16 code points.
+    got = try lineMatch(arena, "x*", .regex, "b" ** 25, &offsets);
+    try testing.expect(got.hit);
+    try testing.expectEqual(@as(usize, 16), got.text_len);
+    try testing.expectEqual(@as(usize, 0), offsets.items.len);
+    // A code point boundary: the cut is a byte offset after whole code points.
+    got = try lineMatch(arena, ".", .regex, "é" ** 20, &offsets);
+    try testing.expectEqual(@as(usize, 32), got.text_len);
+    // Literal mode lists every match (its search is one pass whatever the count); regex mode caps a literal too.
+    got = try lineMatch(arena, "a", .literal, as, &offsets);
+    try testing.expectEqual(@as(usize, 100), got.text_len);
+    try testing.expectEqual(@as(usize, 100), offsets.items.len);
+    got = try lineMatch(arena, "a", .regex, as, &offsets);
+    try testing.expectEqual(@as(usize, 16), got.text_len);
+}
+
+fn timeMatch(arena: std.mem.Allocator, matcher: *Matcher, line: []const u8) !u64 {
+    var best: u64 = std.math.maxInt(u64);
+    for (0..3) |_| {
+        var offsets = std.ArrayList([2]u32).empty;
+        const start = std.Io.Clock.awake.now(testing.io).nanoseconds;
+        _ = try matcher.matchLine(arena, line, 512, 512, &offsets);
+        best = @min(best, @as(u64, @intCast(std.Io.Clock.awake.now(testing.io).nanoseconds - start)));
+    }
+    return best;
+}
+
+test "S6-T24 rework 1, ruling 2: listing a(.*b)?'s matches is linear: 2^16 and 2^18 a's, a ratio at most 8 for 4 times the length" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const compiled = try compileOk(arena, "a(.*b)?", .regex, .sensitive, false);
+    var matcher = try Matcher.init(arena, &compiled, null);
+    const long = try arena.alloc(u8, 1 << 18);
+    @memset(long, 'a');
+    const short_ns = try timeMatch(arena, &matcher, long[0 .. 1 << 16]);
+    const long_ns = try timeMatch(arena, &matcher, long);
+    const ratio = @as(f64, @floatFromInt(long_ns)) / @as(f64, @floatFromInt(@max(short_ns, 1)));
+    std.debug.print("S6-T24 listing: a(.*b)? over 2^16 a's {d} ns, 2^18 a's {d} ns, ratio {d:.2} (bar 8)\n", .{ short_ns, long_ns, ratio });
+    try testing.expect(ratio <= 8.0);
+}
+
+test "S6-T24 rework 1, ruling 3: the literal search is linear (1,023 a's and b over a's), both strategies" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const needle = "a" ** 1023 ++ "b";
+    const long = try arena.alloc(u8, 1 << 20);
+    @memset(long, 'a');
+    for ([_]Case{ .sensitive, .insensitive }) |case| {
+        const compiled = try arena.create(Compiled);
+        compiled.* = try compileOk(arena, needle, .literal, case, false);
+        try testing.expectEqual(if (case == .sensitive) Strategy.bytes else Strategy.ascii_ci, compiled.strategy);
+        var matcher = try Matcher.init(arena, compiled, null);
+        const short_ns = try timeMatch(arena, &matcher, long[0 .. 1 << 18]);
+        const long_ns = try timeMatch(arena, &matcher, long);
+        const ratio = @as(f64, @floatFromInt(long_ns)) / @as(f64, @floatFromInt(@max(short_ns, 1)));
+        std.debug.print("S6-T24 literal {s}: 1,023 a's and b over 2^18 a's {d} ns, 2^20 a's {d} ns, ratio {d:.2} (bar 8)\n", .{ @tagName(compiled.strategy), short_ns, long_ns, ratio });
+        try testing.expect(ratio <= 8.0);
+    }
+    // Overlapping candidates for a whole word, and a needle with a repeated prefix: the same answers as before.
+    try expectOffsets("aa", .literal, .sensitive, true, "aaa aa", &.{.{ 4, 6 }});
+    try expectOffsets("abab", .literal, .sensitive, false, "abababab ab", &.{ .{ 0, 4 }, .{ 4, 8 } });
+    try expectOffsets("aab", .literal, .insensitive, false, "AAAAB aab", &.{ .{ 2, 5 }, .{ 6, 9 } });
+    try expectOffsets("Ab", .literal, .insensitive, false, "xaB", &.{.{ 1, 3 }});
+}
+
+test "S6-T24 rework 1, ruling 3: the literal search charges the budget inside a line" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const compiled = try compileOk(arena, "a" ** 1023 ++ "b", .literal, .insensitive, false);
+    var clock = CountingClock{ .step = std.time.ns_per_ms };
+    var budget = Budget.start(.{ .context = &clock, .now = CountingClock.now }, 3);
+    var matcher = try Matcher.init(arena, &compiled, &budget);
+    const line = try arena.alloc(u8, 1 << 20);
+    @memset(line, 'a');
+    var offsets = std.ArrayList([2]u32).empty;
+    try testing.expectError(error.OutOfTime, matcher.matchLine(arena, line, 512, 512, &offsets));
+    // The start, then one read per 65,536 bytes until 3 ms had passed.
+    try testing.expectEqual(@as(u64, 4 * std.time.ns_per_ms), clock.now_ns);
+}
+
+/// A real clock that keeps the longest time between two of its reads.
+const GapClock = struct {
+    last: u64 = 0,
+    widest: u64 = 0,
+    reads: u64 = 0,
+
+    fn now(context: ?*anyopaque) u64 {
+        const self: *GapClock = @ptrCast(@alignCast(context.?));
+        const t: u64 = @intCast(std.Io.Clock.awake.now(testing.io).nanoseconds);
+        if (self.reads > 0) self.widest = @max(self.widest, t - self.last);
+        self.last = t;
+        self.reads += 1;
+        return t;
+    }
+};
+
+test "S6-T24 rework 1, ruling 1: the widest time between two reads of the clock (one meter interval) is under 10 ms" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const line = try arena.alloc(u8, 1 << 20);
+    for (line, 0..) |*byte, i| byte.* = "abcdefghij x"[i % 12];
+    // The heaviest per-position work the caps allow (a program near 8,192 steps, every thread alive), a pattern
+    // whose listing restarts, and the two literal strategies.
+    const cases = [_]struct { []const u8, Mode, Case }{
+        .{ "(?:[a-j ]{1,255}){15}z", .regex, .sensitive },
+        .{ "(?:\\w|\\W){1,255}(?:\\w|\\W){1,255}z", .regex, .insensitive },
+        .{ "a(.*z)?", .regex, .sensitive },
+        .{ "abcdefghij z", .literal, .sensitive },
+        .{ "ABCDEFGHIJ Z", .literal, .insensitive },
+    };
+    var widest: u64 = 0;
+    for (cases) |case| {
+        const compiled = try compileOk(arena, case[0], case[1], case[2], false);
+        var gap = GapClock{};
+        var budget = Budget.start(.{ .context = &gap, .now = GapClock.now }, 30_000);
+        var matcher = try Matcher.init(arena, &compiled, &budget);
+        var offsets = std.ArrayList([2]u32).empty;
+        _ = matcher.matchLine(arena, line, 512, 512, &offsets) catch {};
+        _ = budget.expired();
+        std.debug.print("S6-T24 meter: {s}: {d} reads of the clock, widest gap {d} ns\n", .{ case[0], gap.reads, gap.widest });
+        widest = @max(widest, gap.widest);
+    }
+    try testing.expect(widest < 10 * std.time.ns_per_ms);
 }
