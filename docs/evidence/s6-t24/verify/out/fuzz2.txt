@@ -1,0 +1,2 @@
+seed 7: 600 patterns; refused by the engine 4; engine != reference 0 (of which hit lines differ 0); plain patterns: hit lines differ from re 0, offsets differ 0
+skipped, Python's re over 5 s on a <=32-code-point line: 0 []

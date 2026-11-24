@@ -1,0 +1,42 @@
+=== counts.txt (last lines)
+| tests | `run test tests` | 310 | 310 (301 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 638 tests: every step ran the tests the listing has, and the static checker passes)
+exit 0
+=== layers.txt (last lines)
+== check_layers
+check_layers: OK (47 files in layers, 3 module roots, 6 allowed interface imports; 79 files hold 638 tests, each run by a step of `zig build test`; the public core API `api`: 101 names in 24 namespaces)
+exit 0
+=== req.txt (last lines)
+== check_requirements
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+exit 0
+=== home.txt (last lines)
+== check_no_home_paths
+exit 0
+=== abi.txt (last lines)
+      |  +- options cached
+      +- compile lib search_simpli Debug native (+4 more reused dependencies)
+
+exit 0
+=== python.txt (last lines)
+OK
+
+[{"query": "benico", "ms_1k": 0.0072, "ms_10k": 0.0088, "growth": 1.21}, {"query": "hybrid retrieval", "ms_1k": 0.0183, "ms_10k": 0.0525, "growth": 2.86}, {"query": "how does the hybrid retrieval work for a search", "ms_1k": 0.0927, "ms_10k": 0.5678, "growth": 6.12}, {"query": "the and of to in", "ms_1k": 0.101, "ms_10k": 0.7523, "growth": 7.45}]
+exit 0
+=== dart.txt (last lines)
+00:01 +100: test/parity_test.dart: CLI --json, RPC and Dart agree with no optional fields
+00:01 +101: test/parity_test.dart: (tearDownAll)
+00:01 +101: All tests passed!
+exit 0
+=== native.txt (last lines)
+check_native: android-arm64 memcpy at 0x5e6d4 (537 calls against 174): word-wise (8 q-register moves, no byte loop)
+check_native: ios-arm64 memcpy at 0x587c (244 calls against 116): word-wise (8 q-register moves, no byte loop)
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+exit 0
+145:Build Summary: 15/15 steps succeeded; 629/638 tests passed (9 skipped)
+177:| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+51:S6-T24 linear: (a+)+b over 2^16 a's 17875542 ns, 2^20 a's 288957333 ns, ratio 16.16 (bar 32)
+20:PASS ss_scan answers a literal, a regex with offsets and pages; an unsupported pattern, stale cursor, unknown field, missing pattern, NULL handle, absent source are refused
+65:No issues found!
+66:analyze exit 0
