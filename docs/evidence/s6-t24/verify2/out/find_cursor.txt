@@ -1,0 +1,47 @@
+generation 1; first page next_cursor 1:5
+valid   '1:5': main exit 0 5 hits, next 1:10 | head exit 0 5 hits, next 1:10 | same
+valid   '1:0': main exit 0 5 hits, next 1:5 | head exit 0 5 hits, next 1:5 | same
+valid   '01:5': main exit 0 5 hits, next 1:10 | head exit 0 5 hits, next 1:10 | same
+valid   '1:05': main exit 0 5 hits, next 1:10 | head exit 0 5 hits, next 1:10 | same
+valid   '0001:0000': main exit 0 5 hits, next 1:5 | head exit 0 5 hits, next 1:5 | same
+valid   '1:29': main exit 0 1 hits, next None | head exit 0 1 hits, next None | same
+valid   '1:30': main exit 0 0 hits, next None | head exit 0 0 hits, next None | same
+valid   '1:31': main exit 0 0 hits, next None | head exit 0 0 hits, next None | same
+valid   '1:1000000': main exit 0 0 hits, next None | head exit 0 0 hits, next None | same
+valid   '1:18446744073709551615': main exit 0 0 hits, next None | head exit 0 0 hits, next None | same
+valid   '1:18446744073709551616': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+valid   '18446744073709551615:0': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: stale cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: stale cursor | same
+valid   '18446744073709551616:0': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+valid   '1:99999999999999999999999': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+valid   '0:0': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: stale cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: stale cursor | same
+valid   '2:0': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: stale cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: stale cursor | same
+invalid '+1:5': main exit 0 5 hits, next 1:10 | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | DIFFERENT
+invalid '1:+5': main exit 0 5 hits, next 1:10 | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | DIFFERENT
+invalid '-0:5': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: stale cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | DIFFERENT
+invalid '1:-0': main exit 0 5 hits, next 1:5 | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | DIFFERENT
+invalid '1_0:5': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: stale cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | DIFFERENT
+invalid '1:0_5': main exit 0 5 hits, next 1:10 | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | DIFFERENT
+invalid ' 1:5': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+invalid '1:5 ': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+invalid '1:': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+invalid ':1': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+invalid '1:5:5': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+invalid '': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+invalid '１:5': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+invalid '1：5': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+schema-valid cursors: 16 identical on main and head, 0 different
+list_files, the same cursors (for the record; ruling 8 left it alone)
+  '+1:5': main exit 0  | head exit 0  | same
+  '1:+5': main exit 0  | head exit 0  | same
+  '-0:5': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: stale cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: stale cursor | same
+  '1:-0': main exit 0  | head exit 0  | same
+  '1_0:5': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: stale cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: stale cursor | same
+  '1:0_5': main exit 0  | head exit 0  | same
+  ' 1:5': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+  '1:5 ': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+  '1:': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+  ':1': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+  '1:5:5': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+  '': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+  '１:5': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same
+  '1：5': main exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | head exit 1 searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor | same

@@ -1,0 +1,1 @@
+seed 20261124: 40000 patterns: {'answered': 9393, 'refused': 30607, 'accept_mismatch': 0, 'message_mismatch': 0, 'slow': 0, 'lone_surrogate_json_parse_error': 6857}; slowest answer 0.001 s for '(}=(?{2,>'

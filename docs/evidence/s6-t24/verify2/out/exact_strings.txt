@@ -1,0 +1,2 @@
+64 questions; every digest equal to the frozen one: True (64 of 64)
+answered as frozen: 128 of 128 (64 questions x index and folder)

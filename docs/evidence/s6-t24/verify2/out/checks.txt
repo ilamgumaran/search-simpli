@@ -1,0 +1,169 @@
+# Verdict 2 checks, at d3949fd (worktree after the merge), outputs as run
+
+## counts.txt (head and tail)
+== check_test_counts --run
+$ zig build test --summary all
+test
++- run test core 297 pass, 1 fail (298 total)
+...
+error: the following build command failed with exit code 1:
+.zig-cache/o/5ea7166819d8bdf8fd3e421560fe776f/build <home>/development/zig/zig-aarch64-macos-0.16.0/zig <home>/development/zig/zig-aarch64-macos-0.16.0/lib <repo>/zig .zig-cache <home>/.cache/zig --seed 0x5612f574 -Z4a4a8e3f5b2e7951 test --summary all
+
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+|---|---|---:|---|---|
+| core | `run test core` | 298 | 298 (297 pass, 1 fail) | ok |
+| operations | `run test operations` | 9 | 9 (9 pass) | ok |
+| interfaces | `run test interfaces` | 25 | 25 (25 pass) | ok |
+| tests | `run test tests` | 311 | 311 (302 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: zig build test exited 1
+exit 1
+
+## layers.txt (head and tail)
+== check_layers
+check_layers: OK (47 files in layers, 3 module roots, 6 allowed interface imports; 79 files hold 649 tests, each run by a step of `zig build test`; the public core API `api`: 101 names in 24 namespaces)
+exit 0
+...
+== check_layers
+check_layers: OK (47 files in layers, 3 module roots, 6 allowed interface imports; 79 files hold 649 tests, each run by a step of `zig build test`; the public core API `api`: 101 names in 24 namespaces)
+exit 0
+
+## req.txt (head and tail)
+== check_requirements
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+exit 0
+...
+== check_requirements
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+exit 0
+
+## home.txt (head and tail)
+== check_no_home_paths
+exit 0
+...
+== check_no_home_paths
+exit 0
+
+## abi.txt (head and tail)
+== test-abi
+PASS ss_version
+PASS ss_import_json publishes generation 1
+PASS ss_import_json rejects malformed JSON with a negative code
+...
+test-abi success
++- run exe abi_test success 264ms
+   +- compile exe abi_test Debug native success 87ms MaxRSS:80M
+      +- WriteFile cached
+      +- compile lib search_simpli Debug native success 2s MaxRSS:645M
+      |  +- WriteFile cached
+      |  +- compile obj fastmem Debug native cached 43ms MaxRSS:31M
+      |  +- compile obj fastmem Debug native (reused)
+      |  +- options cached
+      +- compile lib search_simpli Debug native (+4 more reused dependencies)
+
+exit 0
+
+## python.txt (head and tail)
+== python suite
+...................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+S3-T6 parity: 76 requests, MCP structuredContent = RPC result (100%)
+..............................................................S6-T24 ruling 1: 44-byte pattern at --time-ms 1: 11.0 ms (baseline 10.7 ms)
+...
+S6-T24 ruling 2: four times the line, 3.90 times the time
+.S6-T24 ruling 3: 1,023 a's and b over 10 MiB, case sensitive, --time-ms 1: 14.9 ms (baseline 9.2 ms), stopped time
+S6-T24 ruling 3: 1,023 a's and b over 10 MiB, case smart, --time-ms 1: 15.7 ms (baseline 9.2 ms), stopped time
+..S6-T24 agreement: 173 cases (3 in the stated divergence, lines and counts only), 21 refused alike, 9821 hit lines identical
+..........................................................................................................................................
+----------------------------------------------------------------------
+Ran 655 tests in 200.395s
+
+OK
+
+[{"query": "benico", "ms_1k": 0.0072, "ms_10k": 0.0088, "growth": 1.23}, {"query": "hybrid retrieval", "ms_1k": 0.0197, "ms_10k": 0.0515, "growth": 2.61}, {"query": "how does the hybrid retrieval work for a search", "ms_1k": 0.09, "ms_10k": 0.5589, "growth": 6.21}, {"query": "the and of to in", "ms_1k": 0.1007, "ms_10k": 0.7505, "growth": 7.46}]
+exit 0
+
+## dart.txt (head and tail)
+== dart
+Resolving dependencies...
+Downloading packages...
+  cli_util 0.4.2 (0.6.1 available)
+...
+00:00 +96: test/conformance_test.dart: BM25 conformance vs Python reference (fixtures/bm25-golden.json) and the searchd CLI app_text (analyzer-v2): 8 queries, top-1 identical to Python and to the CLI
+00:00 +97: test/conformance_test.dart: BM25 conformance vs Python reference (fixtures/bm25-golden.json) and the searchd CLI app_text (analyzer-v2): 8 queries, top-1 identical to Python and to the CLI
+app_text conformance: 8 queries compared, 6 identical to the plain-BM25 Python top-1 (2 with a title part at top-1, compared with the CLI only), 8 identical to the CLI top-1
+00:00 +98: test/parity_test.dart: CLI --json, RPC and Dart return the same canonical JSON for the fixture judgments
+00:01 +98: test/conformance_test.dart: BM25 conformance vs Python reference (fixtures/bm25-golden.json) and the searchd CLI tamil (analyzer-v2): 10 queries, top-1 identical to Python and to the CLI
+tamil conformance: 10 queries compared, 10 identical to the plain-BM25 Python top-1 (0 with a title part at top-1, compared with the CLI only), 10 identical to the CLI top-1
+00:01 +99: test/parity_test.dart: CLI --json, RPC and Dart return the same canonical JSON for the fixture judgments
+S3-T4 parity: 25 requests, CLI --json = RPC = Dart (canonical JSON)
+00:01 +100: test/parity_test.dart: CLI --json, RPC and Dart agree with no optional fields
+00:02 +101: test/parity_test.dart: (tearDownAll)
+00:02 +101: All tests passed!
+exit 0
+
+## native.txt (head and tail)
+== check_native
+check_native: macos-arm64 memcpy at 0x740 (244 calls against 125): word-wise (8 q-register moves, no byte loop)
+check_native: android-arm64 memcpy at 0x5e94c (536 calls against 174): word-wise (8 q-register moves, no byte loop)
+check_native: ios-arm64 memcpy at 0x587c (243 calls against 116): word-wise (8 q-register moves, no byte loop)
+...
+== check_native
+check_native: macos-arm64 memcpy at 0x740 (244 calls against 125): word-wise (8 q-register moves, no byte loop)
+check_native: android-arm64 memcpy at 0x5e94c (536 calls against 174): word-wise (8 q-register moves, no byte loop)
+check_native: ios-arm64 memcpy at 0x587c (243 calls against 116): word-wise (8 q-register moves, no byte loop)
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+exit 0
+
+## zig build test --summary all, rerun 1 (nothing else of the verifier's running; rerun 3 beside a dart analyze)
+exit 0
+S6-T24 meter: (?:[a-j ]{1,255}){15}z: 1661 reads of the clock, widest gap 1033375 ns
+S6-T24 meter: (?:\w|\W){1,255}(?:\w|\W){1,255}z: 33165 reads of the clock, widest gap 997541 ns
+S6-T24 meter: a(.*z)?: 1905 reads of the clock, widest gap 1027583 ns
+S6-T24 meter: abcdefghij z: 18 reads of the clock, widest gap 520667 ns
+S6-T24 meter: ABCDEFGHIJ Z: 18 reads of the clock, widest gap 591833 ns
+Build Summary: 15/15 steps succeeded; 640/649 tests passed (9 skipped)
+
+## zig build test --summary all, rerun 2 (nothing else of the verifier's running; rerun 3 beside a dart analyze)
+exit 0
+S6-T24 meter: (?:[a-j ]{1,255}){15}z: 1661 reads of the clock, widest gap 1167750 ns
+S6-T24 meter: (?:\w|\W){1,255}(?:\w|\W){1,255}z: 33099 reads of the clock, widest gap 991167 ns
+S6-T24 meter: a(.*z)?: 1905 reads of the clock, widest gap 1087583 ns
+S6-T24 meter: abcdefghij z: 18 reads of the clock, widest gap 533667 ns
+S6-T24 meter: ABCDEFGHIJ Z: 18 reads of the clock, widest gap 625292 ns
+Build Summary: 15/15 steps succeeded; 640/649 tests passed (9 skipped)
+
+## zig build test --summary all, rerun 3 (nothing else of the verifier's running; rerun 3 beside a dart analyze)
+exit 0
+S6-T24 meter: (?:[a-j ]{1,255}){15}z: 1661 reads of the clock, widest gap 1039000 ns
+S6-T24 meter: (?:\w|\W){1,255}(?:\w|\W){1,255}z: 21950 reads of the clock, widest gap 8227875 ns
+S6-T24 meter: a(.*z)?: 1905 reads of the clock, widest gap 6581750 ns
+S6-T24 meter: abcdefghij z: 18 reads of the clock, widest gap 3041959 ns
+S6-T24 meter: ABCDEFGHIJ Z: 18 reads of the clock, widest gap 3658917 ns
+Build Summary: 15/15 steps succeeded; 640/649 tests passed (9 skipped)
+
+## counts.txt: the failing test's lines
+9:error: 'pattern.test.S6-T24 rework 1, ruling 1: the widest time between two reads of the clock (one meter interval) is under 10 ms' failed:
+61:       S6-T24 meter: (?:[a-j ]{1,255}){15}z: 1661 reads of the clock, widest gap 1043167 ns
+62:       S6-T24 meter: (?:\w|\W){1,255}(?:\w|\W){1,255}z: 32721 reads of the clock, widest gap 198552625 ns
+63:       S6-T24 meter: a(.*z)?: 1905 reads of the clock, widest gap 1029667 ns
+64:       S6-T24 meter: abcdefghij z: 18 reads of the clock, widest gap 521083 ns
+65:       S6-T24 meter: ABCDEFGHIJ Z: 18 reads of the clock, widest gap 602583 ns
+85:           try testing.expect(widest < 10 * std.time.ns_per_ms);
+178:Build Summary: 13/15 steps succeeded (1 failed); 639/649 tests passed (9 skipped, 1 failed)
+212:| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+
+## check_test_counts.py --run, rerun (nothing else of the verifier's running)
+56:S6-T24 meter: (?:[a-j ]{1,255}){15}z: 1661 reads of the clock, widest gap 1196666 ns
+57:S6-T24 meter: (?:\w|\W){1,255}(?:\w|\W){1,255}z: 29552 reads of the clock, widest gap 1364333 ns
+58:S6-T24 meter: a(.*z)?: 1905 reads of the clock, widest gap 1096500 ns
+59:S6-T24 meter: abcdefghij z: 18 reads of the clock, widest gap 529792 ns
+60:S6-T24 meter: ABCDEFGHIJ Z: 18 reads of the clock, widest gap 625958 ns
+156:Build Summary: 15/15 steps succeeded; 640/649 tests passed (9 skipped)
+188:| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+190:| core | `run test core` | 298 | 298 (298 pass) | ok |
+191:| operations | `run test operations` | 9 | 9 (9 pass) | ok |
+192:| interfaces | `run test interfaces` | 25 | 25 (25 pass) | ok |
+193:| tests | `run test tests` | 311 | 311 (302 pass, 9 skip) | ok |
+194:| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+195:check_test_counts: OK (5 steps, 649 tests: every step ran the tests the listing has, and the static checker passes)
+196:exit 0

@@ -1,0 +1,30 @@
+Part A: a(.*b)? (regex, sensitive) over one line of n a's
+  n=16384 budget 30000: 0.01 s, exit 0, stopped none, hits 1, cursor no
+  n=65536 budget 30000: 0.02 s, exit 0, stopped none, hits 1, cursor no
+  n=262144 budget 30000: 0.07 s, exit 0, stopped none, hits 1, cursor no
+  n=1048576 budget 30000: 0.27 s, exit 0, stopped none, hits 1, cursor no
+  n=4194304 budget 30000: 1.08 s, exit 0, stopped none, hits 1, cursor no
+  controls over the same lines: a(b)? (no long-running thread); a.*b (one pass of the whole line, never matches)
+  a(b)? n=65536 budget 30000: 0.00 s, exit 0, stopped none, hits 1, cursor no
+  a.*b  n=65536 budget 30000: 0.00 s, exit 0, stopped none, hits 0, cursor no
+  a(b)? n=1048576 budget 30000: 0.00 s, exit 0, stopped none, hits 1, cursor no
+  a.*b  n=1048576 budget 30000: 0.03 s, exit 0, stopped none, hits 0, cursor no
+  default budget, n = 2^20:
+  n=1048576 budget 2000: 0.28 s, exit 0, stopped none, hits 1, cursor no
+  (b + (m-1) a's first: BMH's forward compare fails on the first byte, so that needle is linear)
+Part B: literal b + (m-1) a's over a 10 MiB file of lines of 4,095 a's, budget 1 ms
+  b+a's bytes, m=16: 0.00 s, exit 0, stopped time, hits 0, cursor yes
+  b+a's ascii_ci (smart, the default), m=16: 0.00 s, exit 0, stopped time, hits 0, cursor yes
+  a's+b bytes, m=16: 0.00 s, exit 0, stopped time, hits 0, cursor yes
+  a's+b ascii_ci (smart, the default), m=16: 0.00 s, exit 0, stopped time, hits 0, cursor yes
+  b+a's bytes, m=256: 0.00 s, exit 0, stopped time, hits 0, cursor yes
+  b+a's ascii_ci (smart, the default), m=256: 0.00 s, exit 0, stopped time, hits 0, cursor yes
+  a's+b bytes, m=256: 0.00 s, exit 0, stopped time, hits 0, cursor yes
+  a's+b ascii_ci (smart, the default), m=256: 0.00 s, exit 0, stopped time, hits 0, cursor yes
+  b+a's bytes, m=1024: 0.00 s, exit 0, stopped time, hits 0, cursor yes
+  b+a's ascii_ci (smart, the default), m=1024: 0.00 s, exit 0, stopped time, hits 0, cursor yes
+  a's+b bytes, m=1024: 0.00 s, exit 0, stopped time, hits 0, cursor yes
+  a's+b ascii_ci (smart, the default), m=1024: 0.00 s, exit 0, stopped time, hits 0, cursor yes
+  control: the same needles over a 10 MiB file of x's
+  bytes, m=1024: 0.00 s, exit 0, stopped time, hits 0, cursor yes
+  ascii_ci, m=1024: 0.00 s, exit 0, stopped time, hits 0, cursor yes

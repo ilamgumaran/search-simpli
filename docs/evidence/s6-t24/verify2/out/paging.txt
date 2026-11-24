@@ -1,0 +1,85 @@
+OK   index the folder (exit 0)
+OK   index 'tide': the full answer (728 hits, 8 pages)
+OK   index 'tide' page size 1: 728 hits in 729 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   index 'tide' page size 2: 728 hits in 365 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   index 'tide' page size 7: 728 hits in 105 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   index 'tide' page size 100: 728 hits in 8 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   index 'tide' max 3 per file, page size 1: 107 hits (want 107), capped 33 (want 33)
+OK   index 'tide' max 3 per file, page size 2: 107 hits (want 107), capped 33 (want 33)
+OK   index 'tide' max 3 per file, page size 7: 107 hits (want 107), capped 33 (want 33)
+OK   index '\\d+': the full answer (576 hits, 6 pages)
+OK   index '\\d+' page size 1: 576 hits in 577 pages, each once, counts {'files_scanned': 40, 'files_matched': 35, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   index '\\d+' page size 2: 576 hits in 289 pages, each once, counts {'files_scanned': 40, 'files_matched': 35, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   index '\\d+' page size 7: 576 hits in 83 pages, each once, counts {'files_scanned': 40, 'files_matched': 35, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   index '\\d+' page size 100: 576 hits in 6 pages, each once, counts {'files_scanned': 40, 'files_matched': 35, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   index '\\d+' max 3 per file, page size 1: 102 hits (want 102), capped 32 (want 32)
+OK   index '\\d+' max 3 per file, page size 2: 102 hits (want 102), capped 32 (want 32)
+OK   index '\\d+' max 3 per file, page size 7: 102 hits (want 102), capped 32 (want 32)
+OK   index 'Tide': the full answer (317 hits, 4 pages)
+OK   index 'Tide' page size 1: 317 hits in 318 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   index 'Tide' page size 2: 317 hits in 159 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   index 'Tide' page size 7: 317 hits in 46 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   index 'Tide' page size 100: 317 hits in 4 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   index 'Tide' max 3 per file, page size 1: 99 hits (want 99), capped 29 (want 29)
+OK   index 'Tide' max 3 per file, page size 2: 99 hits (want 99), capped 29 (want 29)
+OK   index 'Tide' max 3 per file, page size 7: 99 hits (want 99), capped 29 (want 29)
+OK   folder 'tide': the full answer (728 hits, 8 pages)
+OK   folder 'tide' page size 1: 728 hits in 729 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   folder 'tide' page size 2: 728 hits in 365 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   folder 'tide' page size 7: 728 hits in 105 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   folder 'tide' page size 100: 728 hits in 8 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   folder 'tide' max 3 per file, page size 1: 107 hits (want 107), capped 33 (want 33)
+OK   folder 'tide' max 3 per file, page size 2: 107 hits (want 107), capped 33 (want 33)
+OK   folder 'tide' max 3 per file, page size 7: 107 hits (want 107), capped 33 (want 33)
+OK   folder '\\d+': the full answer (576 hits, 6 pages)
+OK   folder '\\d+' page size 1: 576 hits in 577 pages, each once, counts {'files_scanned': 40, 'files_matched': 35, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   folder '\\d+' page size 2: 576 hits in 289 pages, each once, counts {'files_scanned': 40, 'files_matched': 35, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   folder '\\d+' page size 7: 576 hits in 83 pages, each once, counts {'files_scanned': 40, 'files_matched': 35, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   folder '\\d+' page size 100: 576 hits in 6 pages, each once, counts {'files_scanned': 40, 'files_matched': 35, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   folder '\\d+' max 3 per file, page size 1: 102 hits (want 102), capped 32 (want 32)
+OK   folder '\\d+' max 3 per file, page size 2: 102 hits (want 102), capped 32 (want 32)
+OK   folder '\\d+' max 3 per file, page size 7: 102 hits (want 102), capped 32 (want 32)
+OK   folder 'Tide': the full answer (317 hits, 4 pages)
+OK   folder 'Tide' page size 1: 317 hits in 318 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   folder 'Tide' page size 2: 317 hits in 159 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   folder 'Tide' page size 7: 317 hits in 46 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   folder 'Tide' page size 100: 317 hits in 4 pages, each once, counts {'files_scanned': 40, 'files_matched': 37, 'files_capped': 0, 'bytes_scanned': 19262}
+OK   folder 'Tide' max 3 per file, page size 1: 99 hits (want 99), capped 29 (want 29)
+OK   folder 'Tide' max 3 per file, page size 2: 99 hits (want 99), capped 29 (want 29)
+OK   folder 'Tide' max 3 per file, page size 7: 99 hits (want 99), capped 29 (want 29)
+OK   index scan = folder scan (354 hits, counts {'files_scanned': 40, 'files_matched': 34, 'files_capped': 0, 'bytes_scanned': 19262} / {'files_scanned': 40, 'files_matched': 34, 'files_capped': 0, 'bytes_scanned': 19262})
+     an index cursor: 1:55f2996651b48d33:0:4:2
+OK   cursor '1:55f2996651b48d33:0:4:2' with 'pool' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: cursor does not belong to this request (want 'cursor does not belong to this request')
+OK   cursor '1:55f2996651b48d33:0:4:2' with 'tide' ['--page-size', '2', '--case', 'sensitive']: refused: searchd: SS_ERR_INVALID_ARGUMENT: cursor does not belong to this request (want 'cursor does not belong to this request')
+OK   cursor '1:55f2996651b48d33:0:4:2' with 'tide' ['--page-size', '2', '--context', '1']: refused: searchd: SS_ERR_INVALID_ARGUMENT: cursor does not belong to this request (want 'cursor does not belong to this request')
+OK   cursor '1:55f2996651b48d33:0:4:2' with 'tide' ['--page-size', '2', '--glob', '*.txt']: refused: searchd: SS_ERR_INVALID_ARGUMENT: cursor does not belong to this request (want 'cursor does not belong to this request')
+OK   the same request with another page size and budget takes the cursor
+OK   cursor '1:55f2996651b48d32:0:4:2' with 'tide' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: cursor does not belong to this request (want 'cursor does not belong to this request')
+OK   cursor '2:55f2996651b48d33:0:4:2' with 'tide' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: stale cursor (want 'stale cursor')
+OK   cursor '' with 'tide' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor (want '')
+OK   cursor 'x' with 'tide' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor (want '')
+OK   cursor '1:2:3:4' with 'tide' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor (want '')
+OK   cursor '1:55f2996651b48d33:0:4:2:0' with 'tide' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor (want '')
+OK   cursor '1:55f2996651b48d33:0:0:2' with 'tide' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor (want '')
+OK   cursor '1:55f2996651b48d33:99999:4:2' with 'tide' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor (want '')
+OK   cursor '1:55f2996651b48d33:0:4:51' with 'tide' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor (want '')
+OK   cursor '1:55f2996651b48d33:-1:4:2' with 'tide' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor (want '')
+OK   cursor '1:55f2996651b48d33:0:99999999999:2' with 'tide' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor (want '')
+OK   cursor 'fa0d05c8080b203e2:55f2996651b48d33:0:4:2' with 'tide' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: stale cursor (want 'stale cursor')
+OK   cursor '1:55f2996651b48d33:0:4:2' with 'tide' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: stale cursor (want 'stale cursor')
+     cursor with '+' before the file ordinal: refused: searchd: SS_ERR_INVALID_ARGUMENT: malformed cursor
+     a cursor of index 1 (generation 1) on index 2: ANSWERED with 2 hits, generation 1
+OK   cursor '1:55f2996651b48d33:0:4:2' with 'tide' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: stale cursor (want 'stale cursor')
+OK   cursor 'fa0d05c8080b203e2:55f2996651b48d33:0:4:2' with 'tide' ['--page-size', '2']: refused: searchd: SS_ERR_INVALID_ARGUMENT: stale cursor (want 'stale cursor')
+OK   a folder cursor after an edit that keeps every path is taken (documented, ruling O-4)
+OK   --time-ms 0: exit 2, searchd: invalid value for --time-ms: '0' (expected a whole number 1-30000)
+OK   --time-ms 30001: exit 2, searchd: invalid value for --time-ms: '30001' (expected a whole number 1-30000)
+OK   --time-ms -1: exit 2, searchd: invalid value for --time-ms: '-1' (expected a whole number 1-30000)
+OK   --time-ms x: exit 2, searchd: invalid value for --time-ms: 'x' (expected a whole number 1-30000)
+OK   big folder, q1\.5 (tide|x9) x9: 6843 hits in 69 pages at budget 30000
+OK   big folder at --time-ms 1: 6843 hits in 101 pages, 100 stopped by time, every hit once in order: True; error: None
+     O-7: tide|a(.*b)? at --time-ms 50, first page: answered, 1 hits, stopped time, cursor fb893ac7c82873450:9109861b80f56ffe:0:2:1
+OK   O-7: the next page is refused, exit 1: searchd: SS_ERR_CAPACITY: line 2 of r-legacy/a.txt outlasts time_budget_ms (50): raise it (at most 30000) or narrow the scope
+     O-7: the same cursor at --time-ms 30000: answered, 2 hits
+     an 8 MiB file whose first line is 5,000 x's, x\d at --time-ms 1: answered, stopped time
+failures: 0

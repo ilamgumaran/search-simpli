@@ -1,0 +1,9 @@
+id-timing-10k-head: scan zzz --time-ms 1: exit 0, stopped time; 20 ms / 38,191,464 B; 16 ms / 38,175,080 B; 16 ms / 38,191,464 B
+id-timing-10k-head: scan tide --time-ms 1: exit 0, stopped time; 16 ms / 38,175,080 B; 16 ms / 38,175,080 B; 16 ms / 38,175,080 B
+id-timing-10k-head: find zzz: exit 0, ; 17 ms / 26,493,264 B; 17 ms / 26,476,880 B; 18 ms / 26,493,264 B
+id-prose-10k-head: scan zzz --time-ms 1: exit 0, stopped time; 24 ms / 63,848,808 B; 25 ms / 63,848,808 B; 25 ms / 63,848,808 B
+id-prose-10k-head: scan tide --time-ms 1: exit 0, stopped time; 24 ms / 63,848,808 B; 24 ms / 63,848,808 B; 24 ms / 63,848,808 B
+id-prose-10k-head: find zzz: exit 0, ; 39 ms / 51,593,576 B; 37 ms / 51,593,576 B; 37 ms / 51,577,192 B
+id-tamil-10k-head: scan zzz --time-ms 1: exit 0, stopped time; 21 ms / 59,392,360 B; 21 ms / 59,392,360 B; 21 ms / 59,408,744 B
+id-tamil-10k-head: scan tide --time-ms 1: exit 0, stopped time; 21 ms / 59,408,744 B; 21 ms / 59,408,744 B; 21 ms / 59,392,360 B
+id-tamil-10k-head: find zzz: exit 0, ; 22 ms / 47,710,568 B; 22 ms / 47,710,568 B; 22 ms / 47,710,568 B

@@ -1,0 +1,4 @@
+text lines (67 B), 10,485,701 bytes, folder: exit 0, maximum resident set 12,845,056 B, peak memory footprint 11,813,200 B
+text lines (67 B), 10,485,701 bytes, index: exit 0, maximum resident set 31,080,448 B, peak memory footprint 30,065,000 B
+line breaks only, 10,485,759 bytes, folder: exit 0, maximum resident set 12,828,672 B, peak memory footprint 11,796,816 B
+line breaks only, 10,485,759 bytes, index: exit 0, maximum resident set 24,444,928 B, peak memory footprint 23,413,072 B
